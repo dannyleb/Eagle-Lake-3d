@@ -1,5 +1,3 @@
-import { ROADS, distToPolyline } from "./map/layout.js";
-
 // Driving and walking assists, so steering on a phone is "point the stick
 // where you want to go" instead of tank controls:
 //   - stickToHeading: joystick direction -> world heading, relative to a
@@ -7,8 +5,6 @@ import { ROADS, distToPolyline } from "./map/layout.js";
 //     while you keep pushing (so holding "right" never turns into circles)
 //   - clearHeading: feelers that bend the path around walls, trees and
 //     parked cars instead of stopping dead against them
-//   - laneHeading: when a vehicle is roughly lined up with a road, ease it
-//     onto the road's direction
 //   - createStuckWatch: if you're pushing but not getting anywhere, pop
 //     the player to the nearest open spot
 
@@ -54,30 +50,6 @@ export function clearHeading(collision, x, z, heading, r, look, bias = 1) {
     return h;
   }
   return null;
-}
-
-// Road direction to snap onto, or null if no road is close and aligned.
-export function laneHeading(x, z, heading) {
-  let best = null, bestD = Infinity;
-  for (const r of ROADS) {
-    const d = distToPolyline(x, z, r.pts) - r.w / 2;
-    if (d > 2 || d >= bestD) continue;
-    // Direction of the nearest segment
-    let segDir = null, segD = Infinity;
-    for (let i = 0; i < r.pts.length - 1; i++) {
-      const sd = distToPolyline(x, z, [r.pts[i], r.pts[i + 1]]);
-      if (sd < segD) {
-        segD = sd;
-        segDir = Math.atan2(r.pts[i + 1][0] - r.pts[i][0], r.pts[i + 1][1] - r.pts[i][1]);
-      }
-    }
-    bestD = d;
-    best = segDir;
-  }
-  if (best === null) return null;
-  // Either way along the road, whichever we're facing.
-  const a = Math.abs(wrapAngle(best - heading)) < Math.PI / 2 ? best : wrapAngle(best + Math.PI);
-  return Math.abs(wrapAngle(a - heading)) < 0.42 ? a : null;
 }
 
 // Watches for "pushing but not moving" and frees the player.

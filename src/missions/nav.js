@@ -23,7 +23,7 @@ function segIntersect(a, b, c, d) {
 function buildGraph() {
   const segs = [];
   for (const r of ROADS) {
-    for (let i = 0; i < r.pts.length - 1; i++) segs.push({ a: r.pts[i], b: r.pts[i + 1], ts: [0, 1] });
+    for (let i = 0; i < r.pts.length - 1; i++) segs.push({ a: r.pts[i], b: r.pts[i + 1], ts: [0, 1], road: r });
   }
   for (let i = 0; i < segs.length; i++) {
     for (let j = 0; j < segs.length; j++) {
@@ -38,16 +38,17 @@ function buildGraph() {
     if (!nodes.has(k)) nodes.set(k, { k, x, z, edges: [] });
     return nodes.get(k);
   };
-  const link = (p, q) => {
-    if (p === q) return;
+  const link = (p, q, road) => {
+    if (p === q || p.edges.some((e) => e.to === q)) return;
     const w = Math.hypot(q.x - p.x, q.z - p.z);
-    p.edges.push({ to: q, w });
-    q.edges.push({ to: p, w });
+    if (w < 0.01) return;
+    p.edges.push({ to: q, w, road });
+    q.edges.push({ to: p, w, road });
   };
   for (const s of segs) {
     s.ts.sort((x, y) => x - y);
     s.nodes = s.ts.map((t) => node(s.a[0] + (s.b[0] - s.a[0]) * t, s.a[1] + (s.b[1] - s.a[1]) * t));
-    for (let i = 0; i < s.nodes.length - 1; i++) link(s.nodes[i], s.nodes[i + 1]);
+    for (let i = 0; i < s.nodes.length - 1; i++) link(s.nodes[i], s.nodes[i + 1], s.road);
   }
   return { segs, nodes };
 }
@@ -123,4 +124,18 @@ export function routeLength(pts) {
   let l = 0;
   for (let i = 0; i < pts.length - 1; i++) l += Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
   return l;
+}
+
+// For vehicles on rails: the closest stretch of road to (x, z), oriented
+// to match `heading`. Returns { a, b, s, road }: travelling from node a
+// toward node b, s units past a.
+export function railAttach(x, z, heading) {
+  if (!graph) graph = buildGraph();
+  const p = snap(x, z);
+  let [n0, n1] = attach(p);
+  if (n0 === n1) [n0, n1] = [n0, n0.edges[0].to];
+  const fx = Math.sin(heading), fz = Math.cos(heading);
+  const forward = (n1.x - n0.x) * fx + (n1.z - n0.z) * fz >= 0;
+  const a = forward ? n0 : n1, b = forward ? n1 : n0;
+  return { a, b, s: Math.hypot(p.x - a.x, p.z - a.z), road: p.s.road };
 }

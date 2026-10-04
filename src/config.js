@@ -6,8 +6,8 @@ export const WORLD = { bounds: 805, fogNear: 340, fogFar: 1550, fogColor: 0xc4e6
 // Bradshall busk by the pond, with Green Dog parked beside him. The '70
 // waits at the fire station on N McCarty (his first objective).
 export const SPAWN = {
-  player: { x: 291, z: -183, heading: -Math.PI / 2 },
-  bike: { x: 292.2, z: -181.0, heading: -Math.PI / 2 },
+  player: { x: 289, z: -179.5, heading: -Math.PI / 2 },
+  bike: { x: 290.5, z: -177, heading: -Math.PI / 2 },
   car: { x: -11, z: -103, heading: Math.PI / 2 },
 };
 

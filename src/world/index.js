@@ -282,7 +282,7 @@ export function buildWorld(scene) {
   const spawnView = (x, z) =>
     (x > -48 && x < 14 && z > -124 && z < -40) ||
     (x > -352 && x < -308 && z > -10 && z < 70) || // Eagle Stop lot and lane
-    (x > 276 && x < 300 && z > -194 && z < -170); // where Sidney starts, by Bradshall
+    (x > 276 && x < 300 && z > -194 && z < -168); // where Sidney starts, by Bradshall
   const tree = (x, z, s = 1, kind = "round") => {
     if (!spawnView(x, z) && freeSpot(x, z, 1.4 * s)) {
       forest.add(x, z, s, kind);
@@ -594,8 +594,8 @@ export function buildWorld(scene) {
   });
   for (let x = 10; x < 238; x += 6.2) {
     for (const side of [-1, 1]) {
-      if (rand() > 0.45 || distToRail(x, side * 4.8) < 6 || Math.abs(x - 60) < 7 || Math.abs(x - 120) < 7 || Math.abs(x - 172) < 6) continue;
-      addCar(x, side * 4.7, side < 0 ? Math.PI * 0.75 : Math.PI * 0.25, pick(CAR_COLORS));
+      if (rand() > 0.45 || distToRail(x, side * 5.8) < 6 || Math.abs(x - 60) < 7 || Math.abs(x - 120) < 7 || Math.abs(x - 172) < 6) continue;
+      addCar(x, side * 5.8, side < 0 ? Math.PI * 0.75 : Math.PI * 0.25, pick(CAR_COLORS)); // nosed in at the curb, clear of the lanes
     }
   }
 

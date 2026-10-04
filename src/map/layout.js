@@ -44,6 +44,8 @@ export const ROADS = [
   { name: "Golf Rd", kind: "spur", w: 7, pts: [[-150, 180], [-150, 204]] },
   { name: "Park Rd", kind: "spur", w: 7, pts: [[0, 180], [0, 236]] },
   { name: "Memorial Park Rd", kind: "spur", w: 7, pts: [[240, -214], [262, -214]] },
+  { name: "Veterans Park Dr", kind: "spur", w: 7, pts: [[240, -174], [290, -174]] },
+  { name: "Eagle Stop Drive-Thru", kind: "spur", w: 6, pts: [[-330, 60], [-330, 6]] },
   { name: "CR 140", kind: "rural", w: 8, pts: [[-500, -830], [-500, 60]] },
   { name: "CR 106", kind: "rural", w: 8, pts: [[-830, -560], [0, -560]] },
 ];

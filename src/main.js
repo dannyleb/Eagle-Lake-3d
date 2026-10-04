@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { WORLD, SPAWN, GAME_TITLE, BRADSHALL } from "./config.js";
-import { RAILS } from "./map/layout.js";
+import { RAILS, distToRoad } from "./map/layout.js";
 import { buildWorld } from "./world/index.js";
 import { inCrossingZone } from "./world/rail.js";
 import { createNPC } from "./npc.js";
@@ -18,7 +18,7 @@ import { createStickSteer, createStuckWatch } from "./assist.js";
 import { createGators } from "./gators.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
-  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap,
+  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateSidVoice,
 } from "./audio.js";
 
 document.title = GAME_TITLE;
@@ -142,7 +142,7 @@ function nearestRide() {
 
 function mount(key) {
   const { veh, pose } = RIDES[key];
-  veh.state.speed = 0;
+  veh.park(); // re-lock onto the nearest road, facing the way it's parked
   veh.group.add(player.group);
   player.group.position.copy(veh.group.userData.seat);
   player.group.rotation.set(0, 0, 0);
@@ -265,18 +265,13 @@ function updateRail(dt, time) {
   hud.setTrainWarning(nearestActive < 260);
 }
 
-// Returns true when the vehicle is being held at a lowered gate.
-function blockCrossings(entity, oldX, oldZ) {
-  if (mode === "walk") return false;
-  const pos = entity.group.position;
+// Vehicles on rails ask this before moving onto (x, z): is it the road over
+// the tracks while that crossing's gates are down?
+function gateBlocks(x, z) {
+  const p = active().group.position;
   for (const cr of gated) {
     if (cr.amount < 0.35) continue;
-    if (inCrossingZone(cr, pos.x, pos.z) && !inCrossingZone(cr, oldX, oldZ)) {
-      pos.x = oldX;
-      pos.z = oldZ;
-      entity.state.speed = 0;
-      return true;
-    }
+    if (inCrossingZone(cr, x, z) && !inCrossingZone(cr, p.x, p.z)) return true;
   }
   return false;
 }
@@ -339,14 +334,12 @@ function frame() {
   bradshall.update(dt);
 
   const ent = active();
-  const oldX = ent.group.position.x, oldZ = ent.group.position.z;
-  ent.update(dt, input, WORLD.bounds, collision);
-  const atGate = blockCrossings(ent, oldX, oldZ);
-  // Pushing but going nowhere for a moment? Pop free (never past a gate).
-  const pushing = !atGate && ((input.dir != null && input.mag > 0.3) || Math.abs(input.y) > 0.3);
-  if (stuckWatch.update(dt, pushing, ent.group.position, collision, ent.state.radius, input.dir ?? ent.state.heading) && mode !== "walk") {
-    ent.state.speed = 0;
-  }
+  ent.update(dt, input, WORLD.bounds, collision, { blocked: gateBlocks });
+  // On foot: pushing but going nowhere for a moment? Pop free. (Vehicles are
+  // on rails and can't get stuck.)
+  const pushing = mode === "walk" && ((input.dir != null && input.mag > 0.3) || Math.abs(input.y) > 0.3);
+  stuckWatch.update(dt, pushing, ent.group.position, collision, ent.state.radius, input.dir ?? ent.state.heading);
+  updateSidVoice(dt, started && !missions.blocking);
   if (mode === "bike") player.animateRide(bike.state.speed, dt);
 
   const pos = ent.group.position;
@@ -395,7 +388,7 @@ frame();
 if (location.search.includes("debug")) {
   window.__debug = {
     THREE, scene, camera, renderer, post, player, bike, car, bradshall, trains, crossings, chaseCam, hud, world,
-    mount, dismount, missions, gators, getMode: () => mode,
+    mount, dismount, missions, gators, distToRoad, getMode: () => mode, gameTime: () => time,
     teleport(x, z, heading = 0) {
       const e = active();
       e.group.position.x = x;

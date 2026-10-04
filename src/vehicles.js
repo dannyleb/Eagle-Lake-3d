@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { clearHeading, laneHeading, wrapAngle } from "./assist.js";
+import { wrapAngle } from "./assist.js";
+import { railAttach } from "./missions/nav.js";
 import { makeWheelTexture, makeGrilleTexture } from "./textures.js";
 
 function canvasTex(w, h, draw) {
@@ -329,6 +330,12 @@ export function buildCar() {
   return g;
 }
 
+// Vehicles run "on rails": they're locked to the street network and stay
+// in the right-hand lane. The stick (or W/S) sets speed; its direction, or
+// A/D held as you approach a corner, picks which way to go at the next
+// intersection. Pull the stick backward (or hold S when stopped) to turn
+// around. Dead ends turn you around automatically. Nothing can push you off
+// the road, so there's nothing to get stuck on.
 export function createVehicle(scene, type, spawn) {
   const group = type === "bike" ? buildBike() : buildCar();
   group.position.set(spawn.x, 0.16, spawn.z);
@@ -336,64 +343,172 @@ export function createVehicle(scene, type, spawn) {
   scene.add(group);
 
   const isBike = type === "bike";
-  const maxSpeed = isBike ? 10 : 26;
-  const accel = isBike ? 7 : 12;
-  const turnRate = isBike ? 2.1 : 1.6;
+  const maxSpeed = isBike ? 20 : 52;
+  const accel = isBike ? 14 : 24;
   const wheels = group.userData.wheels || [];
   const state = { group, heading: spawn.heading, speed: 0, type, maxSpeed, radius: isBike ? 0.7 : 1.45, lean: 0 };
 
-  function update(dt, input, bounds, collision) {
-    let ix = input.x, iy = input.y;
-    const px = group.position.x, pz = group.position.z;
+  let rail = null; // { a, b, s, road, len, ux, uz }
+  let turnIntent = 0, turnTimer = 0; // keyboard: -1 left, +1 right
+  const railPos = new THREE.Vector3();
+
+  function setRail(a, b, s, road) {
+    const len = Math.hypot(b.x - a.x, b.z - a.z) || 0.01;
+    rail = { a, b, s, road, len, ux: (b.x - a.x) / len, uz: (b.z - a.z) / len };
+  }
+
+  // Lock onto the nearest road (called when Sidney gets on).
+  function attach() {
+    const r = railAttach(group.position.x, group.position.z, state.heading);
+    setRail(r.a, r.b, r.s, r.road);
+  }
+
+  const lane = () => Math.min(2.6, (rail.road?.w ?? 9) / 4);
+
+  function railPoint(out) {
+    const l = lane();
+    // Right-hand side of the direction of travel.
+    out.set(rail.a.x + rail.ux * rail.s - rail.uz * l, 0.16, rail.a.z + rail.uz * rail.s + rail.ux * l);
+    return out;
+  }
+
+  const travelHeading = () => Math.atan2(rail.ux, rail.uz);
+
+  // Which way to leave node b, given where the player wants to go.
+  function pickNext(want) {
+    const b = rail.b;
+    let options = b.edges.filter((e) => e.to !== rail.a);
+    if (!options.length) return null; // dead end
+    let best = options[0], bestScore = -Infinity;
+    for (const e of options) {
+      const h = Math.atan2(e.to.x - b.x, e.to.z - b.z);
+      const score = Math.cos(wrapAngle(h - want));
+      if (score > bestScore) { bestScore = score; best = e; }
+    }
+    return best;
+  }
+
+  function turnAround() {
+    const { a, b, s, len, road } = rail;
+    setRail(b, a, len - s, road);
+  }
+
+  // opts.blocked(x, z): true if that spot is closed (lowered crossing gate).
+  function update(dt, input, bounds, collision, opts = {}) {
+    if (!rail) attach();
+    const travel = travelHeading();
+
+    // --- intent: where the player wants to go and how fast ---
+    let want = travel, throttle = 0, reverse = false;
     if (input.dir != null) {
-      // Point-and-go: steer toward where the stick points; pushing farther
-      // goes faster. Roughly lined up with a road? Ease onto the road.
-      let want = input.dir;
-      const lane = laneHeading(px, pz, state.heading);
-      if (lane !== null && Math.abs(wrapAngle(want - lane)) < 0.5) want = lane;
-      const d = wrapAngle(want - state.heading);
-      ix = -THREE.MathUtils.clamp(d * 2, -1, 1);
-      iy = input.mag * (Math.abs(d) > 2.2 ? 0.55 : 1);
+      want = input.dir;
+      throttle = input.mag;
+      if (Math.abs(wrapAngle(want - travel)) > 2.3) {
+        // Stick pulled back: brake, then turn around.
+        if (state.speed < 2.5) reverse = true;
+        else throttle = -1;
+      }
+    } else {
+      // A tap of A/D is remembered until the next real intersection.
+      if (input.x) { turnIntent = Math.sign(input.x); turnTimer = 6; }
+      turnTimer -= dt;
+      if (turnTimer <= 0) turnIntent = 0;
+      want = travel - turnIntent * (Math.PI / 2);
+      if (input.y > 0) throttle = 1;
+      else if (input.y < 0) {
+        if (state.speed < 1) reverse = true;
+        else throttle = -1;
+      }
     }
-    // Guardrail: look ahead and steer around obstacles before hitting them.
-    if (collision && state.speed > 2) {
-      const look = state.radius + 1.5 + state.speed * 0.45;
-      const h = clearHeading(collision, px, pz, state.heading, state.radius * 0.9, look, -Math.sign(ix) || 1);
-      if (h === null) iy = Math.min(iy, 0.25);
-      else if (h !== state.heading) ix = THREE.MathUtils.clamp(ix - wrapAngle(h - state.heading) * 2.5, -1, 1);
+    if (input.brake) throttle = -1;
+    state.turnIntent = turnIntent; // for the HUD / debugging
+    if (reverse) {
+      turnAround();
+      state.speed = 0;
     }
-    const target = iy * maxSpeed * (input.sprint && !isBike ? 1.3 : 1);
+
+    // --- speed ---
+    const top = maxSpeed * (input.sprint && !isBike ? 1.3 : 1);
+    let target = Math.max(0, throttle) * top;
+    // Park drives and the drive-thru lane are slow zones.
+    if (rail.road && rail.road.kind === "spur") target = Math.min(target, 14);
+    // Ease off for sharp corners coming up.
+    const ahead = rail.len - rail.s;
+    if (ahead < 6 + state.speed * 0.7) {
+      const nxt = pickNext(want);
+      if (nxt) {
+        const turn = Math.abs(wrapAngle(Math.atan2(nxt.to.x - rail.b.x, nxt.to.z - rail.b.z) - travelHeading()));
+        target = Math.min(target, Math.max(8, top * (1 - 0.55 * (turn / Math.PI))));
+      }
+    }
+    const rate = throttle < 0 ? accel * 3 : accel;
     const diff = target - state.speed;
-    const rate = input.brake ? accel * 3 : accel;
     state.speed += Math.sign(diff) * Math.min(Math.abs(diff), rate * dt);
-    if (input.brake) state.speed *= 0.9;
+    state.speed = Math.max(0, state.speed);
 
-    const speedFactor = Math.min(1, Math.abs(state.speed) / (maxSpeed * 0.45));
-    const turnDir = state.speed >= 0 ? 1 : -1;
-    const steer = -ix * turnRate * speedFactor * turnDir;
-    state.heading += steer * dt;
+    // --- advance along the network ---
+    const save = { ...rail };
+    let left = state.speed * dt;
+    let guard = 0;
+    while (left > 0 && guard++ < 8) {
+      const room = rail.len - rail.s;
+      if (left < room) {
+        rail.s += left;
+        left = 0;
+        break;
+      }
+      left -= room;
+      const nxt = pickNext(want);
+      if (!nxt) {
+        // Dead end: swing around.
+        setRail(rail.b, rail.a, 0, rail.road);
+        state.speed *= 0.35;
+        break;
+      }
+      const choices = rail.b.edges.length - 1;
+      setRail(rail.b, nxt.to, 0, nxt.road);
+      if (choices >= 2) turnIntent = 0; // used up at a real intersection
+    }
+    railPoint(railPos);
+    if (opts.blocked && opts.blocked(railPos.x, railPos.z)) {
+      rail = save;
+      state.speed = 0;
+      railPoint(railPos);
+    }
 
-    const oldX = group.position.x, oldZ = group.position.z;
-    const nx = THREE.MathUtils.clamp(oldX + Math.sin(state.heading) * state.speed * dt, -bounds, bounds);
-    const nz = THREE.MathUtils.clamp(oldZ + Math.cos(state.heading) * state.speed * dt, -bounds, bounds);
-    const r = collision ? collision.resolveMove(oldX, oldZ, nx, nz, state.radius) : { x: nx, z: nz };
-    // Scrape along walls instead of stopping dead; only a head-on hit stops you.
-    const bx = r.x !== nx, bz = r.z !== nz;
-    if (bx && bz) state.speed *= 0.3;
-    else if (bx || bz) state.speed *= 0.9;
-    group.position.x = r.x;
-    group.position.z = r.z;
+    // --- move with the road, and ease out any offset (corner lane changes,
+    //     hopping on from the curb) so the model never snaps ---
+    const p = group.position;
+    const k = 1 - Math.exp(-dt * 7);
+    const ex = p.x + rail.ux * state.speed * dt, ez = p.z + rail.uz * state.speed * dt;
+    const cx = (railPos.x - ex) * k, cz = (railPos.z - ez) * k;
+    const maxFix = (6 + state.speed * 0.5) * dt; // cap the slide when far off
+    const fl = Math.hypot(cx, cz);
+    const f = fl > maxFix ? maxFix / fl : 1;
+    p.x = THREE.MathUtils.clamp(ex + cx * f, -bounds, bounds);
+    p.z = THREE.MathUtils.clamp(ez + cz * f, -bounds, bounds);
+    const prevHeading = state.heading;
+    const off = Math.hypot(railPos.x - p.x, railPos.z - p.z);
+    const goal = off > 2.5 && state.speed < 4 ? Math.atan2(railPos.x - p.x, railPos.z - p.z) : travelHeading();
+    state.heading += wrapAngle(goal - state.heading) * Math.min(1, dt * 7);
     group.rotation.y = state.heading;
 
     // Lean into turns (the bike leans for real, the car just rolls a touch).
-    const targetLean = -steer * (isBike ? 0.16 : 0.03) * speedFactor;
+    const yawRate = wrapAngle(state.heading - prevHeading) / Math.max(dt, 1e-4);
+    const targetLean = THREE.MathUtils.clamp(yawRate * (isBike ? 0.12 : 0.02) * Math.min(1, state.speed / 8), -0.45, 0.45);
     state.lean += (targetLean - state.lean) * Math.min(1, dt * 6);
     group.rotation.z = state.lean;
 
-    const spin = (state.speed * dt) / (isBike ? 0.4 : 0.4);
+    const spin = (state.speed * dt) / 0.4;
     for (const w of wheels) w.rotation.x += spin;
     if (group.userData.crank) group.userData.crank.rotation.x += spin * 0.55;
   }
 
-  return { group, state, update };
+  return {
+    group,
+    state,
+    update,
+    // Drop off the rails (parked); the next update re-attaches wherever it is.
+    park() { rail = null; state.speed = 0; },
+  };
 }

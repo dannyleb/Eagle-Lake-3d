@@ -85,6 +85,12 @@ It loops through the station automatically; press `R` any time to skip to
 the next track. All three songs are lazy-loaded (only fetched once playback
 actually starts), so they never add weight to the initial page load.
 
+## Sidney's voice
+
+While you play, Sidney pipes up every 3 to 5 seconds with a quick line (none
+longer than two seconds), cut from his real voicemails and picked at random
+without repeats. The radio dips a little under each line.
+
 ## The Thicker Bradshall
 
 A local musician busks by the pond at Veterans Memorial Park — walk up to
@@ -95,7 +101,9 @@ likeness of the real person, in the same style as Sidney himself.
 ## Controls
 
 **Desktop**
-- `WASD` / Arrow keys — move or steer
+- `WASD` / Arrow keys — move; on the bike or in the car, `W` goes, `S`
+  brakes (or turns around when stopped), and a tap of `A`/`D` takes the next
+  left/right
 - `Shift` — sprint (on foot) / boost (car)
 - `Space` — brake
 - `E` — ride / park / talk / order at the drive-thru window
@@ -105,10 +113,11 @@ likeness of the real person, in the same style as Sidney himself.
 
 **Mobile**
 - On-screen joystick — point it where you want to go (relative to the
-  screen) and Sidney, Green Dog or the '70 heads that way. Steering assists
-  bend the path around walls, trees and parked cars, slide along anything
-  you clip, ease vehicles onto the road you're lined up with, and pop you
-  free if you're ever stuck
+  screen). On foot, Sidney walks that way and steers himself around walls,
+  trees and parked cars (and pops free if he's ever stuck). On Green Dog
+  or in the '70 you're on rails: locked to the streets in the right-hand
+  lane, the stick sets your speed and picks the turn at each
+  intersection; pull it back to turn around
 - `RUN` — sprint / boost
 - `RIDE` — ride / park / talk / order
 - `VIEW`, `MAP`, `RADIO` — same as the keys above

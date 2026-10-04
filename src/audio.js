@@ -107,8 +107,10 @@ function getRadioEl() {
   return radioEl;
 }
 
+let radioTarget = 0.55; // where the radio volume is headed (siren ducking etc.)
 function fadeTo(target, ms) {
   clearInterval(fadeTimer);
+  radioTarget = target;
   const el = getRadioEl();
   const start = el.volume;
   const startTime = performance.now();
@@ -117,6 +119,7 @@ function fadeTo(target, ms) {
     el.volume = start + (target - start) * t;
     if (t >= 1) {
       clearInterval(fadeTimer);
+      fadeTimer = null;
       if (target === 0) el.pause();
     }
   }, 40);
@@ -303,4 +306,74 @@ export function playTick(urgent = false) {
 }
 export function playFail() {
   [392, 370, 349, 311].forEach((f, i) => tone(f, i * 0.28, i === 3 ? 0.7 : 0.26, { type: "sawtooth", vol: 0.04, slide: i === 3 ? 0.9 : 1 }));
+}
+
+// ---------- Sidney's voice ----------
+// Short phrases cut from Sid's voicemails, played at random every 3-5
+// seconds while you play. Clips are fetched once the game starts, decoded
+// into buffers, and drawn from a shuffled bag so none repeats back to back.
+const SID_CLIPS = Array.from({ length: 16 }, (_, i) => `audio/sid/sid${String(i + 1).padStart(2, "0")}.mp3`);
+let sidBuffers = null;
+let sidBag = [];
+let sidLast = -1;
+let sidNext = 3;
+
+function loadSid() {
+  const c = getCtx();
+  if (!c || sidBuffers) return;
+  sidBuffers = [];
+  SID_CLIPS.forEach((src, i) => {
+    fetch(src)
+      .then((r) => r.arrayBuffer())
+      .then((b) => c.decodeAudioData(b))
+      .then((buf) => { sidBuffers[i] = buf; })
+      .catch(() => {});
+  });
+}
+
+function nextSidClip() {
+  const ready = sidBuffers ? sidBuffers.map((b, i) => (b ? i : -1)).filter((i) => i >= 0) : [];
+  if (!ready.length) return -1;
+  if (!sidBag.length) {
+    sidBag = ready.slice();
+    for (let i = sidBag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [sidBag[i], sidBag[j]] = [sidBag[j], sidBag[i]];
+    }
+    if (sidBag.length > 1 && sidBag[sidBag.length - 1] === sidLast) sidBag.unshift(sidBag.pop());
+  }
+  return sidBag.pop();
+}
+
+// Call every frame; `active` is false during story cards and menus.
+// Timing runs on game time (not `onended`), so a stalled or suspended
+// audio context can never leave the voice stuck "busy".
+let sidBusy = 0;
+export function updateSidVoice(dt, active) {
+  loadSid();
+  if (sidBusy > 0) {
+    sidBusy -= dt;
+    if (sidBusy <= 0 && radioEl && radioOn && !fadeTimer) radioEl.volume = radioTarget;
+    return;
+  }
+  if (!active) return;
+  sidNext -= dt;
+  if (sidNext > 0) return;
+  const c = getCtx();
+  if (!c || c.state !== "running") return;
+  const i = nextSidClip();
+  if (i < 0) return;
+  const src = c.createBufferSource();
+  src.buffer = sidBuffers[i];
+  src.playbackRate.value = 0.96 + Math.random() * 0.08; // a little variety
+  const g = c.createGain();
+  g.gain.value = 0.95;
+  src.connect(g).connect(c.destination);
+  src.start();
+  sidLast = i;
+  sidBusy = src.buffer.duration / src.playbackRate.value;
+  // A new line every 3-5 s, start to start (with a breath between lines).
+  sidNext = Math.max(0.8, 3 + Math.random() * 2 - sidBusy);
+  // Dip the radio a touch so the line comes through.
+  if (radioEl && radioOn && !radioEl.paused && !fadeTimer) radioEl.volume = radioTarget * 0.55;
 }

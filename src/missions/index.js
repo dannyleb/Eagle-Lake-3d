@@ -17,7 +17,7 @@ import {
 // To add a mission, append to MISSIONS.
 // ---------------------------------------------------------------------------
 
-const FIRE_STATION = { x: -9, z: -96, r: 8 };
+const FIRE_STATION = { x: -9, z: -96, r: 14 }; // reaches both lanes of McCarty
 const EAGLE_STOP = { x: -330, z: 44, r: 24 };
 
 const EAGLE_STOP_NINJAS = [
@@ -82,7 +82,7 @@ export const MISSIONS = [
         "your recliner before the opening bell, Chief. The clock is ticking.",
       go: "TO THE RECLINER",
     },
-    steps: [{ type: "goto", label: "Get home before the bell", at: (ctx) => ctx.world.sidneyHouse, r: 5, timed: true }],
+    steps: [{ type: "goto", label: "Get home before the bell", at: (ctx) => ctx.world.sidneyHouse, r: 8, timed: true }],
     failStory: {
       kicker: "MISSION 3 \u00b7 WRESTLING NIGHT",
       title: "YOU MISSED THE BELL!",
@@ -124,7 +124,7 @@ export function createMissions(ctx) {
         // Enough time to run it on foot along the streets, with a little slack.
         const p = ctx.getPos();
         const len = routeLength(findRoute(p.x, p.z, step.x, step.z));
-        step.timeLeft = Math.max(30, Math.ceil(len / 8 + 14));
+        step.timeLeft = Math.max(25, Math.ceil(len / 9 + 12)); // a brisk run; the bike or car makes it easy
         step.lastTick = Math.ceil(step.timeLeft);
       }
     });

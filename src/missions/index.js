@@ -4,7 +4,7 @@ import { createMissionUI } from "./ui.js";
 import { createNinjaGang } from "../ninja.js";
 import {
   startSiren, stopSiren, setSirenVolume, duckRadio,
-  playFanfare, playObjective, playHit, playPoof, playOof, playTick, playFail,
+  playFanfare, playPop, playObjective, playHit, playPoof, playOof, playTick, playFail,
 } from "../audio.js";
 
 // ---------------------------------------------------------------------------
@@ -163,7 +163,9 @@ export function createMissions(ctx) {
       stopSiren();
       duckRadio(false);
     }
+    if (ctx.arrive) ctx.arrive();
     if (m.onComplete) m.onComplete(ctx);
+    playPop();
     playFanfare();
     await ui.achievement(m.achievement.title, m.achievement.text);
     mission = null;
@@ -242,6 +244,7 @@ export function createMissions(ctx) {
       ui.setObjective(step.label, `${Math.round(remaining)} m`, !!alarmOn || !!step.timed);
       ui.waypoint({ x: step.x, y: 10, z: step.z }, ctx.camera, remaining);
       if (d < step.r) {
+        if (ctx.arrive) ctx.arrive(); // brake and hop off the bike / out of the car
         step.resolve("done");
         return;
       }

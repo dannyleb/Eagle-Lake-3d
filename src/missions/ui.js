@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { createConfetti } from "../ui/confetti.js";
 
 // DOM side of missions: the flashing alarm banner, the objective tracker,
 // story cards between missions, achievement popups, and the on-screen
@@ -25,6 +26,7 @@ export function createMissionUI(viewport) {
     timer: $("timer"),
     wayDist: $("wayDist"),
   };
+  const confetti = createConfetti(document.getElementById("confetti"));
   let storyResolve = null;
   el.storyGo.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -85,7 +87,8 @@ export function createMissionUI(viewport) {
       return !!storyResolve;
     },
     dismissStory: closeStory,
-    achievement(title, text, ms = 5200) {
+    achievement(title, text, ms = 6500) {
+      confetti.burst();
       el.achTitle.textContent = title;
       el.achText.textContent = text;
       el.ach.classList.remove("show");

@@ -128,7 +128,14 @@ const missions = createMissions({
     player.punch();
   },
   kickPlayer: (dx, dz) => knockPlayer(dx, dz),
+  // Reached an objective: brake, then Sidney hops off (handled in frame()).
+  arrive: () => {
+    if (mode === "walk") return;
+    RIDES[mode].veh.stop();
+    hopOffWhenStopped = true;
+  },
 });
+let hopOffWhenStopped = false;
 
 function nearestRide() {
   const p = player.group.position;
@@ -347,6 +354,13 @@ function frame() {
   stuckWatch.update(dt, pushing, ent.group.position, collision, ent.state.radius, input.dir ?? ent.state.heading);
   updateSidVoice(dt, started && !missions.blocking);
   if (mode === "bike") player.animateRide(bike.state.speed, dt);
+  if (hopOffWhenStopped) {
+    if (mode === "walk") hopOffWhenStopped = false;
+    else if (ent.state.speed < 0.6) {
+      hopOffWhenStopped = false;
+      dismount();
+    }
+  }
 
   const pos = ent.group.position;
   chaseCam.update(pos, ent.state.heading, dt, mode, collision);

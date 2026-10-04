@@ -512,5 +512,7 @@ export function createVehicle(scene, type, spawn) {
     update,
     // Drop off the rails (parked); the next update re-attaches wherever it is.
     park() { rail = null; state.speed = 0; cruise = false; turnIntent = 0; },
+    // Brake to a stop (used when you reach an objective).
+    stop() { cruise = false; turnIntent = 0; },
   };
 }

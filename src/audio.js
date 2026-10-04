@@ -377,3 +377,10 @@ export function updateSidVoice(dt, active) {
   // Dip the radio a touch so the line comes through.
   if (radioEl && radioOn && !radioEl.paused && !fadeTimer) radioEl.volume = radioTarget * 0.55;
 }
+
+// Party-popper crack for the confetti.
+export function playPop() {
+  noise(0, 0.08, { vol: 0.5, freq: 2400, q: 0.6, type: "highpass" });
+  tone(1800, 0, 0.12, { type: "triangle", vol: 0.05, slide: 0.4 });
+  noise(0.42, 0.07, { vol: 0.35, freq: 2600, q: 0.6, type: "highpass" });
+}

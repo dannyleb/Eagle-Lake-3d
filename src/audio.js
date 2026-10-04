@@ -45,15 +45,31 @@ export function stopCrossingBell() {
   }
 }
 
+// The '70's radio station: a little local playlist. Both tracks are
+// lazy-loaded (only fetched once the car radio actually needs them) and
+// play back to back, looping the station when it reaches the end.
+export const STATION = [
+  { src: "audio/take-it-back.mp3", title: "I'll Take It Back", artist: "Blake" },
+  { src: "audio/peel-on.mp3", title: "Peel On", artist: "The Thicker Bradshall" },
+];
+
 let radioEl = null;
 let fadeTimer = null;
+let trackIndex = 0;
+let radioOn = false;
+let onTrackChange = null;
 
 function getRadioEl() {
   if (!radioEl) {
-    radioEl = new Audio("audio/take-it-back.mp3");
-    radioEl.loop = true;
+    radioEl = new Audio(STATION[trackIndex].src);
     radioEl.volume = 0;
     radioEl.preload = "none";
+    radioEl.addEventListener("ended", () => {
+      trackIndex = (trackIndex + 1) % STATION.length;
+      radioEl.src = STATION[trackIndex].src;
+      if (radioOn) radioEl.play().catch(() => {});
+      if (onTrackChange) onTrackChange(STATION[trackIndex]);
+    });
   }
   return radioEl;
 }
@@ -73,13 +89,31 @@ function fadeTo(target, ms) {
   }, 40);
 }
 
+export function onRadioTrackChange(cb) {
+  onTrackChange = cb;
+}
+
+export function currentTrack() {
+  return STATION[trackIndex];
+}
+
 export function playRadio() {
+  radioOn = true;
   const el = getRadioEl();
   if (el.paused) el.play().catch(() => {});
   fadeTo(0.55, 500);
 }
 
 export function stopRadio() {
+  radioOn = false;
   if (!radioEl) return;
   fadeTo(0, 400);
+}
+
+export function nextStation() {
+  if (!radioEl) return;
+  trackIndex = (trackIndex + 1) % STATION.length;
+  radioEl.src = STATION[trackIndex].src;
+  if (radioOn) radioEl.play().catch(() => {});
+  if (onTrackChange) onTrackChange(STATION[trackIndex]);
 }

@@ -16,10 +16,15 @@ Pages deployment once it's live.
 
 ## The radio
 
-Get in the '70 and the radio comes on — "I'll Take It Back," a song built
-from Sidney's own voice. It's lazy-loaded (only fetched the moment you first
-get in the car), so it doesn't add weight to the initial page load. Get out
-and it fades out; the bike doesn't have a radio.
+Get in the '70 and the radio comes on — a two-song local station:
+
+- **"I'll Take It Back"** by Blake — built from Sidney's own voice
+- **"Peel On"** by The Thicker Bradshall — a friend of Sidney's from Eagle Lake
+
+It plays through the station and loops; press `R` to skip to the other
+track. Both songs are lazy-loaded (only fetched the moment you first get in
+the car), so they never add weight to the initial page load. Get out and the
+radio fades out; the bike doesn't have one.
 
 ## Controls
 

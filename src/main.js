@@ -6,7 +6,7 @@ import { createControls } from "./controls.js";
 import { createPlayer } from "./player.js";
 import { createVehicle } from "./vehicles.js";
 import { createChaseCamera } from "./camera.js";
-import { unlockAudio, startCrossingBell, stopCrossingBell, playRadio, stopRadio } from "./audio.js";
+import { unlockAudio, startCrossingBell, stopCrossingBell, playRadio, stopRadio, nextStation, currentTrack } from "./audio.js";
 import { buildObstacles } from "./collision.js";
 
 document.title = GAME_TITLE;
@@ -122,7 +122,8 @@ function updatePrompt() {
     else if (target === "car") promptEl.textContent = "Press E / tap ◉ to drive the '70";
     else promptEl.textContent = "";
   } else if (mode === "car") {
-    promptEl.textContent = "Press E / tap ◉ to park — ♪ I'll Take It Back ♪";
+    const t = currentTrack();
+    promptEl.textContent = `Press E / tap ◉ to park — ♪ ${t.title} — ${t.artist} ♪ (R: change station)`;
   } else {
     promptEl.textContent = "Press E / tap ◉ to park";
   }
@@ -180,8 +181,9 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
 
   const polled = controls.poll();
-  const input = started ? polled : { x: 0, y: 0, sprint: false, brake: false, interact: false };
+  const input = started ? polled : { x: 0, y: 0, sprint: false, brake: false, interact: false, changeStation: false };
   if (input.interact) tryInteract();
+  if (started && input.changeStation && mode === "car") nextStation();
 
   updateTrainAndGates(dt);
 

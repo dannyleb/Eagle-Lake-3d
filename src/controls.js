@@ -2,10 +2,12 @@
 export function createControls() {
   const keys = new Set();
   let interactPressed = false;
+  let changeStationPressed = false;
 
   window.addEventListener("keydown", (e) => {
     keys.add(e.code);
     if (e.code === "KeyE" || e.code === "Enter") interactPressed = true;
+    if (e.code === "KeyR") changeStationPressed = true;
     if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
@@ -113,8 +115,10 @@ export function createControls() {
         sprint: state.sprint || touchSprint,
         brake: state.brake,
         interact: interactPressed,
+        changeStation: changeStationPressed,
       };
       interactPressed = false;
+      changeStationPressed = false;
       return out;
     },
   };

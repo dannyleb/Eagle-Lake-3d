@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { toonify } from "./render/toon.js";
+import { clearHeading, wrapAngle } from "./assist.js";
 import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
 
 // Sidney — a stylized tribute built from the photos: heavyset, glasses and a
@@ -194,6 +195,36 @@ export function createPlayer(scene, spawn) {
     punchT = 0.32;
   }
 
+  // Gold championship belt: black strap, big center plate with a red jewel,
+  // and two side plates.
+  let belt = null;
+  function setBelt(on) {
+    if (!on || belt) return;
+    belt = new THREE.Group();
+    const strap = new THREE.Mesh(new THREE.CylinderGeometry(0.39, 0.39, 0.16, 18), new THREE.MeshLambertMaterial({ color: 0x1a1a1a }));
+    strap.scale.set(1.1, 1, 0.88);
+    strap.position.y = 0.08;
+    belt.add(strap);
+    const gold = new THREE.MeshLambertMaterial({ color: 0xf2c230 });
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16), gold);
+    plate.rotation.x = Math.PI / 2;
+    plate.scale.set(1.25, 1, 1);
+    plate.position.set(0, 0.09, 0.35);
+    belt.add(plate);
+    const jewel = new THREE.Mesh(new THREE.OctahedronGeometry(0.07, 0), new THREE.MeshLambertMaterial({ color: 0xd62828 }));
+    jewel.position.set(0, 0.1, 0.39);
+    belt.add(jewel);
+    for (const sx of [-1, 1]) {
+      const side = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.13, 0.04), gold);
+      side.position.set(sx * 0.33, 0.08, 0.24);
+      side.rotation.y = sx * 0.7;
+      belt.add(side);
+    }
+    belt.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    toonify(belt);
+    parts.hips.add(belt);
+  }
+
   // White fire-chief helmet: dome, long back brim, front shield, top comb.
   function setChief(on) {
     if (!on || helmet) return;
@@ -212,11 +243,11 @@ export function createPlayer(scene, spawn) {
     comb.position.set(0, 1.71, -0.02);
     helmet.add(comb);
     const shield = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.3, 0.04), gold);
-    shield.position.set(0, 1.64, 0.3);
+    shield.position.set(0, 1.55, 0.31);
     shield.rotation.x = -0.25;
     helmet.add(shield);
     const mark = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.02), new THREE.MeshLambertMaterial({ color: 0xb5342c }));
-    mark.position.set(0, 1.64, 0.325);
+    mark.position.set(0, 1.55, 0.335);
     mark.rotation.x = -0.25;
     helmet.add(mark);
     helmet.traverse((o) => { if (o.isMesh) o.castShadow = true; });
@@ -255,13 +286,32 @@ export function createPlayer(scene, spawn) {
   }
 
   function update(dt, input, bounds, collision) {
-    state.heading += -input.x * 2.6 * dt;
-    const target = input.y !== 0 ? (input.sprint ? state.sprintSpeed : state.walkSpeed) * Math.sign(input.y) : 0;
+    let target;
+    const pointed = input.dir != null;
+    if (pointed) {
+      // Point-and-go (touch stick): turn quickly to face the stick, speed
+      // from how far it's pushed; a full push breaks into a run.
+      const d = wrapAngle(input.dir - state.heading);
+      state.heading += Math.sign(d) * Math.min(Math.abs(d), 11 * dt);
+      target = input.sprint || input.mag > 0.9 ? state.sprintSpeed : state.walkSpeed * (0.45 + 0.55 * input.mag);
+    } else {
+      state.heading += -input.x * 2.6 * dt;
+      target = input.y !== 0 ? (input.sprint ? state.sprintSpeed : state.walkSpeed) * Math.sign(input.y) : 0;
+    }
     state.speed += (target - state.speed) * Math.min(1, dt * 8);
 
     const oldX = group.position.x, oldZ = group.position.z;
-    const nx = THREE.MathUtils.clamp(oldX + Math.sin(state.heading) * state.speed * dt, -bounds, bounds);
-    const nz = THREE.MathUtils.clamp(oldZ + Math.cos(state.heading) * state.speed * dt, -bounds, bounds);
+    // Guardrail: bend the path around whatever is ahead instead of
+    // walking face-first into it.
+    let moveH = state.heading;
+    if (collision && state.speed > 0.5) {
+      const bias = pointed ? Math.sign(wrapAngle(input.dir - state.heading)) || 1 : -Math.sign(input.x) || 1;
+      const h = clearHeading(collision, oldX, oldZ, state.heading, state.radius, 1.0 + state.speed * 0.12, bias);
+      if (h !== null) moveH = h;
+      if (pointed) state.heading += wrapAngle(moveH - state.heading) * Math.min(1, dt * 6);
+    }
+    const nx = THREE.MathUtils.clamp(oldX + Math.sin(moveH) * state.speed * dt, -bounds, bounds);
+    const nz = THREE.MathUtils.clamp(oldZ + Math.cos(moveH) * state.speed * dt, -bounds, bounds);
     const r = collision ? collision.resolveMove(oldX, oldZ, nx, nz, state.radius) : { x: nx, z: nz };
     group.position.x = r.x;
     group.position.z = r.z;
@@ -291,5 +341,5 @@ export function createPlayer(scene, spawn) {
     }
   }
 
-  return { group, state, update, setPose, animateRide, punch, setChief };
+  return { group, state, update, setPose, animateRide, punch, setChief, setBelt };
 }

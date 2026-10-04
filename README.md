@@ -40,6 +40,14 @@ seconds in, the missions start:
    foot, or run them down on the bike or in the car. They circle, dart in
    for flying kicks, and flip out of the way of traffic. Unlocks **HEAD OF
    SECURITY**.
+3. **Wrestling Night.** The title match is about to start. Get home to
+   Sidney's house (northeast side, yellow "SIDNEY'S" yard sign) before the
+   countdown hits zero. Miss it and you get another shot. Unlocks the
+   **CHAMPIONSHIP BELT**, which he wears from then on.
+
+Watch the lake shore: alligators sun themselves all the way around it.
+They'll hiss with jaws wide open if you get close, and snap if you get
+closer.
 
 Every objective gets a story card, an objective tracker, an on-screen
 waypoint with distance, yellow arrows painted along the shortest street
@@ -96,7 +104,11 @@ likeness of the real person, in the same style as Sidney himself.
 - `R` — next song
 
 **Mobile**
-- On-screen joystick — move or steer
+- On-screen joystick — point it where you want to go (relative to the
+  screen) and Sidney, Green Dog or the '70 heads that way. Steering assists
+  bend the path around walls, trees and parked cars, slide along anything
+  you clip, ease vehicles onto the road you're lined up with, and pop you
+  free if you're ever stuck
 - `RUN` — sprint / boost
 - `RIDE` — ride / park / talk / order
 - `VIEW`, `MAP`, `RADIO` — same as the keys above

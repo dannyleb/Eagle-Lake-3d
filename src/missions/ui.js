@@ -22,6 +22,7 @@ export function createMissionUI(viewport) {
     achTitle: $("achTitle"),
     achText: $("achText"),
     way: $("waypoint"),
+    timer: $("timer"),
     wayDist: $("wayDist"),
   };
   let storyResolve = null;
@@ -45,6 +46,17 @@ export function createMissionUI(viewport) {
       if (text) el.alarmText.textContent = text;
       el.alarm.classList.toggle("show", !!text);
       viewport.classList.toggle("alarm", !!text); // pushes toasts below the banner
+    },
+    // Countdown clock (seconds), or null to hide it.
+    setTimer(sec) {
+      if (sec == null) {
+        el.timer.classList.remove("show", "low");
+        return;
+      }
+      const t = Math.max(0, Math.ceil(sec));
+      el.timer.textContent = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
+      el.timer.classList.add("show");
+      el.timer.classList.toggle("low", t <= 15);
     },
     setObjective(text, sub = "", urgent = false) {
       el.obj.classList.toggle("show", !!text);

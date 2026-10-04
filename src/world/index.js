@@ -447,7 +447,7 @@ export function buildWorld(scene) {
       props.prim(PRIM.box(), { x: dx + Math.sin(fire.rot) * 0.1, y: 0.8 + k * 1.2, z: dz + Math.cos(fire.rot) * 0.1, sx: 6, sy: 0.08, sz: 0.1, ry: fire.rot }, "#9aa3ab");
     }
   }
-  addSign({ ...(() => { const [x, z] = L(fire, 0, fire.d / 2 + 0.07); return { x, z }; })(), y: 6.4, rot: fire.rot, w: 14, h: 1.5, title: "Eagle Lake Vol. Fire Dept.", sub: "STATION 1 • SIDNEY'S HOUSE", bg: "#ffffff", fg: "#b5342c" });
+  addSign({ ...(() => { const [x, z] = L(fire, 0, fire.d / 2 + 0.07); return { x, z }; })(), y: 6.4, rot: fire.rot, w: 14, h: 1.5, title: "Eagle Lake Vol. Fire Dept.", sub: "STATION 1 • EST. 1912", bg: "#ffffff", fg: "#b5342c" });
   ground.groundQuad([[-16, -111], [-6, -111], [-6, -81], [-16, -81]].map(([x, z]) => [x, z]).reverse(), Y.lot, PAL.concrete);
   minimap.landmarks.push({ x: -27, z: -96, label: "Fire Station" });
   // Alarm lights on the station's roof edge (blink when the fire alarm sounds).
@@ -836,6 +836,7 @@ export function buildWorld(scene) {
   const ewNames = { "-240": "5th St", "-180": "4th St", "-120": "3rd St", "-60": "2nd St", "0": "Main St", "60": "Post Office St", "120": "A St", "180": "Lakeside Dr" };
   const downtown = REGIONS[0];
   let houses = 0;
+  const residences = [];
   for (let bx = -240; bx < 240; bx += 60) {
     for (let bz = -240; bz < 180; bz += 60) {
       for (const side of ["north", "south"]) {
@@ -861,6 +862,7 @@ export function buildWorld(scene) {
             rh: 2 + rand() * 1.4, porch: rand() < 0.35, chimney: rand() < 0.22, fence: rand() < 0.3,
           };
           addHouse(h);
+          residences.push(h);
           houses++;
           // Driveway and maybe a car out front
           if (w < 9.2 && rand() < 0.6) {
@@ -881,6 +883,28 @@ export function buildWorld(scene) {
       }
     }
   }
+
+  // ---------- Sidney's house (northeast side, off Boothe Dr) ----------
+  // The house nearest this spot becomes his: yard sign, a satellite dish
+  // for wrestling night, and a flag out front.
+  const home = residences.reduce((best, h) => (Math.hypot(h.x - 165, h.z + 150) < Math.hypot(best.x - 165, best.z + 150) ? h : best), residences[0]);
+  {
+    const h = home;
+    const [sx, sz] = L(h, -2.4, h.d / 2 + 3.2);
+    props.prim(PRIM.box(), { x: sx, y: 0.7, z: sz, sx: 0.12, sy: 1.4, sz: 0.12 }, "#6b4a2e");
+    addSign({ x: sx, y: 1.55, z: sz, rot: h.rot, w: 2.6, h: 1.1, title: "SIDNEY'S", sub: "WRESTLING NIGHT HQ", bg: "#ffd43b", fg: "#2b1450", twoSided: true });
+    const [dx, dz] = L(h, h.w * 0.25, -h.d * 0.12);
+    const dy = h.h + h.rh * 0.62;
+    props.prim(PRIM.cyl(6), { x: dx, y: dy, z: dz, sx: 0.1, sy: 0.8, sz: 0.1 }, "#c9ced3");
+    props.prim(PRIM.hemi(12), { x: dx, y: dy + 0.5, z: dz, sx: 1.4, sy: 0.5, sz: 1.4, rx: -1.1, ry: h.rot }, "#eef1f3");
+    const [fx, fz] = L(h, h.w / 2 + 1.0, h.d / 2 + 2.0);
+    props.prim(PRIM.cyl(6), { x: fx, y: 3, z: fz, sx: 0.1, sy: 6, sz: 0.1 }, "#d9dde0");
+    props.prim(PRIM.box(), { x: fx + 0.75, y: 5.4, z: fz, sx: 1.4, sy: 0.9, sz: 0.04 }, "#c0392b");
+    props.prim(PRIM.box(), { x: fx + 0.5, y: 5.6, z: fz + 0.01, sx: 0.5, sy: 0.45, sz: 0.05 }, "#1f3b70");
+    minimap.landmarks.push({ x: h.x, z: h.z, label: "Sidney's House" });
+  }
+  const [homeX, homeZ] = L(home, 0, home.d / 2 + 4.6); // end of the front walk, clear of the porch
+  const sidneyHouse = { x: homeX, z: homeZ, houseX: home.x, houseZ: home.z };
 
   // ---------- street details: stop signs, stop bars, manholes ----------
   const nsStreets = ROADS.filter((r) => r.kind === "street" && r.pts[0][0] === r.pts[1][0]);
@@ -1032,6 +1056,7 @@ export function buildWorld(scene) {
   return {
     collision,
     fireLights,
+    sidneyHouse,
     crossings: railInfo.crossings,
     lampMats: railInfo.lampMats,
     triggers,

@@ -627,3 +627,32 @@ body.touch .controlsGrid > div:first-child { display: none; }
   #viewport.alarm #minimap.mini { top: 50px; }
 }
 #objective, #hudMode { z-index: 3; }
+
+#timer {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translate(-50%, -90px);
+  padding: 2px 16px 4px;
+  border-radius: 14px;
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: "Courier New", monospace;
+  font-weight: 900;
+  font-size: 34px;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 0 var(--ink);
+  transition: transform 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+  pointer-events: none;
+  z-index: 3;
+}
+#timer.show { transform: translate(-50%, 0); }
+#timer.low { background: #d62828; color: #fff; animation: timerLow 0.5s steps(1) infinite; }
+@keyframes timerLow { 50% { background: #ffd43b; color: var(--ink); } }
+@media (max-width: 560px) { #timer { font-size: 26px; top: 8px; } }
+@media (max-width: 560px) {
+  /* Phones: clock tucks under the minimap, clear of the objective box. */
+  #timer { left: auto; right: 10px; top: 132px; transform: translateX(140px); }
+  #timer.show { transform: none; }
+}

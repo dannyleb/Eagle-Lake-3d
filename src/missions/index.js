@@ -4,13 +4,15 @@ import { createMissionUI } from "./ui.js";
 import { createNinjaGang } from "../ninja.js";
 import {
   startSiren, stopSiren, setSirenVolume, duckRadio,
-  playFanfare, playObjective, playHit, playPoof, playOof,
+  playFanfare, playObjective, playHit, playPoof, playOof, playTick, playFail,
 } from "../audio.js";
 
 // ---------------------------------------------------------------------------
 // Missions. Each one is a story card, a list of steps, and an achievement.
 // Step types:
 //   goto   { label, x, z, r }            reach a spot (route + waypoint shown)
+//          { at: (ctx) => ({ x, z }) }   ...or a spot looked up at run time
+//          { timed: true }               ...against the clock (see failStory)
 //   defeat { label, gang }               knock out every ninja in a gang
 // To add a mission, append to MISSIONS.
 // ---------------------------------------------------------------------------
@@ -69,6 +71,30 @@ export const MISSIONS = [
       text: "The Eagle Stop is ninja-free and the cashier is out of the cooler. You've been named Head of Security. The pay is one free six-pack a week.",
     },
   },
+  {
+    id: "wrestling-night",
+    story: {
+      kicker: "MISSION 3 \u00b7 WRESTLING NIGHT",
+      title: "IT'S WRESTLING NIGHT!",
+      body:
+        "Saturday Night Slamtown is about to start, and tonight it's the title match: " +
+        "Hacksaw Hank \u201cThe Rice Belt Rumbler\u201d versus El Gallo Grande. Get home to " +
+        "your recliner before the opening bell, Chief. The clock is ticking.",
+      go: "TO THE RECLINER",
+    },
+    steps: [{ type: "goto", label: "Get home before the bell", at: (ctx) => ctx.world.sidneyHouse, r: 5, timed: true }],
+    failStory: {
+      kicker: "MISSION 3 \u00b7 WRESTLING NIGHT",
+      title: "YOU MISSED THE BELL!",
+      body: "You heard the crowd pop from three blocks away. Good news: Channel 4 runs the replay in a minute. Run it back!",
+      go: "TRY AGAIN",
+    },
+    achievement: {
+      title: "CHAMPIONSHIP BELT",
+      text: "You hit the recliner just as the bell rang. Hacksaw Hank took the title, and somehow you went home with the belt. Wear it proud, Champ.",
+    },
+    onComplete: (ctx) => ctx.player.setBelt(true),
+  },
 ];
 
 // ctx: { scene, camera, viewport, collision, hud, player, getMode, getPos,
@@ -86,13 +112,21 @@ export function createMissions(ctx) {
 
   function runStep(s) {
     return new Promise((resolve) => {
-      step = { ...s, resolve };
+      const spot = s.at ? s.at(ctx) : s;
+      step = { ...s, x: spot.x, z: spot.z, resolve };
       playObjective();
       routePts = null;
       routeFrom = null;
-      if (s.type === "goto") route.setTarget(s);
+      if (s.type === "goto") route.setTarget(step);
       else route.setTarget(null);
       route.setRoute(null);
+      if (s.timed) {
+        // Enough time to run it on foot along the streets, with a little slack.
+        const p = ctx.getPos();
+        const len = routeLength(findRoute(p.x, p.z, step.x, step.z));
+        step.timeLeft = Math.max(30, Math.ceil(len / 8 + 14));
+        step.lastTick = Math.ceil(step.timeLeft);
+      }
     });
   }
 
@@ -106,8 +140,20 @@ export function createMissions(ctx) {
     }
     await ui.story(m.story);
     state = m.setup ? m.setup(ctx) : {};
-    for (const s of m.steps) await runStep(s);
+    for (const s of m.steps) {
+      // Timed steps can be failed; show the miss card and go again.
+      while ((await runStep(s)) === "failed") {
+        step = null;
+        route.setTarget(null);
+        route.setRoute(null);
+        ui.setObjective(null);
+        ui.setTimer(null);
+        playFail();
+        await ui.story(m.failStory);
+      }
+    }
     step = null;
+    ui.setTimer(null);
     route.setTarget(null);
     route.setRoute(null);
     ui.setObjective(null);
@@ -123,9 +169,10 @@ export function createMissions(ctx) {
     mission = null;
   }
 
-  async function run() {
+  // from: mission index to start at (debug builds can skip ahead).
+  async function run(from = 0) {
     await wait(3.5);
-    for (const m of MISSIONS) {
+    for (const m of MISSIONS.slice(from)) {
       await runMission(m);
       await wait(2.5);
     }
@@ -192,14 +239,27 @@ export function createMissions(ctx) {
       // Distance along the streets (straight-line once you're off the network).
       const sinceRoute = routeFrom ? Math.hypot(pos.x - routeFrom[0], pos.z - routeFrom[1]) : 0;
       const remaining = routePts ? Math.max(d, routeLen - sinceRoute) : d;
-      ui.setObjective(step.label, `${Math.round(remaining)} m`, !!alarmOn);
+      ui.setObjective(step.label, `${Math.round(remaining)} m`, !!alarmOn || !!step.timed);
       ui.waypoint({ x: step.x, y: 10, z: step.z }, ctx.camera, remaining);
-      if (d < step.r) step.resolve();
+      if (d < step.r) {
+        step.resolve("done");
+        return;
+      }
+      if (step.timed) {
+        step.timeLeft -= dt;
+        ui.setTimer(step.timeLeft);
+        const sec = Math.ceil(step.timeLeft);
+        if (sec < step.lastTick) {
+          step.lastTick = sec;
+          if (sec <= 10 && sec > 0) playTick(sec <= 5);
+        }
+        if (step.timeLeft <= 0) step.resolve("failed");
+      }
     } else if (step.type === "defeat") {
       const g = state[step.gang];
       ui.setObjective(step.label, `${g.defeated} / ${g.total} down`, true);
       ui.waypoint(null);
-      if (g.remaining === 0) step.resolve();
+      if (g.remaining === 0) step.resolve("done");
     }
   }
 
@@ -235,6 +295,10 @@ export function createMissions(ctx) {
 
   return {
     start: run,
+    // Testing: set the countdown on a timed step.
+    debugSetTime(t) {
+      if (step && step.timed) step.timeLeft = t;
+    },
     update,
     interact,
     prompt,

@@ -100,6 +100,7 @@ export function createControls() {
         y: Math.max(-1, Math.min(1, y)),
         sprint: keys.has("ShiftLeft") || keys.has("ShiftRight") || holdRun,
         brake: keys.has("Space"),
+        stick: { x: joy.x, y: joy.y, on: joy.id !== null },
         ...pressed,
       };
       for (const k of Object.keys(pressed)) pressed[k] = false;

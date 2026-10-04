@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { clearHeading, laneHeading, wrapAngle } from "./assist.js";
 import { makeWheelTexture, makeGrilleTexture } from "./textures.js";
 
 function canvasTex(w, h, draw) {
@@ -342,7 +343,26 @@ export function createVehicle(scene, type, spawn) {
   const state = { group, heading: spawn.heading, speed: 0, type, maxSpeed, radius: isBike ? 0.7 : 1.45, lean: 0 };
 
   function update(dt, input, bounds, collision) {
-    const target = input.y * maxSpeed * (input.sprint && !isBike ? 1.3 : 1);
+    let ix = input.x, iy = input.y;
+    const px = group.position.x, pz = group.position.z;
+    if (input.dir != null) {
+      // Point-and-go: steer toward where the stick points; pushing farther
+      // goes faster. Roughly lined up with a road? Ease onto the road.
+      let want = input.dir;
+      const lane = laneHeading(px, pz, state.heading);
+      if (lane !== null && Math.abs(wrapAngle(want - lane)) < 0.5) want = lane;
+      const d = wrapAngle(want - state.heading);
+      ix = -THREE.MathUtils.clamp(d * 2, -1, 1);
+      iy = input.mag * (Math.abs(d) > 2.2 ? 0.55 : 1);
+    }
+    // Guardrail: look ahead and steer around obstacles before hitting them.
+    if (collision && state.speed > 2) {
+      const look = state.radius + 1.5 + state.speed * 0.45;
+      const h = clearHeading(collision, px, pz, state.heading, state.radius * 0.9, look, -Math.sign(ix) || 1);
+      if (h === null) iy = Math.min(iy, 0.25);
+      else if (h !== state.heading) ix = THREE.MathUtils.clamp(ix - wrapAngle(h - state.heading) * 2.5, -1, 1);
+    }
+    const target = iy * maxSpeed * (input.sprint && !isBike ? 1.3 : 1);
     const diff = target - state.speed;
     const rate = input.brake ? accel * 3 : accel;
     state.speed += Math.sign(diff) * Math.min(Math.abs(diff), rate * dt);
@@ -350,14 +370,17 @@ export function createVehicle(scene, type, spawn) {
 
     const speedFactor = Math.min(1, Math.abs(state.speed) / (maxSpeed * 0.45));
     const turnDir = state.speed >= 0 ? 1 : -1;
-    const steer = -input.x * turnRate * speedFactor * turnDir;
+    const steer = -ix * turnRate * speedFactor * turnDir;
     state.heading += steer * dt;
 
     const oldX = group.position.x, oldZ = group.position.z;
     const nx = THREE.MathUtils.clamp(oldX + Math.sin(state.heading) * state.speed * dt, -bounds, bounds);
     const nz = THREE.MathUtils.clamp(oldZ + Math.cos(state.heading) * state.speed * dt, -bounds, bounds);
     const r = collision ? collision.resolveMove(oldX, oldZ, nx, nz, state.radius) : { x: nx, z: nz };
-    if (r.x !== nx || r.z !== nz) state.speed *= 0.4;
+    // Scrape along walls instead of stopping dead; only a head-on hit stops you.
+    const bx = r.x !== nx, bz = r.z !== nz;
+    if (bx && bz) state.speed *= 0.3;
+    else if (bx || bz) state.speed *= 0.9;
     group.position.x = r.x;
     group.position.z = r.z;
     group.rotation.y = state.heading;

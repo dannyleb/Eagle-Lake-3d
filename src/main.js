@@ -14,9 +14,11 @@ import { toonify } from "./render/toon.js";
 import { treeFocus } from "./world/trees.js";
 import { createPost } from "./render/post.js";
 import { createMissions } from "./missions/index.js";
+import { createStickSteer, createStuckWatch } from "./assist.js";
+import { createGators } from "./gators.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
-  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION,
+  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap,
 } from "./audio.js";
 
 document.title = GAME_TITLE;
@@ -81,6 +83,7 @@ const car = createVehicle(scene, "car", SPAWN.car);
 const bradshall = createNPC(scene, BRADSHALL);
 const chaseCam = createChaseCamera(camera);
 const hud = createHud(world.minimap);
+const gators = createGators(scene, collision);
 toonify(scene);
 
 const RIDES = {
@@ -93,6 +96,18 @@ let bradshallLine = 0;
 let driveThruCount = 0;
 
 const active = () => (mode === "walk" ? player : RIDES[mode].veh);
+
+// Shove Sidney a couple of meters (ninja kicks, gator snaps) with a red flash.
+function knockPlayer(dx, dz, dist = 2.4) {
+  const p = player.group.position;
+  const l = Math.hypot(dx, dz) || 1;
+  const r = collision.resolveMove(p.x, p.z, p.x + (dx / l) * dist, p.z + (dz / l) * dist, player.state.radius);
+  p.x = r.x;
+  p.z = r.z;
+  viewport.classList.remove("hurt");
+  void viewport.offsetWidth;
+  viewport.classList.add("hurt");
+}
 
 // ---------- Missions ----------
 const missions = createMissions({
@@ -112,17 +127,7 @@ const missions = createMissions({
     player.state.speed = 0;
     player.punch();
   },
-  // A ninja's flying kick shoves Sidney back a couple of meters.
-  kickPlayer: (dx, dz) => {
-    const p = player.group.position;
-    const l = Math.hypot(dx, dz) || 1;
-    const r = collision.resolveMove(p.x, p.z, p.x + (dx / l) * 2.4, p.z + (dz / l) * 2.4, player.state.radius);
-    p.x = r.x;
-    p.z = r.z;
-    viewport.classList.remove("hurt");
-    void viewport.offsetWidth;
-    viewport.classList.add("hurt");
-  },
+  kickPlayer: (dx, dz) => knockPlayer(dx, dz),
 });
 
 function nearestRide() {
@@ -260,8 +265,9 @@ function updateRail(dt, time) {
   hud.setTrainWarning(nearestActive < 260);
 }
 
+// Returns true when the vehicle is being held at a lowered gate.
 function blockCrossings(entity, oldX, oldZ) {
-  if (mode === "walk") return;
+  if (mode === "walk") return false;
   const pos = entity.group.position;
   for (const cr of gated) {
     if (cr.amount < 0.35) continue;
@@ -269,9 +275,10 @@ function blockCrossings(entity, oldX, oldZ) {
       pos.x = oldX;
       pos.z = oldZ;
       entity.state.speed = 0;
-      return;
+      return true;
     }
   }
+  return false;
 }
 
 // ---------- Adaptive resolution ----------
@@ -301,6 +308,8 @@ function adaptQuality(dt) {
 // ---------- Main loop ----------
 let last = performance.now();
 let time = 0;
+const stickSteer = createStickSteer();
+const stuckWatch = createStuckWatch();
 const IDLE = { x: 0, y: 0, sprint: false, brake: false, interact: false, view: false, map: false, radio: false };
 const extras = [];
 
@@ -312,7 +321,13 @@ function frame() {
   time += dt;
   const polled = controls.poll();
   // Story cards hold everything except the button that closes them.
-  const input = !started ? IDLE : missions.blocking ? { ...IDLE, interact: polled.interact } : polled;
+  let input = !started ? IDLE : missions.blocking ? { ...IDLE, interact: polled.interact } : polled;
+  // Touch stick: point where you want to go (camera-relative), and the
+  // walk/ride/drive code steers there with its guardrails.
+  if (input === polled && polled.stick.on) {
+    const s = stickSteer.heading(polled.stick, chaseCam.yaw);
+    input = s ? { ...polled, x: 0, y: 0, dir: s.dir, mag: s.mag } : { ...polled, x: 0, y: 0 };
+  }
 
   adaptQuality(dt);
   if (input.interact) interact();
@@ -326,7 +341,12 @@ function frame() {
   const ent = active();
   const oldX = ent.group.position.x, oldZ = ent.group.position.z;
   ent.update(dt, input, WORLD.bounds, collision);
-  blockCrossings(ent, oldX, oldZ);
+  const atGate = blockCrossings(ent, oldX, oldZ);
+  // Pushing but going nowhere for a moment? Pop free (never past a gate).
+  const pushing = !atGate && ((input.dir != null && input.mag > 0.3) || Math.abs(input.y) > 0.3);
+  if (stuckWatch.update(dt, pushing, ent.group.position, collision, ent.state.radius, input.dir ?? ent.state.heading) && mode !== "walk") {
+    ent.state.speed = 0;
+  }
   if (mode === "bike") player.animateRide(bike.state.speed, dt);
 
   const pos = ent.group.position;
@@ -334,6 +354,17 @@ function frame() {
   camera.updateMatrixWorld();
   treeFocus.value.set(pos.x, pos.y + 1.2, pos.z).applyMatrix4(camera.matrixWorldInverse);
   missions.update(dt, time);
+  gators.update(dt, {
+    px: pos.x,
+    pz: pos.z,
+    onFoot: mode === "walk",
+    hiss: () => playHiss(),
+    snap: (dx, dz) => {
+      playSnap();
+      knockPlayer(dx, dz, 3);
+      hud.toast("Gator! Back away from the water.", 1600);
+    },
+  });
   sky.follow(camera, dt);
   world.update(time);
   sun.target.position.set(pos.x, 0, pos.z);
@@ -364,7 +395,7 @@ frame();
 if (location.search.includes("debug")) {
   window.__debug = {
     THREE, scene, camera, renderer, post, player, bike, car, bradshall, trains, crossings, chaseCam, hud, world,
-    mount, dismount, missions, getMode: () => mode,
+    mount, dismount, missions, gators, getMode: () => mode,
     teleport(x, z, heading = 0) {
       const e = active();
       e.group.position.x = x;
@@ -385,7 +416,9 @@ function start() {
   playRadio();
   overlay.classList.add("hidden");
   window.removeEventListener("keydown", start);
-  missions.start();
+  // ?debug&mission=3 starts at the third mission (testing only).
+  const q = new URLSearchParams(location.search);
+  missions.start(q.has("debug") ? Math.max(0, (parseInt(q.get("mission"), 10) || 1) - 1) : 0);
 }
 overlay.addEventListener("click", start);
 overlay.addEventListener("touchend", (e) => { e.preventDefault(); start(); }, { passive: false });

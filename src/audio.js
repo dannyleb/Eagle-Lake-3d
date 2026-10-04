@@ -284,3 +284,23 @@ export function playOof() {
   tone(220, 0, 0.18, { type: "square", vol: 0.04, slide: 0.6 });
   noise(0, 0.1, { vol: 0.2, freq: 600 });
 }
+
+// Gator hiss: a long breathy highpassed exhale.
+export function playHiss(volume = 0.16) {
+  noise(0, 0.9, { vol: volume, freq: 3200, q: 0.4, type: "highpass" });
+  noise(0.05, 0.7, { vol: volume * 0.6, freq: 1400, q: 1.2 });
+}
+
+// Jaws slamming shut.
+export function playSnap() {
+  noise(0, 0.06, { vol: 0.45, freq: 1800, q: 1.5 });
+  tone(90, 0, 0.12, { type: "square", vol: 0.08, slide: 0.6 });
+}
+
+// Countdown tick (last ten seconds) and a sad trombone-ish miss.
+export function playTick(urgent = false) {
+  tone(urgent ? 1760 : 1320, 0, 0.05, { type: "square", vol: 0.04 });
+}
+export function playFail() {
+  [392, 370, 349, 311].forEach((f, i) => tone(f, i * 0.28, i === 3 ? 0.7 : 0.26, { type: "sawtooth", vol: 0.04, slide: i === 3 ? 0.9 : 1 }));
+}

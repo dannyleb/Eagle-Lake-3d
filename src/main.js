@@ -1,6 +1,7 @@
 import * as THREE from "three";
-import { COLORS, WORLD, RAIL, SPAWN, GAME_TITLE } from "./config.js";
+import { COLORS, WORLD, RAIL, SPAWN, GAME_TITLE, BRADSHALL } from "./config.js";
 import { buildWorld } from "./world.js";
+import { createNPC } from "./npc.js";
 import { createTrain } from "./train.js";
 import { createControls } from "./controls.js";
 import { createPlayer } from "./player.js";
@@ -63,6 +64,7 @@ const player = createPlayer(scene, SPAWN.player);
 const bike = createVehicle(scene, "bike", SPAWN.bike);
 const car = createVehicle(scene, "car", SPAWN.car);
 const chaseCam = createChaseCamera(camera);
+const bradshall = createNPC(scene, BRADSHALL);
 
 let mode = "walk"; // "walk" | "bike" | "car"
 let gateClosedAmount = 0; // 0 open -> 1 closed
@@ -120,7 +122,9 @@ function updatePrompt() {
     const target = nearestMountable();
     if (target === "bike") promptEl.textContent = "Press E / tap ◉ to hop on Green Dog";
     else if (target === "car") promptEl.textContent = "Press E / tap ◉ to drive the '70";
-    else promptEl.textContent = "";
+    else if (player.group.position.distanceTo(bradshall.group.position) < 4) {
+      promptEl.textContent = "That's The Thicker Bradshall — two of the radio's songs are his";
+    } else promptEl.textContent = "";
   } else if (mode === "car") {
     const t = currentTrack();
     promptEl.textContent = `Press E / tap ◉ to park — ♪ ${t.title} — ${t.artist} ♪ (R: change station)`;
@@ -186,6 +190,7 @@ function animate() {
   if (started && input.changeStation && mode === "car") nextStation();
 
   updateTrainAndGates(dt);
+  bradshall.update(dt);
 
   const entity = activeEntity();
   const prevPos = entity.group.position.clone();
@@ -219,7 +224,7 @@ function animate() {
 animate();
 
 if (window.location.search.includes("debug")) {
-  window.__debug = { player, bike, car, tryInteract, getMode: () => mode };
+  window.__debug = { player, bike, car, bradshall, camera, tryInteract, getMode: () => mode };
 }
 
 // --- Start overlay ---

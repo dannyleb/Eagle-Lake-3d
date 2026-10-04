@@ -140,6 +140,11 @@ export const SIGNAGE = {
   goose: { x: 10, z: 46, text: "EAGLE LAKE\nGOOSE HUNTING CAPITAL OF TEXAS" },
 };
 
+// A local musician busking outside the depot — The Thicker Bradshall, whose
+// songs are two of the three on the '70's radio. An original, stylized
+// tribute character, not a likeness of the real person.
+export const BRADSHALL = { x: -13.5, z: 22, heading: Math.PI / 2 };
+
 // Starting transform for Sidney (outside the firehouse) and the vehicles.
 // Heading PI faces south, down toward Main St and the downtown crossing.
 export const SPAWN = {

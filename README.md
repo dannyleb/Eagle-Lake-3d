@@ -27,6 +27,13 @@ track. Both songs are lazy-loaded (only fetched the moment you first get in
 the car), so they never add weight to the initial page load. Get out and the
 radio fades out; the bike doesn't have one.
 
+## The Thicker Bradshall
+
+A local musician busks outside the Prairie Depot Museum — walk up to him on
+foot for a line of flavor text. He's an original, stylized tribute (bald,
+goatee, ball cap, guitar), not a likeness of the real person, in the same
+style as Sidney himself.
+
 ## Controls
 
 **Desktop**

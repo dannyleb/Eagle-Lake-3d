@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { COLORS, WORLD, STREETS, RAIL, BUILDINGS, HOUSES, HOUSE_SIZE, WATER_TOWER, LAKE, SIGNAGE } from "./config.js";
+import { COLORS, WORLD, STREETS, RAIL, BUILDINGS, HOUSES, HOUSE_SIZE, WATER_TOWER, LAKE, SIGNAGE, BRADSHALL } from "./config.js";
 import { makeSignTexture, makeBannerTexture } from "./signage.js";
 
 const box = new THREE.BoxGeometry(1, 1, 1);
@@ -312,6 +312,32 @@ function buildGooseSign(scene) {
   scene.add(group);
 }
 
+function buildBuskingSign(scene) {
+  const tex = makeSignTexture({
+    title: "The Thicker Bradshall",
+    sub: "LIVE ON THE SIDEWALK • TIPS WELCOME",
+    bg: "#2f3a2f",
+    fg: "#f2e9d8",
+  });
+  const group = new THREE.Group();
+  group.position.set(BRADSHALL.x, 0, BRADSHALL.z + 1.4);
+  group.rotation.y = BRADSHALL.heading;
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.1, 6), new THREE.MeshLambertMaterial({ color: 0x3a2d22 }));
+  post.position.y = 0.55;
+  group.add(post);
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.47), new THREE.MeshBasicMaterial({ map: tex }));
+  board.position.set(0, 1.15, 0);
+  group.add(board);
+  const guitarCase = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.1, 0.22),
+    new THREE.MeshLambertMaterial({ color: 0x1a1a1a })
+  );
+  guitarCase.position.set(-0.6, 0.05, 0.3);
+  guitarCase.rotation.y = 0.3;
+  group.add(guitarCase);
+  scene.add(group);
+}
+
 export function buildWorld(scene) {
   buildGround(scene);
   buildLake(scene);
@@ -330,6 +356,7 @@ export function buildWorld(scene) {
   for (const def of HOUSES) buildHouse(scene, def);
   buildWaterTower(scene);
   buildGooseSign(scene);
+  buildBuskingSign(scene);
 
   const treeGroup = new THREE.Group();
   const treeSpots = [

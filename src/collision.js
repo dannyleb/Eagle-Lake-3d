@@ -1,4 +1,4 @@
-import { BUILDINGS, HOUSES, HOUSE_SIZE, LAKE } from "./config.js";
+import { BUILDINGS, HOUSES, HOUSE_SIZE, LAKE, BRADSHALL } from "./config.js";
 
 const MARGIN = 0.3; // inflate building footprints slightly so you don't clip corners
 
@@ -11,6 +11,7 @@ export function buildObstacles() {
     obstacles.push({ type: "box", x: h.x, z: h.z, hw: HOUSE_SIZE.w / 2 + MARGIN, hd: HOUSE_SIZE.d / 2 + MARGIN });
   }
   obstacles.push({ type: "ellipse", x: LAKE.x, z: LAKE.z, rx: LAKE.rx, rz: LAKE.rz });
+  obstacles.push({ type: "box", x: BRADSHALL.x, z: BRADSHALL.z, hw: 0.5, hd: 0.5 });
   return obstacles;
 }
 

@@ -1,132 +1,140 @@
 import * as THREE from "three";
 import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
 
-const SKIN = 0xc9a87c;
+// The Thicker Bradshall — a stylized tribute from his photos: ball cap,
+// sunglasses, goatee and stubble, a charcoal tee, gray work pants, brown work
+// boots, and an acoustic guitar with a few stickers on it.
 
-// The Thicker Bradshall — a local musician NPC, modeled the same way Sidney
-// is: an original, stylized low-poly tribute (bald head, goatee, ball cap,
-// guitar), not a scanned or photo-based likeness of the real person.
+const SKIN = 0xd9a27c;
+
 export function buildBradshall() {
   const group = new THREE.Group();
-  const skin = new THREE.MeshLambertMaterial({ color: 0xc9a87c });
-  const shirt = new THREE.MeshLambertMaterial({ color: 0x4a4a48 });
-  const pants = new THREE.MeshLambertMaterial({ color: 0x6b6b63 });
+  const skin = new THREE.MeshLambertMaterial({ color: SKIN });
+  const tee = new THREE.MeshLambertMaterial({ color: 0x55575a });
+  const pants = new THREE.MeshLambertMaterial({ color: 0x6e706b });
+  const boots = new THREE.MeshLambertMaterial({ color: 0x6b4426 });
   const dark = new THREE.MeshLambertMaterial({ color: 0x1c1c1c });
-  const capMat = new THREE.MeshLambertMaterial({ color: 0x2f3a2f });
-  const guitarBody = new THREE.MeshLambertMaterial({ color: 0xa9752f });
-  const guitarNeck = new THREE.MeshLambertMaterial({ color: 0x3c2a1a });
+  const capMat = new THREE.MeshLambertMaterial({ color: 0x2a2a28 });
+  const capFront = new THREE.MeshLambertMaterial({ color: 0xc9a33a });
+  const wood = new THREE.MeshLambertMaterial({ color: 0xd59a45 });
+  const woodDark = new THREE.MeshLambertMaterial({ color: 0x3c2a1a });
 
   const hips = new THREE.Group();
   hips.position.y = 1.0;
   group.add(hips);
 
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.66, 0.38), shirt);
-  torso.position.y = 0.42;
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 0.34, 6, 12), tee);
+  torso.scale.set(1.08, 1, 0.82);
+  torso.position.y = 0.44;
   hips.add(torso);
+  const shades = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.05, 0.03), dark);
+  shades.position.set(0.02, 0.72, 0.27);
+  shades.rotation.z = 0.1;
+  hips.add(shades);
 
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.1, 8), skin);
-  neck.position.y = 0.78;
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.12, 0.12, 10), skin);
+  neck.position.y = 0.92;
   hips.add(neck);
-
-  const faceTex = makeFaceTexture({ skin: "#c9a87c", sunglasses: true, goatee: true });
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.46, 0.4), makeHeadMaterials(faceTex, SKIN));
-  head.position.y = 1.0;
+  const faceTex = makeFaceTexture({ skin: "#d9a27c", sunglasses: true, goatee: true, mustache: true, stubble: true, browColor: "#3a2a1c" });
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.47, 0.52, 0.44), makeHeadMaterials(faceTex, SKIN));
+  head.position.y = 1.2;
   hips.add(head);
 
-  // Balding: hair only low on the sides/back, not on top.
-  const sideHair = new THREE.Mesh(
-    new THREE.SphereGeometry(0.27, 12, 10, 0, Math.PI * 2, Math.PI * 0.45, Math.PI * 0.4),
-    dark
-  );
-  sideHair.position.y = 0.98;
-  hips.add(sideHair);
-
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.275, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.42), capMat);
-  cap.position.y = 1.04;
+  // Trucker cap
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), capMat);
+  cap.scale.set(0.52, 0.34, 0.5);
+  cap.position.set(0, 1.4, -0.01);
   hips.add(cap);
-  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.03, 16, 1, false, 0, Math.PI), capMat);
-  brim.position.set(0, 0.97, 0.2);
-  brim.rotation.x = -0.15;
+  const patch = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.02), capFront);
+  patch.position.set(0, 1.52, 0.235);
+  patch.rotation.x = -0.4;
+  hips.add(patch);
+  const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.03, 0.24), capMat);
+  brim.position.set(0, 1.43, 0.32);
+  brim.rotation.x = 0.12;
   hips.add(brim);
-
-  const goatee = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.1), dark);
-  goatee.position.set(0, 0.84, 0.22);
-  hips.add(goatee);
-
-  const shades = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.08, 0.04), dark);
-  shades.position.set(0, 0.99, 0.25);
-  hips.add(shades);
+  for (const sx of [-0.245, 0.245]) {
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), skin);
+    ear.position.set(sx, 1.18, 0);
+    hips.add(ear);
+  }
 
   function buildArm(sign) {
     const arm = new THREE.Group();
-    arm.position.set(sign * 0.38, 0.68, 0);
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.42, 0.18), shirt);
-    upper.position.y = -0.21;
-    arm.add(upper);
-    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), skin);
-    hand.position.y = -0.46;
+    arm.position.set(sign * 0.41, 0.76, 0);
+    const sleeve = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.1, 4, 8), tee);
+    sleeve.position.y = -0.1;
+    arm.add(sleeve);
+    const fore = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.3, 4, 8), skin);
+    fore.position.y = -0.4;
+    arm.add(fore);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.095, 8, 8), skin);
+    hand.position.y = -0.62;
     arm.add(hand);
     return arm;
   }
-  const armL = buildArm(-1);
-  const armR = buildArm(1);
-  armL.rotation.x = -0.9;
-  armR.rotation.x = -0.5;
+  const armL = buildArm(1);
+  const armR = buildArm(-1);
+  armL.rotation.set(-0.95, 0, -0.35);
+  armR.rotation.set(-0.55, 0, 0.25);
   hips.add(armL, armR);
 
-  function buildLeg(sign) {
+  for (const sign of [-1, 1]) {
     const leg = new THREE.Group();
-    leg.position.set(sign * 0.16, 0.1, 0);
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.5, 0.22), pants);
-    upper.position.y = -0.25;
-    leg.add(upper);
-    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.28), dark);
-    shoe.position.set(0, -0.56, 0.04);
-    leg.add(shoe);
-    return leg;
+    leg.position.set(sign * 0.15, 0.02, 0);
+    const pant = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.86, 0.26), pants);
+    pant.position.y = -0.43;
+    leg.add(pant);
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.34), boots);
+    boot.position.set(0, -0.92, 0.05);
+    leg.add(boot);
+    hips.add(leg);
   }
-  hips.add(buildLeg(-1), buildLeg(1));
 
-  // Guitar, slung across the front on a strap.
+  // Acoustic guitar with a few stickers, slung across the front.
   const guitar = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.32, 0.1, 16), guitarBody);
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.32, 0.12, 18), wood);
   body.rotation.x = Math.PI / 2;
   guitar.add(body);
-  const soundHole = new THREE.Mesh(new THREE.CircleGeometry(0.08, 12), dark);
-  soundHole.position.z = 0.051;
-  guitar.add(soundHole);
-  const guitarNeckMesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7, 0.04), guitarNeck);
-  guitarNeckMesh.position.set(0, 0.5, 0);
-  guitar.add(guitarNeckMesh);
-  const headstock = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.04), guitarNeck);
-  headstock.position.set(0, 0.86, 0);
+  const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.24, 0.121, 18), wood);
+  waist.rotation.x = Math.PI / 2;
+  waist.position.y = 0.3;
+  guitar.add(waist);
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(0.08, 14), dark);
+  hole.position.set(0, 0.2, 0.062);
+  guitar.add(hole);
+  for (const [sx, sy, col] of [[-0.14, -0.08, 0xe74c3c], [0.12, -0.14, 0x2ecc71], [0.1, 0.05, 0xf1c40f]]) {
+    const st = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.06), new THREE.MeshLambertMaterial({ color: col }));
+    st.position.set(sx, sy, 0.062);
+    guitar.add(st);
+  }
+  const neckG = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.72, 0.05), woodDark);
+  neckG.position.set(0, 0.78, 0);
+  guitar.add(neckG);
+  const headstock = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.14, 0.05), woodDark);
+  headstock.position.set(0, 1.18, 0);
   guitar.add(headstock);
-  const strap = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.9, 0.02), new THREE.MeshLambertMaterial({ color: 0x5c3a24 }));
-  strap.position.set(0, 0.3, -0.08);
-  strap.rotation.z = 0.5;
-  guitar.add(strap);
-  guitar.rotation.z = -0.15;
-  guitar.position.set(0.05, 0.55, 0.26);
+  guitar.rotation.z = 1.05;
+  guitar.position.set(0.05, 0.38, 0.3);
   hips.add(guitar);
 
   group.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-
+  group.scale.setScalar(0.8);
   return { group, parts: { hips, armR, guitar } };
 }
 
 export function createNPC(scene, spawn) {
   const { group, parts } = buildBradshall();
-  group.position.set(spawn.x, 0, spawn.z);
+  group.position.set(spawn.x, 0.05, spawn.z);
   group.rotation.y = spawn.heading;
   scene.add(group);
 
   let t = 0;
   function update(dt) {
     t += dt;
-    // A slow idle strum/sway so he doesn't look frozen.
-    parts.armR.rotation.x = -0.5 + Math.sin(t * 2.2) * 0.12;
-    parts.guitar.rotation.x = Math.sin(t * 2.2) * 0.03;
-    group.position.y = Math.sin(t * 1.1) * 0.01;
+    parts.armR.rotation.x = -0.55 + Math.sin(t * 7) * 0.18;
+    parts.hips.rotation.y = Math.sin(t * 1.3) * 0.08;
+    parts.hips.position.y = 1.0 + Math.abs(Math.sin(t * 2.6)) * 0.025;
   }
 
   return { group, update };

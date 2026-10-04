@@ -1,236 +1,315 @@
 import * as THREE from "three";
-import { COLORS, WORLD, RAIL, SPAWN, GAME_TITLE, BRADSHALL } from "./config.js";
-import { buildWorld } from "./world.js";
+import { WORLD, SPAWN, GAME_TITLE, BRADSHALL } from "./config.js";
+import { RAILS } from "./map/layout.js";
+import { buildWorld } from "./world/index.js";
+import { inCrossingZone } from "./world/rail.js";
 import { createNPC } from "./npc.js";
 import { createTrain } from "./train.js";
 import { createControls } from "./controls.js";
 import { createPlayer } from "./player.js";
 import { createVehicle } from "./vehicles.js";
 import { createChaseCamera } from "./camera.js";
-import { unlockAudio, startCrossingBell, stopCrossingBell, playRadio, nextStation, currentTrack } from "./audio.js";
-import { buildObstacles } from "./collision.js";
+import { createHud } from "./ui/hud.js";
+import {
+  unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
+  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION,
+} from "./audio.js";
 
 document.title = GAME_TITLE;
+const touch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+if (touch) document.body.classList.add("touch");
 
-if ("ontouchstart" in window || navigator.maxTouchPoints > 0) {
-  document.body.classList.add("touch");
-}
-
+// ---------- Renderer, sized to the viewport inside the bezel ----------
 const canvas = document.getElementById("gameCanvas");
+const viewport = document.getElementById("viewport");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, touch ? 1.5 : 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(COLORS.sky); // fallback while the sky dome texture loads
-scene.fog = new THREE.Fog(COLORS.fog, WORLD.fogNear, WORLD.fogFar);
+scene.background = new THREE.Color(0x8fd0f0);
+scene.fog = new THREE.Fog(WORLD.fogColor, WORLD.fogNear, WORLD.fogFar);
 
-const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 400);
+const camera = new THREE.PerspectiveCamera(55, 1, 0.3, 3200);
 
 function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
-  renderer.setSize(w, h);
+  const w = Math.max(1, viewport.clientWidth), h = Math.max(1, viewport.clientHeight);
+  renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }
-window.addEventListener("resize", resize);
+new ResizeObserver(resize).observe(viewport);
 resize();
 
-// --- Lighting ---
-const hemi = new THREE.HemisphereLight(0xdceeff, 0x4a5a3a, 0.9);
-scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xfff3d6, 1.15);
-sun.position.set(80, 120, 40);
+// ---------- Light: bright, saturated mid-afternoon Texas sun ----------
+scene.add(new THREE.HemisphereLight(0xe4f4ff, 0x6f8a4a, 1.05));
+const sun = new THREE.DirectionalLight(0xfff1d2, 1.5);
+const SUN_OFFSET = new THREE.Vector3(-70, 130, 55);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left = -140;
-sun.shadow.camera.right = 140;
-sun.shadow.camera.top = 140;
-sun.shadow.camera.bottom = -140;
-sun.shadow.camera.far = 300;
-sun.shadow.bias = -0.0015;
-scene.add(sun);
-scene.add(sun.target);
+sun.shadow.mapSize.set(touch ? 1024 : 2048, touch ? 1024 : 2048);
+Object.assign(sun.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 10, far: 360 });
+sun.shadow.bias = -0.0012;
+sun.shadow.normalBias = 0.4;
+scene.add(sun, sun.target);
 
-// --- World ---
-const { gates } = buildWorld(scene);
-const train = createTrain(scene);
-const obstacles = buildObstacles();
+// ---------- World ----------
+const world = buildWorld(scene);
+const { collision, crossings, triggers, sky } = world;
 
-// --- Entities ---
+const trains = {
+  sunset: createTrain(scene, { path: RAILS.sunset.pts, cars: 12, speed: 18, locoColor: "#e8562a", firstDelay: 5, seed: 1 }),
+  saap: createTrain(scene, { path: RAILS.saap.pts, cars: 5, speed: 15, locoColor: "#2c5aa0", firstDelay: 45, seed: 3 }),
+};
+const gated = crossings.filter((c) => c.gated);
+
+// ---------- Characters & rides ----------
 const controls = createControls();
 const player = createPlayer(scene, SPAWN.player);
 const bike = createVehicle(scene, "bike", SPAWN.bike);
 const car = createVehicle(scene, "car", SPAWN.car);
-const chaseCam = createChaseCamera(camera);
 const bradshall = createNPC(scene, BRADSHALL);
+const chaseCam = createChaseCamera(camera);
+const hud = createHud(world.minimap);
 
-let mode = "walk"; // "walk" | "bike" | "car"
-let gateClosedAmount = 0; // 0 open -> 1 closed
+const RIDES = {
+  bike: { veh: bike, pose: "ride", label: "GREEN DOG · BEACH CRUISER", name: "Green Dog" },
+  car: { veh: car, pose: "drive", label: "THE '70 · 454 V8", name: "the '70" },
+};
+let mode = "walk";
 let started = false;
+let bradshallLine = 0;
+let driveThruCount = 0;
 
-const hudMode = document.getElementById("hudMode");
-const nowPlayingEl = document.getElementById("nowPlaying");
-const promptEl = document.getElementById("prompt");
-const trainBanner = document.getElementById("trainBanner");
+const active = () => (mode === "walk" ? player : RIDES[mode].veh);
 
-function activeEntity() {
-  if (mode === "walk") return player;
-  if (mode === "bike") return bike;
-  return car;
-}
-
-function nearestMountable() {
+function nearestRide() {
   const p = player.group.position;
-  let best = null;
-  let bestDist = 3.4;
-  for (const [key, veh] of [["bike", bike], ["car", car]]) {
-    const d = p.distanceTo(veh.group.position);
-    if (d < bestDist) {
-      bestDist = d;
-      best = key;
-    }
+  let best = null, bestD = 3.4;
+  for (const key of ["bike", "car"]) {
+    const d = p.distanceTo(RIDES[key].veh.group.position);
+    if (d < bestD) { bestD = d; best = key; }
   }
   return best;
 }
 
-function tryInteract() {
-  if (mode === "walk") {
-    const target = nearestMountable();
-    if (target) {
-      const veh = target === "bike" ? bike : car;
-      veh.state.heading = player.state.heading;
-      veh.group.rotation.y = veh.state.heading;
-      veh.group.position.copy(player.group.position);
-      mode = target;
-    }
-  } else {
-    const veh = activeEntity();
-    const dismountOffset = new THREE.Vector3(Math.cos(veh.state.heading) * 1.4, 0, -Math.sin(veh.state.heading) * 1.4);
-    player.group.position.copy(veh.group.position).add(dismountOffset);
-    player.state.heading = veh.state.heading;
-    player.group.rotation.y = player.state.heading;
-    veh.state.speed = 0;
-    mode = "walk";
+function mount(key) {
+  const { veh, pose } = RIDES[key];
+  veh.state.speed = 0;
+  veh.group.add(player.group);
+  player.group.position.copy(veh.group.userData.seat);
+  player.group.rotation.set(0, 0, 0);
+  player.setPose(pose);
+  mode = key;
+}
+
+function dismount() {
+  const veh = RIDES[mode].veh;
+  const h = veh.state.heading;
+  const vp = veh.group.position;
+  scene.add(player.group);
+  player.setPose("walk");
+  // Step off on the left, or the right if something's in the way.
+  const side = mode === "car" ? 2.0 : 1.2;
+  let spot = null;
+  for (const s of [1, -1, 0]) {
+    const x = vp.x + Math.cos(h) * side * s - (s === 0 ? Math.sin(h) * 2.6 : 0);
+    const z = vp.z - Math.sin(h) * side * s - (s === 0 ? Math.cos(h) * 2.6 : 0);
+    if (!collision.hits(x, z, player.state.radius)) { spot = [x, z]; break; }
   }
+  spot = spot || [vp.x, vp.z];
+  player.group.position.set(spot[0], 0.16, spot[1]);
+  player.state.heading = h;
+  player.state.speed = 0;
+  player.group.rotation.set(0, h, 0);
+  veh.state.speed = 0;
+  mode = "walk";
 }
 
-function updatePrompt() {
-  if (mode === "walk") {
-    const target = nearestMountable();
-    if (target === "bike") promptEl.textContent = "Press E / tap ◉ to hop on Green Dog";
-    else if (target === "car") promptEl.textContent = "Press E / tap ◉ to drive the '70";
-    else if (player.group.position.distanceTo(bradshall.group.position) < 4) {
-      promptEl.textContent = "That's The Thicker Bradshall — two of the radio's songs are his";
-    } else promptEl.textContent = "";
-  } else {
-    promptEl.textContent = "Press E / tap ◉ to park";
+const BRADSHALL_LINES = [
+  "Bradshall: \"Request? I got two of my own on the radio.\"",
+  "Bradshall: \"This pond's got the best acoustics in Colorado County.\"",
+  "Bradshall: \"Train's my drummer. Never late, never early.\"",
+];
+const DRIVE_THRU_MENU = [
+  "Cashier: \"Six-pack of Lone Goose Lager. Don't open it in the car.\"",
+  "Cashier: \"Pack of Prairie Lights. Those'll kill ya, hon.\"",
+  "Cashier: \"Bag of ice and a Big Red. Ten-four.\"",
+  "Cashier: \"Sack of boiled peanuts, on the house. We're closed anyway.\"",
+];
+
+function nearBradshall() {
+  return player.group.parent === scene && player.group.position.distanceTo(bradshall.group.position) < 4.2;
+}
+
+function inTrigger() {
+  const p = active().group.position;
+  return triggers.find((t) => p.x > t.x0 && p.x < t.x1 && p.z > t.z0 && p.z < t.z1) || null;
+}
+
+function interact() {
+  const trig = inTrigger();
+  if (mode !== "walk" && trig) {
+    driveThruCount++;
+    hud.toast(DRIVE_THRU_MENU[(driveThruCount - 1) % DRIVE_THRU_MENU.length], 3200);
+    return;
   }
-  promptEl.style.opacity = promptEl.textContent ? "1" : "0";
-}
-
-function syncVisibility() {
-  player.group.visible = mode === "walk";
-}
-
-function updateHud() {
-  if (mode === "walk") hudMode.textContent = "On foot — Sidney";
-  else if (mode === "bike") hudMode.textContent = "Riding — Green Dog";
-  else hudMode.textContent = "Driving — the '70";
-  const t = currentTrack();
-  nowPlayingEl.textContent = `♪ ${t.title} — ${t.artist} (R: change station)`;
-}
-updateHud();
-
-const CROSSING_BOX = { xMin: RAIL.x - 3.4, xMax: RAIL.x + 3.4, zMin: -RAIL.gateZOffset, zMax: RAIL.gateZOffset };
-function insideCrossingBox(pos) {
-  return pos.x > CROSSING_BOX.xMin && pos.x < CROSSING_BOX.xMax && pos.z > CROSSING_BOX.zMin && pos.z < CROSSING_BOX.zMax;
-}
-
-let bellActive = false;
-
-function updateTrainAndGates(dt) {
-  train.update(dt);
-  const approaching = train.isApproachingOrCrossing();
-  const targetClosed = approaching ? 1 : 0;
-  gateClosedAmount += (targetClosed - gateClosedAmount) * Math.min(1, dt * 3);
-
-  for (const gate of gates) {
-    gate.armPivot.rotation.z = gate.closedRot * gateClosedAmount;
-    const blink = approaching && Math.floor(performance.now() / 260) % 2 === 0;
-    for (const light of gate.lights) {
-      light.material.color.setHex(blink ? 0xff2020 : 0x440000);
-    }
+  if (mode !== "walk") return dismount();
+  if (nearBradshall()) {
+    // Alternate between his two songs.
+    const idx = STATION.findIndex((t, i) => t.artist === "The Thicker Bradshall" && i !== STATION.indexOf(currentTrack()));
+    if (idx >= 0) playTrack(idx);
+    hud.toast(BRADSHALL_LINES[bradshallLine++ % BRADSHALL_LINES.length], 3200);
+    return;
   }
+  const ride = nearestRide();
+  if (ride) mount(ride);
+}
 
-  if (approaching && !bellActive) {
-    startCrossingBell();
-    bellActive = true;
-  } else if (!approaching && bellActive) {
+function promptText() {
+  const trig = inTrigger();
+  if (mode !== "walk") {
+    if (trig) return "E / RIDE  —  roll up to the cashier's window";
+    return "";
+  }
+  if (nearBradshall()) return "E / RIDE  —  ask The Thicker Bradshall to play one";
+  const ride = nearestRide();
+  if (ride) return `E / RIDE  —  ${ride === "bike" ? "hop on Green Dog" : "get in the '70"}`;
+  if (trig) return trig.text;
+  return "";
+}
+
+onRadioTrackChange((t) => hud.toast(`ON THE RADIO: ${t.title} — ${t.artist}`));
+
+// ---------- Trains and gates ----------
+let bellOn = false;
+function updateRail(dt, time) {
+  for (const t of Object.values(trains)) t.update(dt);
+  const p = active().group.position;
+  let nearestActive = Infinity;
+  for (const cr of gated) {
+    const on = trains[cr.rail].approaching(cr.s, 85);
+    cr.amount += ((on ? 1 : 0) - cr.amount) * Math.min(1, dt * 2.2);
+    for (const g of cr.gates) g.pivot.rotation.z = (-Math.PI / 2) * cr.amount;
+    const blink = on && Math.floor(time * 2.3) % 2 === 0;
+    cr.lamps[0].color.setHex(on ? (blink ? 0xff2a1a : 0x3a0606) : 0x3a0606);
+    cr.lamps[1].color.setHex(on ? (!blink ? 0xff2a1a : 0x3a0606) : 0x3a0606);
+    if (on) nearestActive = Math.min(nearestActive, Math.hypot(p.x - cr.x, p.z - cr.z));
+  }
+  const bellRange = 160;
+  if (nearestActive < bellRange) {
+    setBellVolume(0.09 * (1 - nearestActive / bellRange));
+    if (!bellOn) { startCrossingBell(); bellOn = true; }
+  } else if (bellOn) {
     stopCrossingBell();
-    bellActive = false;
+    bellOn = false;
   }
-
-  trainBanner.style.opacity = approaching ? "1" : "0";
+  // Horn when a moving train is close enough to hear.
+  for (const t of Object.values(trains)) {
+    if (!t.moving) continue;
+    const hp = t.headPos();
+    const d = Math.hypot(hp.x - p.x, hp.z - p.z);
+    if (d < 260) playHorn(0.13 * (1 - d / 260));
+  }
+  hud.setTrainWarning(nearestActive < 260);
 }
 
-const WORLD_BOUNDS = WORLD.halfSize - 4;
-const clock = new THREE.Clock();
+function blockCrossings(entity, oldX, oldZ) {
+  if (mode === "walk") return;
+  const pos = entity.group.position;
+  for (const cr of gated) {
+    if (cr.amount < 0.35) continue;
+    if (inCrossingZone(cr, pos.x, pos.z) && !inCrossingZone(cr, oldX, oldZ)) {
+      pos.x = oldX;
+      pos.z = oldZ;
+      entity.state.speed = 0;
+      return;
+    }
+  }
+}
 
-function animate() {
-  requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.05);
+// ---------- Main loop ----------
+let last = performance.now();
+let time = 0;
+const IDLE = { x: 0, y: 0, sprint: false, brake: false, interact: false, view: false, map: false, radio: false };
+const extras = [];
 
-  const polled = controls.poll();
-  const input = started ? polled : { x: 0, y: 0, sprint: false, brake: false, interact: false, changeStation: false };
-  if (input.interact) tryInteract();
-  if (started && input.changeStation) nextStation();
+function frame() {
+  requestAnimationFrame(frame);
+  const nowMs = performance.now();
+  const dt = Math.min((nowMs - last) / 1000, 0.05);
+  last = nowMs;
+  time += dt;
+  const input = started ? controls.poll() : (controls.poll(), IDLE);
 
-  updateTrainAndGates(dt);
+  if (input.interact) interact();
+  if (input.view) hud.toast(chaseCam.cycle());
+  if (input.map) hud.toast(hud.cycleMap());
+  if (input.radio) { unlockAudio(); playRadio(); nextStation(); }
+
+  updateRail(dt, time);
   bradshall.update(dt);
 
-  const entity = activeEntity();
-  const prevPos = entity.group.position.clone();
-  const wasInCrossing = mode !== "walk" && insideCrossingBox(prevPos);
-  entity.update(dt, input, WORLD_BOUNDS, obstacles);
+  const ent = active();
+  const oldX = ent.group.position.x, oldZ = ent.group.position.z;
+  ent.update(dt, input, WORLD.bounds, collision);
+  blockCrossings(ent, oldX, oldZ);
+  if (mode === "bike") player.animateRide(bike.state.speed, dt);
 
-  if (mode !== "walk" && gateClosedAmount > 0.4 && !wasInCrossing && insideCrossingBox(entity.group.position)) {
-    entity.group.position.copy(prevPos);
-    entity.state.speed = 0;
+  const pos = ent.group.position;
+  chaseCam.update(pos, ent.state.heading, dt, mode, collision);
+  sky.follow(camera, dt);
+  sun.target.position.set(pos.x, 0, pos.z);
+  sun.position.copy(sun.target.position).add(SUN_OFFSET);
+
+  hud.setMode(mode === "walk" ? "ON FOOT · SIDNEY" : RIDES[mode].label, mode !== "walk");
+  hud.setPrompt(promptText());
+  extras.length = 0;
+  for (const t of Object.values(trains)) {
+    if (t.moving) { const h = t.headPos(); extras.push({ x: h.x, z: h.z, r: 4, color: "#e8262a" }); }
   }
-
-  // Keep inactive entities visually resting (no physics needed while parked).
-  syncVisibility();
-  updatePrompt();
-  updateHud();
-
-  chaseCam.update(
-    entity.group.position,
-    entity.state.heading,
-    dt,
-    mode === "car" ? 8.5 : mode === "bike" ? 6.5 : 5.2,
-    mode === "car" ? 3.6 : 3.0,
-    obstacles
-  );
-
-  sun.target.position.copy(entity.group.position);
-  sun.position.copy(entity.group.position).add(new THREE.Vector3(80, 120, 40));
+  if (mode !== "bike") extras.push({ x: bike.group.position.x, z: bike.group.position.z, r: 2.4, color: "#2ecc71" });
+  if (mode !== "car") extras.push({ x: car.group.position.x, z: car.group.position.z, r: 2.6, color: "#1f8a4c" });
+  extras.push({ x: bradshall.group.position.x, z: bradshall.group.position.z, r: 2.6, color: "#8e44ad" });
+  const maxSpeed = mode === "walk" ? player.state.sprintSpeed : ent.state.maxSpeed * 1.3;
+  const t = currentTrack();
+  hud.update({
+    x: pos.x, z: pos.z, heading: ent.state.heading,
+    speedFrac: Math.abs(ent.state.speed) / maxSpeed,
+    now: `${t.title} — ${t.artist}`, time, extras,
+  });
 
   renderer.render(scene, camera);
 }
-animate();
+frame();
 
-if (window.location.search.includes("debug")) {
-  window.__debug = { player, bike, car, bradshall, camera, tryInteract, getMode: () => mode };
+if (location.search.includes("debug")) {
+  window.__debug = {
+    THREE, scene, camera, renderer, player, bike, car, bradshall, trains, crossings, chaseCam, hud, world,
+    mount, dismount, getMode: () => mode,
+    teleport(x, z, heading = 0) {
+      const e = active();
+      e.group.position.x = x;
+      e.group.position.z = z;
+      e.state.heading = heading;
+      e.group.rotation.y = heading;
+      chaseCam.snap();
+    },
+  };
 }
 
-// --- Start overlay ---
-const startOverlay = document.getElementById("startOverlay");
-const startBtn = document.getElementById("startBtn");
-startBtn.addEventListener("click", () => {
+// ---------- Start: any click, tap or key starts the radio and the game ----------
+const overlay = document.getElementById("startOverlay");
+function start() {
+  if (started) return;
+  started = true;
   unlockAudio();
   playRadio();
-  started = true;
-  startOverlay.classList.add("hidden");
-});
+  overlay.classList.add("hidden");
+  window.removeEventListener("keydown", start);
+}
+overlay.addEventListener("click", start);
+overlay.addEventListener("touchend", (e) => { e.preventDefault(); start(); }, { passive: false });
+window.addEventListener("keydown", start);
+// Belt and braces: if audio was blocked, the next touch anywhere retries it.
+window.addEventListener("pointerdown", () => { if (started) { unlockAudio(); playRadio(); } }, { once: true });

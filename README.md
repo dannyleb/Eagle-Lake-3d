@@ -5,12 +5,28 @@ energy, scaled down to a small Texas railroad town. Explore on foot, hop on a
 beach cruiser named **Green Dog**, or take the '70 muscle car out for a spin,
 all while dodging the train that cuts straight through downtown.
 
-Built with [Three.js](https://threejs.org/), no framework, no heavy image
-assets — low-poly geometry with procedurally-drawn canvas textures (brick
-facades, windows, grass, asphalt, a sky with clouds, a horizon treeline, and
-actual drawn faces on the characters), so it still loads fast and runs
-smoothly on a phone browser despite looking like more than flat colored
-boxes.
+The look is modeled on mid-90s CD-ROM "virtual town" explorers: bright,
+saturated pre-rendered-style colors, a high three-quarter camera, puffy
+clouds, and a chunky purple "Eagle-Eye View-O-Matic" bezel with a location
+readout, compass, speed meter, minimap, and full town map.
+
+Built with [Three.js](https://threejs.org/), no framework, no image assets —
+merged low-poly geometry, instanced trees, and procedurally drawn canvas
+textures, so a whole town (about 270 houses, 1,700 trees, two rail lines, a
+lake, farms, and an airport) loads in a few seconds and runs on a phone.
+
+## The map
+
+The street grid, rail lines, and landmark positions follow the real town,
+compressed to about 60% scale: Main St (east-west) crossing McCarty Ave /
+FM 102 (north-south), the old Sunset Route freight line cutting diagonally
+through downtown, the second line meeting it at a junction west of town,
+the abandoned Santa Fe grade by the depot, the lake on the south side, the
+rice dryers, Veterans Memorial Park, the golf course, and the airport to the
+northeast. The layout was reconstructed from public sources (addresses,
+historic-district boundaries, highway route descriptions, rail history), so
+it is approximate; exact street geometry from OpenStreetMap can be dropped
+in later.
 
 ## Play it
 
@@ -19,7 +35,7 @@ Pages deployment once it's live.
 
 ## The radio
 
-A local station plays continuously from the moment you hit "Start Driving" —
+A local station plays continuously from the moment you tap or press any key —
 on foot, on the bike, in the car, doesn't matter:
 
 - **"I'll Take It Back"** by Blake — built from Sidney's own voice
@@ -32,23 +48,27 @@ actually starts), so they never add weight to the initial page load.
 
 ## The Thicker Bradshall
 
-A local musician busks outside the Prairie Depot Museum — walk up to him on
-foot for a line of flavor text. He's an original, stylized tribute (bald,
-goatee, ball cap, guitar), not a likeness of the real person, in the same
-style as Sidney himself.
+A local musician busks by the pond at Veterans Memorial Park — walk up to
+him and press `E` to have him put one of his songs on. He's an original,
+stylized tribute (trucker cap, shades, goatee, acoustic guitar), not a
+likeness of the real person, in the same style as Sidney himself.
 
 ## Controls
 
 **Desktop**
 - `WASD` / Arrow keys — move or steer
 - `Shift` — sprint (on foot) / boost (car)
-- `E` — get on/off a nearby vehicle
 - `Space` — brake
+- `E` — ride / park / talk / order at the drive-thru window
+- `V` — camera (Town View, Bird's Eye, Street View)
+- `M` — map (mini map, town map, off)
+- `R` — next song
 
 **Mobile**
 - On-screen joystick — move or steer
-- `RUN` button — sprint
-- `●` button — get on/off a nearby vehicle
+- `RUN` — sprint / boost
+- `RIDE` — ride / park / talk / order
+- `VIEW`, `MAP`, `RADIO` — same as the keys above
 
 ## Running locally
 
@@ -101,7 +121,11 @@ still-operating business, open an issue and it'll get changed.
 ## Project structure
 
 ```
-src/            ES module source (world, player, vehicles, train, controls)
+src/main.js     game loop: wiring, trains/gates, mounting, interactions
+src/map/        town layout: roads, rails, lake, areas, location names
+src/world/      world builder (merged geometry, facade atlas, sky, trees, rails)
+src/ui/         HUD: location plate, compass, meter, minimap, town map
+src/*.js        player, NPC, vehicles, train, camera, audio, controls
 public/         the static site that actually ships (index.html, style.css, bundle.js)
 build.mjs        esbuild bundler config
 .github/workflows/pages.yml   GitHub Pages deploy

@@ -1,8 +1,10 @@
-// Tiny procedural audio (no sound files) for the crossing bell, plus the
-// '70's radio (a real song, lazy-loaded only once you actually get in the
-// car so it never weighs down the initial page load).
+// Tiny procedural audio (no sound files) for the crossing bell and the train
+// horn, plus the town radio (real songs, lazy-loaded once playback starts so
+// they never weigh down the initial page load).
 let ctx = null;
 let bellTimer = null;
+let bellVolume = 0.08;
+let lastHorn = 0;
 
 function getCtx() {
   if (!ctx) {
@@ -25,11 +27,41 @@ function ding() {
   osc.type = "square";
   osc.frequency.value = 880;
   gain.gain.setValueAtTime(0.0001, c.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.08, c.currentTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, bellVolume), c.currentTime + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.22);
   osc.connect(gain).connect(c.destination);
   osc.start();
   osc.stop(c.currentTime + 0.25);
+}
+
+export function setBellVolume(v) {
+  bellVolume = Math.max(0, Math.min(0.1, v));
+}
+
+// Two long, one short, one long — the grade-crossing horn pattern, on a
+// slightly sour three-note chord like a real freight horn.
+export function playHorn(volume = 0.12) {
+  const c = getCtx();
+  if (!c || volume < 0.005) return;
+  const now = c.currentTime;
+  if (now - lastHorn < 8) return;
+  lastHorn = now;
+  const pattern = [[0, 1.1], [1.35, 1.1], [2.7, 0.45], [3.35, 1.6]];
+  for (const [start, len] of pattern) {
+    for (const f of [311, 370, 466]) {
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, now + start);
+      g.gain.exponentialRampToValueAtTime(volume / 3, now + start + 0.06);
+      g.gain.setValueAtTime(volume / 3, now + start + len - 0.08);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + start + len);
+      osc.connect(g).connect(c.destination);
+      osc.start(now + start);
+      osc.stop(now + start + len + 0.05);
+    }
+  }
 }
 
 export function startCrossingBell() {
@@ -116,5 +148,16 @@ export function nextStation() {
   trackIndex = (trackIndex + 1) % STATION.length;
   radioEl.src = STATION[trackIndex].src;
   if (radioOn) radioEl.play().catch(() => {});
+  if (onTrackChange) onTrackChange(STATION[trackIndex]);
+}
+
+// Jump straight to a track (used when you ask Bradshall to play one).
+export function playTrack(index) {
+  const el = getRadioEl();
+  trackIndex = ((index % STATION.length) + STATION.length) % STATION.length;
+  el.src = STATION[trackIndex].src;
+  radioOn = true;
+  el.play().catch(() => {});
+  fadeTo(0.55, 300);
   if (onTrackChange) onTrackChange(STATION[trackIndex]);
 }

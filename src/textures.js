@@ -380,6 +380,7 @@ export function makeFaceTexture(opts) {
     goatee = false,
     mustache = false,
     blush = false,
+    stubble = false,
   } = opts;
   const w = 256, h = 256;
   const c = canvas(w, h);
@@ -434,6 +435,15 @@ export function makeFaceTexture(opts) {
       ctx.beginPath();
       ctx.ellipse(w / 2 + sign * w * 0.22, eyeY + 28, 14, 9, 0, 0, Math.PI * 2);
       ctx.fill();
+    }
+  }
+
+  if (stubble) {
+    ctx.fillStyle = "rgba(40,28,20,0.35)";
+    for (let i = 0; i < 260; i++) {
+      const a = Math.random() * Math.PI;
+      const r = 40 + Math.random() * 62;
+      ctx.fillRect(w / 2 + Math.cos(a) * r, h * 0.6 + Math.sin(a) * r * 0.55, 2, 2);
     }
   }
 

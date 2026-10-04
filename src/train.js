@@ -1,134 +1,151 @@
 import * as THREE from "three";
-import { RAIL } from "./config.js";
+import { MeshBuilder, PRIM } from "./world/builder.js";
+import { pathLengths } from "./world/rail.js";
 
-const CAR_LENGTH = 9;
-const CAR_COUNT = 7;
-const TRAIN_SPEED = 20; // units/sec
-const WARNING_DISTANCE = 34; // how far out the gates start lowering
+// A freight train that follows a real rail polyline. Each car is placed by
+// its two trucks so it bends naturally through curves; trains run the line
+// in one direction, wait off-map, then come back the other way.
 
-function buildLocomotive() {
-  const group = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(3.4, 3.4, CAR_LENGTH),
-    new THREE.MeshLambertMaterial({ color: 0x2a3a2a })
-  );
-  body.position.y = 2.0;
-  group.add(body);
-  const nose = new THREE.Mesh(
-    new THREE.BoxGeometry(3.6, 2.2, 1.6),
-    new THREE.MeshLambertMaterial({ color: 0xc9a227 })
-  );
-  nose.position.set(0, 1.4, CAR_LENGTH / 2 + 0.6);
-  group.add(nose);
-  const cab = new THREE.Mesh(
-    new THREE.BoxGeometry(3.2, 1.6, 2.2),
-    new THREE.MeshLambertMaterial({ color: 0x3a4a3a })
-  );
-  cab.position.set(0, 4.5, CAR_LENGTH / 2 - 1.5);
-  group.add(cab);
-  const headlight = new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0xfff4c2 })
-  );
-  headlight.position.set(0, 2.1, CAR_LENGTH / 2 + 1.3);
-  group.add(headlight);
-  group.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-  return group;
-}
+const CAR_MAT = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
 
-function buildFreightCar(colorSeed) {
-  const colors = [0x8c3b32, 0x4a5a6b, 0x6b5a3a, 0x3a5a4a];
-  const color = colors[colorSeed % colors.length];
-  const group = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(3.1, 3.0, CAR_LENGTH - 0.6),
-    new THREE.MeshLambertMaterial({ color })
-  );
-  body.position.y = 1.9;
-  group.add(body);
-  group.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-  return group;
-}
-
-export function createTrain(scene) {
-  const root = new THREE.Group();
-  const cars = [];
-  for (let i = 0; i < CAR_COUNT; i++) {
-    const car = i === 0 ? buildLocomotive() : buildFreightCar(i);
-    root.add(car);
-    cars.push(car);
-  }
-  // Wheels (simple shared cylinders per car for a bit of detail)
-  for (const car of cars) {
-    for (const zOff of [-CAR_LENGTH / 2 + 1.4, CAR_LENGTH / 2 - 1.4]) {
-      for (const xOff of [-1.5, 1.5]) {
-        const wheel = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.6, 0.6, 0.4, 10),
-          new THREE.MeshLambertMaterial({ color: 0x1a1a1a })
-        );
-        wheel.rotation.z = Math.PI / 2;
-        wheel.position.set(xOff, 0.6, zOff);
-        car.add(wheel);
-      }
-    }
-  }
-  scene.add(root);
-
-  const state = {
-    root,
-    cars,
-    z: RAIL.zMin - 40,
-    dir: 1,
-    speed: TRAIN_SPEED,
-    waitTimer: 4,
+function carMesh(kind, color) {
+  const b = new MeshBuilder();
+  const len = kind === "loco" ? 18 : kind === "tank" ? 14 : 15;
+  const truck = (z) => {
+    b.prim(PRIM.box(), { y: 0.55, z, sx: 2.4, sy: 0.6, sz: 2.6 }, "#2b2b2b");
+    for (const dz of [-0.8, 0.8]) for (const dx of [-1.05, 1.05]) b.prim(PRIM.cyl(10), { x: dx, y: 0.5, z: z + dz, sx: 0.95, sy: 0.25, sz: 0.95, rz: Math.PI / 2 }, "#1a1a1a");
   };
-
-  function reset() {
-    state.z = RAIL.zMin - 60 - Math.random() * 40;
-    state.dir = 1;
+  truck(len / 2 - 2.6);
+  truck(-len / 2 + 2.6);
+  b.prim(PRIM.box(), { y: 1.05, sx: 2.9, sy: 0.3, sz: len }, "#2f2f2f");
+  if (kind === "loco") {
+    b.prim(PRIM.box(), { y: 2.6, z: -1.5, sx: 2.8, sy: 2.8, sz: len - 5 }, color);
+    b.prim(PRIM.box(), { y: 3.0, z: len / 2 - 2.6, sx: 3.0, sy: 3.6, sz: 3.6 }, color);
+    b.prim(PRIM.box(), { y: 3.7, z: len / 2 - 0.82, sx: 2.6, sy: 1.0, sz: 0.1 }, "#26394f");
+    b.prim(PRIM.box(), { y: 1.8, z: len / 2 - 0.8, sx: 2.9, sy: 0.9, sz: 0.2 }, "#f5f5ef");
+    b.prim(PRIM.box(), { y: 2.2, z: -1.5, sx: 2.84, sy: 0.4, sz: len - 5 }, "#f5f5ef");
+    b.prim(PRIM.box(), { y: 4.15, z: -2, sx: 2.2, sy: 0.4, sz: 6 }, "#555b62");
+    b.prim(PRIM.sphere(8), { y: 4.2, z: len / 2 - 0.85, sx: 0.4, sy: 0.4, sz: 0.2 }, "#fff4c2");
+  } else if (kind === "box") {
+    b.prim(PRIM.box(), { y: 3.0, sx: 3.0, sy: 3.6, sz: len - 0.6 }, color);
+    b.prim(PRIM.box(), { y: 2.8, sx: 3.06, sy: 3.0, sz: 2.6 }, "#2b2b2b");
+  } else if (kind === "hopper") {
+    b.prim(PRIM.box(), { y: 2.9, sx: 3.0, sy: 3.4, sz: len - 0.6 }, color);
+    for (const z of [-4, 0, 4]) b.prim(PRIM.cone(4), { y: 1.2, z, sx: 2.6, sy: 1.2, sz: 2.6, rx: Math.PI, ry: Math.PI / 4 }, color);
+    for (let z = -6; z <= 6; z += 1.5) b.prim(PRIM.box(), { y: 2.9, z, sx: 3.08, sy: 3.3, sz: 0.12 }, "#9aa0a6");
+  } else if (kind === "tank") {
+    b.prim(PRIM.cyl(14), { y: 2.6, sx: 2.9, sy: len - 1.4, sz: 2.9, rx: Math.PI / 2 }, color);
+    b.prim(PRIM.cyl(10), { y: 4.1, sx: 0.9, sy: 0.6, sz: 0.9 }, color);
+  } else {
+    b.prim(PRIM.box(), { y: 2.0, sx: 3.0, sy: 1.6, sz: len - 0.6 }, color);
   }
-  reset();
+  const mesh = new THREE.Mesh(b.build(), CAR_MAT);
+  mesh.castShadow = true;
+  return { mesh, len };
+}
 
-  function headZ() {
-    return state.z;
+const FREIGHT = [
+  ["box", "#a8452f"], ["hopper", "#d9d2c3"], ["hopper", "#c9c2b3"], ["box", "#2f6fca"],
+  ["tank", "#1f1f1f"], ["hopper", "#e0d9c8"], ["box", "#d35400"], ["gondola", "#5a6170"],
+  ["box", "#27ae60"], ["hopper", "#d9d2c3"], ["tank", "#ecf0f1"], ["box", "#8e44ad"],
+];
+
+export function createTrain(scene, { path, cars = 10, speed = 18, locoColor = "#e8562a", firstDelay = 6, seed = 1 }) {
+  const acc = pathLengths(path);
+  const total = acc[acc.length - 1];
+  const units = [];
+  const loco = carMesh("loco", locoColor);
+  units.push(loco);
+  let r = seed;
+  for (let i = 0; i < cars; i++) {
+    r = (r * 9301 + 49297) % 233280;
+    const [kind, col] = FREIGHT[(i + seed * 3 + Math.floor((r / 233280) * 4)) % FREIGHT.length];
+    units.push(carMesh(kind, col));
+  }
+  if (cars > 6) units.push(carMesh("loco", locoColor));
+  const gap = 0.9;
+  const offsets = [];
+  let o = 0;
+  for (const u of units) {
+    offsets.push(o + u.len / 2);
+    o += u.len + gap;
+    u.mesh.visible = false;
+    scene.add(u.mesh);
+  }
+  const trainLen = o;
+
+  // Point at arc length s, extrapolating straight past either end.
+  const tmp = { x: 0, z: 0 };
+  function at(s) {
+    let i = 0;
+    if (s <= 0) i = 0;
+    else if (s >= total) i = acc.length - 2;
+    else while (i < acc.length - 2 && acc[i + 1] < s) i++;
+    const a = path[i], b = path[i + 1];
+    const segLen = acc[i + 1] - acc[i];
+    const t = (s - acc[i]) / segLen;
+    tmp.x = a[0] + (b[0] - a[0]) * t;
+    tmp.z = a[1] + (b[1] - a[1]) * t;
+    return tmp;
+  }
+
+  const margin = 120;
+  const state = { head: -margin, dir: 1, wait: firstDelay, speed };
+
+  function place() {
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      const center = state.head - state.dir * offsets[i];
+      const f = at(center + state.dir * u.len * 0.36);
+      const fx = f.x, fz = f.z;
+      const bk = at(center - state.dir * u.len * 0.36);
+      u.mesh.position.set((fx + bk.x) / 2, 0.2, (fz + bk.z) / 2);
+      u.mesh.rotation.y = Math.atan2(fx - bk.x, fz - bk.z);
+      u.mesh.visible = true;
+    }
   }
 
   function update(dt) {
-    if (state.waitTimer > 0) {
-      state.waitTimer -= dt;
+    if (state.wait > 0) {
+      state.wait -= dt;
+      if (state.wait <= 0) {
+        state.head = state.dir > 0 ? -margin : total + margin;
+        place();
+      }
       return;
     }
-    state.z += state.dir * state.speed * dt;
-    const tailZ = state.z - state.dir * CAR_COUNT * CAR_LENGTH;
-    const farEnd = state.dir > 0 ? RAIL.zMax + 50 : RAIL.zMin - 50;
-    if ((state.dir > 0 && state.z > farEnd) || (state.dir < 0 && state.z < farEnd)) {
+    state.head += state.dir * state.speed * dt;
+    const tail = state.head - state.dir * trainLen;
+    const gone = state.dir > 0 ? tail > total + margin : tail < -margin;
+    if (gone) {
       state.dir *= -1;
-      state.z = state.dir > 0 ? RAIL.zMin - 60 - Math.random() * 60 : RAIL.zMax + 60 + Math.random() * 60;
-      state.waitTimer = 6 + Math.random() * 10;
+      state.wait = 14 + Math.random() * 22;
+      state.speed = speed * (0.85 + Math.random() * 0.3);
+      for (const u of units) u.mesh.visible = false;
+      return;
     }
-    for (let i = 0; i < cars.length; i++) {
-      const carZ = state.z - state.dir * i * CAR_LENGTH;
-      cars[i].position.set(RAIL.x, 0, carZ);
-      cars[i].rotation.y = state.dir > 0 ? 0 : Math.PI;
-    }
+    place();
   }
 
-  function distanceToCrossing() {
-    // Distance of the nearest part of the train to Main St (z=0).
-    const headDist = Math.abs(state.z);
-    const tailZ = state.z - state.dir * CAR_COUNT * CAR_LENGTH;
-    const tailDist = Math.abs(tailZ);
-    return Math.min(headDist, tailDist);
+  // Is the train within warning distance of (or occupying) arc length s?
+  function approaching(s, warn = 70) {
+    if (state.wait > 0) return false;
+    const tail = state.head - state.dir * trainLen;
+    const lo = Math.min(state.head, tail), hi = Math.max(state.head, tail);
+    if (state.dir > 0) return s >= lo - 3 && s <= hi + warn;
+    return s >= lo - warn && s <= hi + 3;
   }
 
-  function isApproachingOrCrossing() {
-    if (state.waitTimer > 0) return false;
-    const headZ = state.z;
-    const tailZ = state.z - state.dir * CAR_COUNT * CAR_LENGTH;
-    const lo = Math.min(headZ, tailZ) - WARNING_DISTANCE;
-    const hi = Math.max(headZ, tailZ) + 2;
-    return 0 >= lo && 0 <= hi;
+  function headPos() {
+    return at(state.head);
   }
 
-  return { update, isApproachingOrCrossing, distanceToCrossing };
+  return {
+    update,
+    approaching,
+    headPos,
+    get moving() {
+      return state.wait <= 0;
+    },
+  };
 }

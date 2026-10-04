@@ -31,7 +31,7 @@
     <main id="viewport">
       <canvas id="gameCanvas"></canvas>
       <div id="hudMode">ON FOOT &middot; SIDNEY</div>
-      <div id="prompt"></div>
+      <div id="prompt"><span class="keycap">E</span><span id="promptText"></span></div>
       <div id="toast"></div>
       <div id="trainBanner">TRAIN COMING &mdash; GATES DOWN</div>
       <canvas id="minimap" class="mini"></canvas>
@@ -42,7 +42,7 @@
       <button id="btnView" class="chunk">VIEW</button>
       <button id="btnMap" class="chunk">MAP</button>
       <button id="btnRun" class="chunk teal">RUN</button>
-      <button id="btnRide" class="chunk yellow">RIDE</button>
+      <button id="btnRide" class="actionBtn" aria-label="Action (E)"><span class="keycap">E</span><span id="rideLabel" class="actLabel">RIDE</span></button>
     </footer>
   </div>
 

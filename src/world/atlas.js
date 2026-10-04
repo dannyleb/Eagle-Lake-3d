@@ -6,12 +6,16 @@ import * as THREE from "three";
 // brightness is the alpha value. A small shader patch below turns that into
 // colorful walls with bluish glass, all in a single draw call.
 
+// The atlas is a 3x2 grid of 512px tiles (1536 x 1024).
+const C = 1 / 3;
 export const ATLAS = {
-  store: [0, 0.5, 0.5, 1],
-  house: [0.5, 0.5, 1, 1],
-  plain: [0, 0, 0.5, 0.5],
-  office: [0.5, 0, 1, 0.5],
-  blank: [0.02, 0.44, 0.18, 0.49], // a strip of the plain tile with no window
+  store: [0, 0.5, C, 1],
+  house: [C, 0.5, 2 * C, 1],
+  roof: [2 * C, 0.5, 1, 1],
+  plain: [0, 0, C, 0.5],
+  office: [C, 0, 2 * C, 0.5],
+  store2: [2 * C, 0, 1, 0.5],
+  blank: [0.02 * C * 2, 0.44, 0.18 * C * 2, 0.49], // a strip of the plain tile with no window
 };
 
 const S = 512;
@@ -170,15 +174,69 @@ function drawOffice(ctx, ox, oy) {
   }
 }
 
+// Asphalt shingles: staggered tab rows with a dark shadow line under each.
+function drawRoof(ctx, ox, oy) {
+  wallFill(ctx, ox, oy, 236);
+  const rows = 8, rh = S / rows, tab = 64;
+  for (let r = 0; r < rows; r++) {
+    const y = oy + r * rh;
+    ctx.fillStyle = "rgb(150,150,150)";
+    ctx.fillRect(ox, y + rh - 9, S, 9);
+    ctx.fillStyle = "rgb(200,200,200)";
+    ctx.fillRect(ox, y + rh - 13, S, 4);
+    const off = r % 2 === 0 ? 0 : tab / 2;
+    for (let x = -tab + off; x < S; x += tab) {
+      ctx.fillStyle = "rgb(170,170,170)";
+      ctx.fillRect(ox + Math.max(0, x), y + rh * 0.35, 4, rh * 0.65 - 9);
+      // Slight per-tab shade variation reads as weathered shingles.
+      const v = 226 + ((x * 7 + r * 13) % 5) * 6;
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(ox + Math.max(0, x + 5), y + 2, Math.min(tab - 6, S - Math.max(0, x + 5)), rh * 0.3);
+    }
+  }
+}
+
+// Second storefront design: big single display window, two tall
+// rectangular upper windows with lintels, a sign band and kick plates.
+function drawStore2(ctx, ox, oy) {
+  wallFill(ctx, ox, oy, 238);
+  brickLines(ctx, ox, oy, 30, 290, 0.09);
+  ctx.fillStyle = "rgb(205,205,205)";
+  ctx.fillRect(ox, oy, S, 22);
+  for (const wx of [70, 300]) {
+    ctx.fillStyle = "rgb(190,190,190)";
+    ctx.fillRect(ox + wx - 12, oy + 58, 166, 22);
+    glassRect(ctx, ox + wx, oy + 80, 142, 170);
+    ctx.fillStyle = "rgb(255,255,255)";
+    ctx.fillRect(ox + wx, oy + 160, 142, 7);
+    frame(ctx, ox + wx, oy + 80, 142, 170, 255, 8);
+    ctx.fillStyle = "rgb(205,205,205)";
+    ctx.fillRect(ox + wx - 8, oy + 250, 158, 12);
+  }
+  ctx.fillStyle = "rgb(175,175,175)";
+  ctx.fillRect(ox, oy + 286, S, 46);
+  glassRect(ctx, ox + 24, oy + 344, 330, 128);
+  frame(ctx, ox + 24, oy + 344, 330, 128, 255, 8);
+  ctx.fillStyle = "rgb(255,255,255)";
+  ctx.fillRect(ox + 186, oy + 344, 6, 128);
+  ctx.fillStyle = "rgb(95,95,95)";
+  ctx.fillRect(ox + 372, oy + 340, 110, 172);
+  glassRect(ctx, ox + 388, oy + 354, 78, 104);
+  ctx.fillStyle = "rgb(140,140,140)";
+  ctx.fillRect(ox + 24, oy + 472, 330, 40);
+}
+
 export function makeFacadeAtlas() {
   const c = document.createElement("canvas");
-  c.width = 1024;
+  c.width = 1536;
   c.height = 1024;
   const ctx = c.getContext("2d");
   drawStore(ctx, 0, 0);
   drawHouse(ctx, S, 0);
+  drawRoof(ctx, 2 * S, 0);
   drawPlain(ctx, 0, S);
   drawOffice(ctx, S, S);
+  drawStore2(ctx, 2 * S, S);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;

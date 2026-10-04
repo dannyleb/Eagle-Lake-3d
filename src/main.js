@@ -10,6 +10,9 @@ import { createPlayer } from "./player.js";
 import { createVehicle } from "./vehicles.js";
 import { createChaseCamera } from "./camera.js";
 import { createHud } from "./ui/hud.js";
+import { toonify } from "./render/toon.js";
+import { treeFocus } from "./world/trees.js";
+import { createPost } from "./render/post.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
   playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION,
@@ -23,7 +26,8 @@ if (touch) document.body.classList.add("touch");
 const canvas = document.getElementById("gameCanvas");
 const viewport = document.getElementById("viewport");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, touch ? 1.5 : 2));
+let pixelRatio = Math.min(window.devicePixelRatio, touch ? 1.5 : 2);
+renderer.setPixelRatio(pixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 
@@ -31,11 +35,13 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x8fd0f0);
 scene.fog = new THREE.Fog(WORLD.fogColor, WORLD.fogNear, WORLD.fogFar);
 
-const camera = new THREE.PerspectiveCamera(55, 1, 0.3, 3200);
+const camera = new THREE.PerspectiveCamera(55, 1, 0.5, 3200);
+const post = createPost(renderer);
 
 function resize() {
   const w = Math.max(1, viewport.clientWidth), h = Math.max(1, viewport.clientHeight);
   renderer.setSize(w, h, false);
+  post.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }
@@ -43,14 +49,15 @@ new ResizeObserver(resize).observe(viewport);
 resize();
 
 // ---------- Light: bright, saturated mid-afternoon Texas sun ----------
-scene.add(new THREE.HemisphereLight(0xe4f4ff, 0x6f8a4a, 1.05));
-const sun = new THREE.DirectionalLight(0xfff1d2, 1.5);
+scene.add(new THREE.HemisphereLight(0xe4f4ff, 0x7d8f5a, 0.95));
+const sun = new THREE.DirectionalLight(0xfff1d2, 1.75);
 const SUN_OFFSET = new THREE.Vector3(-70, 130, 55);
 sun.castShadow = true;
 sun.shadow.mapSize.set(touch ? 1024 : 2048, touch ? 1024 : 2048);
 Object.assign(sun.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 10, far: 360 });
 sun.shadow.bias = -0.0012;
 sun.shadow.normalBias = 0.4;
+sun.shadow.camera.layers.enable(1); // tree shadow stand-ins
 scene.add(sun, sun.target);
 
 // ---------- World ----------
@@ -71,6 +78,7 @@ const car = createVehicle(scene, "car", SPAWN.car);
 const bradshall = createNPC(scene, BRADSHALL);
 const chaseCam = createChaseCamera(camera);
 const hud = createHud(world.minimap);
+toonify(scene);
 
 const RIDES = {
   bike: { veh: bike, pose: "ride", label: "GREEN DOG · BEACH CRUISER", name: "Green Dog" },
@@ -169,14 +177,15 @@ function interact() {
 function promptText() {
   const trig = inTrigger();
   if (mode !== "walk") {
-    if (trig) return "E / RIDE  —  roll up to the cashier's window";
-    return "";
+    if (trig) return { text: "Roll up to the cashier's window", action: "ORDER" };
+    return null;
   }
-  if (nearBradshall()) return "E / RIDE  —  ask The Thicker Bradshall to play one";
+  if (nearBradshall()) return { text: "Ask The Thicker Bradshall to play one", action: "TALK" };
   const ride = nearestRide();
-  if (ride) return `E / RIDE  —  ${ride === "bike" ? "hop on Green Dog" : "get in the '70"}`;
-  if (trig) return trig.text;
-  return "";
+  if (ride === "bike") return { text: "Hop on Green Dog", action: "RIDE" };
+  if (ride === "car") return { text: "Get in the '70", action: "DRIVE" };
+  if (trig) return { text: trig.text };
+  return null;
 }
 
 onRadioTrackChange((t) => hud.toast(`ON THE RADIO: ${t.title} — ${t.artist}`));
@@ -228,6 +237,25 @@ function blockCrossings(entity, oldX, oldZ) {
   }
 }
 
+// ---------- Adaptive resolution ----------
+// If the frame rate sags (older phones), step the render resolution down
+// rather than stutter. Checked every 3 seconds, never below 1x.
+let perfTime = 0, perfFrames = 0;
+function adaptQuality(dt) {
+  if (!started) return;
+  perfTime += dt;
+  perfFrames++;
+  if (perfTime < 3) return;
+  const avg = perfTime / perfFrames;
+  perfTime = 0;
+  perfFrames = 0;
+  if (avg > 1 / 40 && pixelRatio > 1) {
+    pixelRatio = Math.max(1, pixelRatio - 0.25);
+    renderer.setPixelRatio(pixelRatio);
+    resize();
+  }
+}
+
 // ---------- Main loop ----------
 let last = performance.now();
 let time = 0;
@@ -242,6 +270,7 @@ function frame() {
   time += dt;
   const input = started ? controls.poll() : (controls.poll(), IDLE);
 
+  adaptQuality(dt);
   if (input.interact) interact();
   if (input.view) hud.toast(chaseCam.cycle());
   if (input.map) hud.toast(hud.cycleMap());
@@ -258,7 +287,10 @@ function frame() {
 
   const pos = ent.group.position;
   chaseCam.update(pos, ent.state.heading, dt, mode, collision);
+  camera.updateMatrixWorld();
+  treeFocus.value.set(pos.x, pos.y + 1.2, pos.z).applyMatrix4(camera.matrixWorldInverse);
   sky.follow(camera, dt);
+  world.update(time);
   sun.target.position.set(pos.x, 0, pos.z);
   sun.position.copy(sun.target.position).add(SUN_OFFSET);
 
@@ -279,13 +311,13 @@ function frame() {
     now: `${t.title} — ${t.artist}`, time, extras,
   });
 
-  renderer.render(scene, camera);
+  post.render(scene, camera);
 }
 frame();
 
 if (location.search.includes("debug")) {
   window.__debug = {
-    THREE, scene, camera, renderer, player, bike, car, bradshall, trains, crossings, chaseCam, hud, world,
+    THREE, scene, camera, renderer, post, player, bike, car, bradshall, trains, crossings, chaseCam, hud, world,
     mount, dismount, getMode: () => mode,
     teleport(x, z, heading = 0) {
       const e = active();

@@ -141,6 +141,30 @@ button { font: inherit; }
   touch-action: manipulation;
 }
 .chunk:active { transform: translateY(3px); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.45), 0 1px 0 var(--ink); }
+.actionBtn {
+  position: relative;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  margin: -10px 4px -10px 8px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: radial-gradient(circle at 35% 28%, #fff4b8, var(--yellow) 55%, #d69e0c);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), 0 4px 0 var(--ink);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  padding: 0;
+}
+.actionBtn:active { transform: translateY(3px); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), 0 1px 0 var(--ink); }
+.actionBtn .keycap { width: auto; height: auto; border: 0; background: none; font-size: 28px; line-height: 0.95; }
+.actionBtn .actLabel { font-size: 9px; font-weight: 900; letter-spacing: 0.08em; }
+.actionBtn.hot { animation: hot 0.8s infinite alternate; }
+@keyframes hot { to { box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), 0 4px 0 var(--ink), 0 0 0 6px rgba(255, 212, 59, 0.55); } }
 .chunk.teal { background: linear-gradient(180deg, #8ff3e8, var(--teal) 55%, #12867b); }
 .chunk.yellow { background: linear-gradient(180deg, #fff1a6, var(--yellow) 55%, #d69e0c); color: var(--ink); text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6); }
 #btnRun { display: none; }
@@ -175,20 +199,41 @@ button { font: inherit; }
 #prompt {
   position: absolute;
   left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  max-width: min(92%, 640px);
-  padding: 9px 16px;
-  border-radius: 14px;
-  background: var(--yellow);
-  color: var(--ink);
-  border: 3px solid var(--ink);
+  bottom: 10px;
+  transform: translate(-50%, 8px);
+  max-width: min(86%, 560px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  background: rgba(27, 15, 46, 0.86);
+  color: #fff;
+  border: 2px solid var(--yellow);
   font-weight: 900;
   font-size: 14px;
-  text-align: center;
+  line-height: 1.2;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.2s;
   pointer-events: none;
+}
+#prompt.show { opacity: 1; transform: translate(-50%, 0); }
+#prompt.info .keycap { display: none; }
+#prompt.info { padding-left: 14px; }
+.keycap {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff1a6, var(--yellow) 60%, #d69e0c);
+  border: 3px solid var(--ink);
+  color: var(--ink);
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1;
 }
 #toast {
   position: absolute;
@@ -264,7 +309,9 @@ button { font: inherit; }
 }
 body.touch #joyBase { display: block; }
 body.touch #btnRun { display: inline-block; }
-body.touch #prompt { bottom: 152px; }
+/* On touch, keep the prompt right of the joystick, along the bottom edge. */
+body.touch #prompt { left: 156px; right: 10px; bottom: 12px; transform: translateY(8px); max-width: none; justify-content: flex-start; }
+body.touch #prompt.show { transform: translateY(0); }
 
 /* ---------- Start card ---------- */
 #startOverlay {

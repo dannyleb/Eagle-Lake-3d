@@ -62,6 +62,19 @@ export class MeshBuilder {
     this.vert(d[0], d[1], d[2], col, r[0], r[3]);
   }
 
+  // A quad split into nu x nv cells, each mapped to the full uvRect, so a
+  // texture tile repeats across it (shingles across a roof slope).
+  tiledQuad(a, b, c, d, color, uvRect, nu, nv) {
+    const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t];
+    const at = (u, v) => lerp(lerp(a, b, u), lerp(d, c, u), v);
+    for (let i = 0; i < nu; i++) {
+      for (let j = 0; j < nv; j++) {
+        const u0 = i / nu, u1 = (i + 1) / nu, v0 = j / nv, v1 = (j + 1) / nv;
+        this.quad(at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1), color, uvRect);
+      }
+    }
+  }
+
   // Flat quad on the ground (y), axis-free: four XZ points CCW from above.
   groundQuad(pts, y, color) {
     const [a, b, c, d] = orderCCW(pts);
@@ -159,14 +172,23 @@ export class MeshBuilder {
   }
 
   // Pitched roof over a w x d footprint (ridge along local x). type: gable | hip
-  roof({ x, z, y0, w, d, rot = 0, rh, overhang = 0.5, color, gableColor, type = "gable" }) {
+  // With uvRect (and a uv builder) the slopes get a repeating shingle tile.
+  // Also adds a soffit underneath and, when trim is given, fascia boards
+  // along the eaves so the roof reads as a solid slab, not a paper sheet.
+  roof({ x, z, y0, w, d, rot = 0, rh, overhang = 0.5, color, gableColor, type = "gable", uvRect = null, trim = null }) {
     const c = Math.cos(rot), s = Math.sin(rot);
     const P = (lx, y, lz) => [x + lx * c + lz * s, y, z - lx * s + lz * c];
     const hw = w / 2 + overhang, hd = d / 2 + overhang, y1 = y0 + rh;
     const inset = type === "hip" ? Math.min(d / 2, w / 2 - 0.1) : 0;
     const rl = -w / 2 + inset, rr = w / 2 - inset;
-    this.quad(P(-hw, y0, hd), P(hw, y0, hd), P(rr, y1, 0), P(rl, y1, 0), color);
-    this.quad(P(hw, y0, -hd), P(-hw, y0, -hd), P(rl, y1, 0), P(rr, y1, 0), color);
+    const slope = Math.hypot(hd, rh);
+    const nu = Math.max(1, Math.round((2 * hw) / 3.2)), nv = Math.max(1, Math.round(slope / 2.2));
+    const face = (a, b, cc, dd) => {
+      if (uvRect && this.uv) this.tiledQuad(a, b, cc, dd, color, uvRect, nu, nv);
+      else this.quad(a, b, cc, dd, color);
+    };
+    face(P(-hw, y0, hd), P(hw, y0, hd), P(rr, y1, 0), P(rl, y1, 0));
+    face(P(hw, y0, -hd), P(-hw, y0, -hd), P(rl, y1, 0), P(rr, y1, 0));
     if (type === "hip") {
       this.tri(P(hw, y0, hd), P(hw, y0, -hd), P(rr, y1, 0), color);
       this.tri(P(-hw, y0, -hd), P(-hw, y0, hd), P(rl, y1, 0), color);
@@ -174,6 +196,22 @@ export class MeshBuilder {
       const g = gableColor || color;
       this.tri(P(w / 2, y0, d / 2), P(w / 2, y0, -d / 2), P(w / 2, y1, 0), g);
       this.tri(P(-w / 2, y0, -d / 2), P(-w / 2, y0, d / 2), P(-w / 2, y1, 0), g);
+    }
+    // Soffit (faces down)
+    this.quad(P(-hw, y0, -hd), P(hw, y0, -hd), P(hw, y0, hd), P(-hw, y0, hd), trim || color);
+    if (trim) {
+      const t = 0.26;
+      this.quad(P(-hw, y0 - t, hd), P(hw, y0 - t, hd), P(hw, y0, hd), P(-hw, y0, hd), trim);
+      this.quad(P(hw, y0 - t, -hd), P(-hw, y0 - t, -hd), P(-hw, y0, -hd), P(hw, y0, -hd), trim);
+      if (type === "hip") {
+        this.quad(P(hw, y0 - t, hd), P(hw, y0 - t, -hd), P(hw, y0, -hd), P(hw, y0, hd), trim);
+        this.quad(P(-hw, y0 - t, -hd), P(-hw, y0 - t, hd), P(-hw, y0, hd), P(-hw, y0, -hd), trim);
+      }
+      // Ridge cap
+      if (rr > rl) {
+        const rc = new THREE.Color(color).multiplyScalar(0.72);
+        this.quad(P(rl, y1 + 0.08, 0.22), P(rr, y1 + 0.08, 0.22), P(rr, y1 + 0.08, -0.22), P(rl, y1 + 0.08, -0.22), rc);
+      }
     }
   }
 

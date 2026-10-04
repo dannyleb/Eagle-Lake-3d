@@ -87,11 +87,14 @@ export function createHud(minimapData) {
     now: $("nowPlaying"),
     banner: $("trainBanner"),
     ride: $("btnRide"),
+    rideLabel: $("rideLabel"),
+    promptText: $("promptText"),
     map: $("minimap"),
   };
   const base = drawBase(minimapData);
   const mctx = el.map.getContext("2d");
   let mapMode = 1; // 0 off, 1 mini, 2 full town
+  let defaultAction = "RIDE";
   let lastLoc = 0, lastMap = 0, toastTimer = null, lastPrompt = "", lastMode = "", lastNow = "";
 
   function applyMapMode() {
@@ -204,17 +207,26 @@ export function createHud(minimapData) {
         drawMap(x, z, bearing, extras);
       }
     },
-    setPrompt(text) {
-      if (text === lastPrompt) return;
-      lastPrompt = text;
-      el.prompt.textContent = text;
-      el.prompt.style.opacity = text ? "1" : "0";
+    // prompt: { text, action } — action is the verb on the yellow E button
+    // ("RIDE", "TALK", ...); without one it's a plain info line.
+    setPrompt(p) {
+      const text = p ? p.text : "";
+      const action = p ? p.action || "" : "";
+      const key = text + "|" + action;
+      if (key === lastPrompt) return;
+      lastPrompt = key;
+      if (text) el.promptText.textContent = text;
+      el.prompt.classList.toggle("show", !!text);
+      el.prompt.classList.toggle("info", !action);
+      el.ride.classList.toggle("hot", !!action);
+      el.rideLabel.textContent = action || defaultAction;
     },
     setMode(text, riding) {
       if (text === lastMode) return;
       lastMode = text;
       el.mode.textContent = text;
-      el.ride.textContent = riding ? "PARK" : "RIDE";
+      defaultAction = riding ? "PARK" : "RIDE";
+      if (!el.ride.classList.contains("hot")) el.rideLabel.textContent = defaultAction;
     },
     toast(text, ms = 2200) {
       el.toast.textContent = text;

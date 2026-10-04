@@ -10,10 +10,20 @@ saturated pre-rendered-style colors, a high three-quarter camera, puffy
 clouds, and a chunky purple "Eagle-Eye View-O-Matic" bezel with a location
 readout, compass, speed meter, minimap, and full town map.
 
+Rendering is cel-shaded: every lit surface uses banded toon lighting, and a
+single full-screen pass draws ink outlines from the depth buffer (silhouettes
+plus creases), with a light color grade on top. Surfaces get procedural
+detail in world space (grass blades, asphalt grain and cracks, sidewalk slab
+joints, animated water ripples), roofs are shingled with fascia and ridge
+caps, and the town is dressed with rooftop units, curbs, benches, planters,
+hydrants, stop signs, picket fences, mailboxes and flower beds. Geese fly
+over in V formation.
+
 Built with [Three.js](https://threejs.org/), no framework, no image assets —
-merged low-poly geometry, instanced trees, and procedurally drawn canvas
-textures, so a whole town (about 270 houses, 1,700 trees, two rail lines, a
-lake, farms, and an airport) loads in a few seconds and runs on a phone.
+merged low-poly geometry, instanced trees, and procedurally generated
+textures, so a whole town (about 275 houses, 1,700 trees, two rail lines, a
+lake, farms, and an airport) loads in a few seconds and runs on a phone. On
+slower devices the render resolution steps down automatically.
 
 ## The map
 
@@ -123,7 +133,8 @@ still-operating business, open an issue and it'll get changed.
 ```
 src/main.js     game loop: wiring, trains/gates, mounting, interactions
 src/map/        town layout: roads, rails, lake, areas, location names
-src/world/      world builder (merged geometry, facade atlas, sky, trees, rails)
+src/world/      world builder (merged geometry, facade atlas, surfaces, sky, trees, rails)
+src/render/     cel shading: toon materials and the ink-outline post pass
 src/ui/         HUD: location plate, compass, meter, minimap, town map
 src/*.js        player, NPC, vehicles, train, camera, audio, controls
 public/         the static site that actually ships (index.html, style.css, bundle.js)

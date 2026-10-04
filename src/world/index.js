@@ -6,6 +6,7 @@ import {
 import { MeshBuilder, PRIM, offsetPolygon } from "./builder.js";
 import { ATLAS, makeFacadeAtlas, makeWallMaterial } from "./atlas.js";
 import { buildSky } from "./sky.js";
+import { makeDetailTexture, makeGroundMaterial, makeWaterMaterial } from "./surface.js";
 import { Forest } from "./trees.js";
 import { buildRails } from "./rail.js";
 import { makeSignTexture, makeBannerTexture } from "../signage.js";
@@ -13,7 +14,7 @@ import { CollisionWorld } from "../collision.js";
 import { BRADSHALL } from "../config.js";
 
 // Ground layer heights (kept apart so distant surfaces don't z-fight).
-export const Y = { field: 0, lawn: 0.04, shore: 0.05, water: 0.08, lot: 0.1, walk: 0.12, road: 0.16, bed: 0.18, mark: 0.2 };
+export const Y = { field: 0, lawn: 0.04, shore: 0.05, water: 0.08, lot: 0.1, walk: 0.12, road: 0.16, bed: 0.18, mark: 0.2, curbwalk: 0.26 };
 
 const PAL = {
   base: "#5f9f44",
@@ -50,6 +51,14 @@ function mulberry32(seed) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+// Darken (f < 1) or lighten (f > 1) a CSS color.
+function shade(hex, f) {
+  const c = new THREE.Color(hex);
+  if (f < 1) c.multiplyScalar(f);
+  else c.lerp(new THREE.Color(1, 1, 1), f - 1);
+  return c;
 }
 
 function offsetLine(pts, off) {
@@ -107,6 +116,31 @@ export function buildWorld(scene) {
     collision.add({ type: "circle", x, z, r: 0.5, h });
   }
 
+  // Coping along the parapet edge, rooftop HVAC units, vents and a hatch.
+  function flatRoofDetails(b) {
+    const y = b.h;
+    const cope = shade(b.wall, 0.8);
+    const hw = b.w / 2, hd = b.d / 2;
+    for (const [lx, lz, sx, sz] of [[0, hd - 0.2, b.w, 0.4], [0, -hd + 0.2, b.w, 0.4], [hw - 0.2, 0, 0.4, b.d], [-hw + 0.2, 0, 0.4, b.d]]) {
+      const [x, z] = L(b, lx, lz);
+      props.prim(PRIM.box(), { x, y: y + 0.25, z, sx, sy: 0.5, sz, ry: b.rot }, cope);
+    }
+    if (b.w * b.d < 90) return;
+    const units = 1 + Math.floor(rand() * Math.min(3, b.w / 9));
+    for (let i = 0; i < units; i++) {
+      const [x, z] = L(b, (rand() - 0.5) * (b.w - 5), (rand() - 0.5) * (b.d - 5));
+      props.prim(PRIM.box(), { x, y: y + 0.65, z, sx: 2.2, sy: 1.3, sz: 1.6, ry: b.rot }, "#d5d9dd");
+      props.prim(PRIM.cyl(10), { x, y: y + 1.33, z, sx: 1.1, sy: 0.08, sz: 1.1 }, "#5d646b");
+    }
+    for (let i = 0; i < 2; i++) {
+      const [x, z] = L(b, (rand() - 0.5) * (b.w - 3), (rand() - 0.5) * (b.d - 3));
+      props.prim(PRIM.cyl(8), { x, y: y + 0.5, z, sx: 0.35, sy: 1, sz: 0.35 }, "#9aa1a8");
+      props.prim(PRIM.cyl(8), { x, y: y + 1.05, z, sx: 0.55, sy: 0.12, sz: 0.55 }, "#7d848b");
+    }
+    const [hx, hz] = L(b, hw * 0.5, -hd * 0.4);
+    props.prim(PRIM.box(), { x: hx, y: y + 0.2, z: hz, sx: 1.2, sy: 0.4, sz: 1.2, ry: b.rot }, "#8b939a");
+  }
+
   function addBuilding(b) {
     const front = b.front || "plain";
     const faces = {
@@ -118,15 +152,19 @@ export function buildWorld(scene) {
     const roofType = b.roofType || "flat";
     walls.box({ x: b.x, z: b.z, y0: 0, w: b.w, h: b.h, d: b.d, rot: b.rot, color: b.wall, faces, top: roofType === "flat", topColor: b.roof || "#8d8f94" });
     if (roofType !== "flat") {
-      props.roof({ x: b.x, z: b.z, y0: b.h, w: b.w, d: b.d, rot: b.rot, rh: b.rh || 2.5, overhang: b.overhang ?? 0.5, color: b.roof, gableColor: b.wall, type: roofType });
+      walls.roof({ x: b.x, z: b.z, y0: b.h, w: b.w, d: b.d, rot: b.rot, rh: b.rh || 2.5, overhang: b.overhang ?? 0.5, color: b.roof, gableColor: b.wall, type: roofType, uvRect: ATLAS.roof, trim: b.trimColor || "#f7f4ea" });
+    } else {
+      flatRoofDetails(b);
     }
+    // Foundation band: a darker plinth along the base of every wall.
+    props.prim(PRIM.box(), { x: b.x, y: 0.28, z: b.z, sx: b.w + 0.22, sy: 0.56, sz: b.d + 0.22, ry: b.rot }, shade(b.wall, 0.62));
     collision.add({ type: "box", x: b.x, z: b.z, hw: b.w / 2, hd: b.d / 2, rot: b.rot, h: b.h + (roofType === "flat" ? 0 : b.rh || 2.5) });
     minimap.buildings.push({ x: b.x, z: b.z, hw: b.w / 2, hd: b.d / 2, rot: b.rot, color: b.wall });
     return b;
   }
 
   function addStore(b) {
-    addBuilding({ ...b, front: "store", frontSeg: b.w, frontSegH: b.h });
+    addBuilding({ ...b, front: b.front || (rand() < 0.45 ? "store2" : "store"), frontSeg: b.w, frontSegH: b.h });
     const trim = b.trim || pick(TRIMS);
     const ph = b.name ? 2.4 : 1.2 + rand() * 0.6;
     // Parapet + cornice
@@ -171,6 +209,47 @@ export function buildWorld(scene) {
       }
       const [sx, sz] = L(h, 0, h.d / 2 + 1.1);
       props.prim(PRIM.box(), { x: sx, y: 0.2, z: sz, sx: h.w * 0.62, sy: 0.4, sz: 2.4, ry: h.rot }, "#d9d0bd");
+    }
+    // Front yard: walkway to the street, foundation shrubs with flowers,
+    // a mailbox at the curb, and sometimes a white picket fence.
+    const yard = 4.4;
+    const corners = [[-0.7, h.d / 2], [0.7, h.d / 2], [0.7, h.d / 2 + yard], [-0.7, h.d / 2 + yard]].map(([lx, lz]) => L(h, lx, lz));
+    ground.groundQuad(corners, Y.lot, PAL.concrete);
+    const BUSH = ["#3f9b3a", "#2f8a3e", "#4caf50", "#3a7d32"];
+    for (const side of [-1, 1]) {
+      const n = 1 + Math.floor(rand() * 2);
+      for (let k = 0; k < n; k++) {
+        const lx = side * (1.8 + k * 1.5 + rand() * 0.4);
+        if (Math.abs(lx) > h.w / 2 - 0.4) continue;
+        const [x, z] = L(h, lx, h.d / 2 + 0.75);
+        const r = 0.7 + rand() * 0.35;
+        props.prim(PRIM.sphere(6), { x, y: r * 0.55, z, sx: r * 1.5, sy: r * 1.2, sz: r * 1.3 }, pick(BUSH));
+        if (rand() < 0.55) {
+          const fc = pick(["#ff5d8f", "#ffd43b", "#ffffff", "#cc5de8", "#ff922b"]);
+          for (let f = 0; f < 4; f++) {
+            props.prim(PRIM.box(), { x: x + (rand() - 0.5) * r, y: r * 1.05, z: z + (rand() - 0.5) * r * 0.6, sx: 0.2, sy: 0.2, sz: 0.2, ry: rand() * 3 }, fc);
+          }
+        }
+      }
+    }
+    {
+      const [x, z] = L(h, 1.6, h.d / 2 + yard - 0.4);
+      props.prim(PRIM.box(), { x, y: 0.55, z, sx: 0.12, sy: 1.1, sz: 0.12, ry: h.rot }, "#6b4a2e");
+      props.prim(PRIM.box(), { x, y: 1.18, z, sx: 0.32, sy: 0.32, sz: 0.62, ry: h.rot }, pick(["#2b2b2b", "#c0392b", "#2c5d8a", "#f2f2f2"]));
+      const [fx, fz] = L(h, 1.78, h.d / 2 + yard - 0.4);
+      props.prim(PRIM.box(), { x: fx, y: 1.4, z: fz, sx: 0.04, sy: 0.3, sz: 0.1, ry: h.rot }, "#e03131");
+    }
+    if (h.fence) {
+      const fz = h.d / 2 + yard - 1.0;
+      for (const side of [-1, 1]) {
+        const a = 1.0, b = h.w / 2 + 0.6;
+        const [mx, mz] = L(h, side * (a + b) / 2, fz);
+        for (const y of [0.35, 0.8]) props.prim(PRIM.box(), { x: mx, y, z: mz, sx: b - a, sy: 0.08, sz: 0.06, ry: h.rot }, "#ffffff");
+        for (let lx = a; lx <= b; lx += 0.42) {
+          const [x, z] = L(h, side * lx, fz);
+          props.prim(PRIM.box(), { x, y: 0.55, z, sx: 0.12, sy: 1.1, sz: 0.05, ry: h.rot }, "#ffffff");
+        }
+      }
     }
     if (h.chimney) {
       const [cx, cz] = L(h, h.w * 0.3, -h.d * 0.15);
@@ -239,9 +318,9 @@ export function buildWorld(scene) {
 
   // Golf course, parks, airport grounds, gravel pits
   const rectQuad = (r, y, col) => ground.groundQuad([[r.x0, r.z1], [r.x1, r.z1], [r.x1, r.z0], [r.x0, r.z0]], y, col);
-  rectQuad(AREAS.golf, Y.lawn, "#93dc72");
-  rectQuad(AREAS.vetPark, Y.lawn, "#8fd86e");
-  rectQuad(AREAS.muniPark, Y.lawn, "#8fd86e");
+  rectQuad(AREAS.golf, Y.lawn, "#85d063");
+  rectQuad(AREAS.vetPark, Y.lawn, "#82ce60");
+  rectQuad(AREAS.muniPark, Y.lawn, "#82ce60");
   rectQuad(AREAS.airport, Y.lawn, "#9bd67c");
   rectQuad(AREAS.gravel, Y.lawn, PAL.gravel);
   rectQuad(AREAS.dryers, Y.lot, PAL.concrete);
@@ -272,11 +351,48 @@ export function buildWorld(scene) {
       ground.ribbon(offsetLine(r.pts, -(r.w / 2 - 0.5)), 0.16, Y.mark, PAL.white);
     }
   }
-  const sidewalk = (pts, off) => ground.ribbon(offsetLine(pts, off), 3.2, Y.walk, PAL.walk);
+  // Raised sidewalks with curbs, broken at every cross street and track.
+  const furnitureSpots = [];
+  function sidewalk(a, b, off, ownRoad) {
+    const dx = b[0] - a[0], dz = b[1] - a[1];
+    const len = Math.hypot(dx, dz);
+    const ux = dx / len, uz = dz / len;
+    const nx = -uz, nz = ux;
+    const cx0 = a[0] + nx * off, cz0 = a[1] + nz * off;
+    const blocked = (t) => {
+      const x = cx0 + ux * t, z = cz0 + uz * t;
+      if (distToRail(x, z) < 4.5) return true;
+      return ROADS.some((r) => r.name !== ownRoad && distToPolyline(x, z, r.pts) < r.w / 2 + 2.2);
+    };
+    const runs = [];
+    let start = null;
+    for (let t = 0; t <= len; t += 0.5) {
+      const bl = blocked(t);
+      if (!bl && start === null) start = t;
+      if ((bl || t + 0.5 > len) && start !== null) {
+        if (t - start > 2) runs.push([start, bl ? t - 0.5 : t]);
+        start = null;
+      }
+    }
+    const roadSide = off > 0 ? -1 : 1; // which edge of the walk faces the road
+    for (const [t0, t1] of runs) {
+      const p0 = [cx0 + ux * t0, cz0 + uz * t0], p1 = [cx0 + ux * t1, cz0 + uz * t1];
+      ground.ribbon([p0, p1], 3.2, Y.curbwalk, PAL.walk);
+      const rot = Math.atan2(ux, uz);
+      const mx = (p0[0] + p1[0]) / 2, mz = (p0[1] + p1[1]) / 2;
+      for (const side of [roadSide, -roadSide]) {
+        const o = side * 1.62;
+        props.prim(PRIM.box(), { x: mx + nx * o, y: 0.14, z: mz + nz * o, sx: 0.26, sy: 0.3, sz: t1 - t0 + 3.2, ry: rot }, side === roadSide ? "#e4e0d4" : "#bdb7a6");
+      }
+      for (let t = t0 + 5; t < t1 - 3; t += 11 + rand() * 6) {
+        furnitureSpots.push({ x: cx0 + ux * t + nx * roadSide * 0.85, z: cz0 + uz * t + nz * roadSide * 0.85, rot: rot + (roadSide > 0 ? Math.PI / 2 : -Math.PI / 2) });
+      }
+    }
+  }
   for (const side of [-1, 1]) {
-    sidewalk([[-30, 0], [242, 0]], side * 8.6);
-    sidewalk([[0, -62], [0, 60]], side * 7.6);
-    sidewalk([[0, 60], [142, 60]], side * 7.1);
+    sidewalk([-30, 0], [242, 0], side * 8.6, "Main St");
+    sidewalk([0, -62], [0, 62], side * 7.6, "McCarty Ave");
+    sidewalk([0, 60], [142, 60], side * 7.1, "Post Office St");
   }
   // Zebra crosswalks downtown
   for (const [ix, iz] of [[0, 0], [60, 0], [120, 0], [0, 60]]) {
@@ -395,10 +511,75 @@ export function buildWorld(scene) {
   for (let x = -20; x <= 240; x += 26) {
     for (const side of [-1, 1]) {
       if (distToRail(x, side * 9.6) < 5) continue;
-      props.prim(PRIM.cyl(6), { x, y: 3, z: side * 9.8, sx: 0.16, sy: 6, sz: 0.16 }, "#2f3a33");
-      props.prim(PRIM.sphere(8), { x, y: 6.1, z: side * 9.8, sx: 0.7, sy: 0.7, sz: 0.7 }, "#fff3c4");
+      const z = side * 9.8;
+      // Old-fashioned acorn lamp: fluted base, pole, crossarm, two globes.
+      props.prim(PRIM.cyl(8), { x, y: 0.6, z, sx: 0.5, sy: 1.0, sz: 0.5 }, "#24302a");
+      props.prim(PRIM.cyl(6), { x, y: 3, z, sx: 0.16, sy: 6, sz: 0.16 }, "#2f3a33");
+      props.prim(PRIM.box(), { x, y: 5.5, z, sx: 1.8, sy: 0.12, sz: 0.12 }, "#2f3a33");
+      for (const o of [-0.85, 0.85]) {
+        props.prim(PRIM.cone(8), { x: x + o, y: 5.25, z, sx: 0.34, sy: 0.4, sz: 0.34, rx: Math.PI }, "#2f3a33");
+        props.prim(PRIM.sphere(8), { x: x + o, y: 5.75, z, sx: 0.55, sy: 0.7, sz: 0.55 }, "#fff3c4");
+        props.prim(PRIM.cone(8), { x: x + o, y: 6.2, z, sx: 0.4, sy: 0.3, sz: 0.4 }, "#2f3a33");
+      }
+      props.prim(PRIM.cone(8), { x, y: 6.3, z, sx: 0.22, sy: 0.6, sz: 0.22 }, "#2f3a33");
+      collision.add({ type: "circle", x, z, r: 0.35, h: 6 });
     }
   }
+  // Street furniture on the downtown sidewalks: benches, trash cans,
+  // flower planters, newspaper boxes and the odd hydrant.
+  const FLOWERS = ["#ff5d8f", "#ffd43b", "#ff922b", "#cc5de8", "#ffffff", "#f03e3e"];
+  furnitureSpots.forEach((f, i) => {
+    if (collision.hits(f.x, f.z, 1.1)) return;
+    const c = Math.cos(f.rot), sn = Math.sin(f.rot);
+    const P = (lx, lz) => [f.x + lx * c + lz * sn, f.z - lx * sn + lz * c];
+    const kind = i % 5;
+    if (kind === 0 || kind === 3) {
+      // Bench (slats on cast-iron ends)
+      for (const lx of [-0.8, 0.8]) {
+        const [x, z] = P(lx, 0);
+        props.prim(PRIM.box(), { x, y: 0.5, z, sx: 0.1, sy: 0.75, sz: 0.6, ry: f.rot }, "#2b2f33");
+      }
+      for (let k = 0; k < 3; k++) {
+        const [x, z] = P(0, -0.15 + k * 0.17);
+        props.prim(PRIM.box(), { x, y: 0.62, z, sx: 1.9, sy: 0.07, sz: 0.13, ry: f.rot }, "#8a5a33");
+      }
+      for (let k = 0; k < 2; k++) {
+        const [x, z] = P(0, -0.3);
+        props.prim(PRIM.box(), { x, y: 0.85 + k * 0.2, z, sx: 1.9, sy: 0.1, sz: 0.06, ry: f.rot }, "#8a5a33");
+      }
+      collision.add({ type: "box", x: f.x, z: f.z, hw: 1, hd: 0.4, rot: f.rot, h: 1.1 });
+    } else if (kind === 1) {
+      // Planter box with flowers
+      props.prim(PRIM.box(), { x: f.x, y: 0.42, z: f.z, sx: 1.3, sy: 0.6, sz: 1.3, ry: f.rot }, "#a0522d");
+      props.prim(PRIM.box(), { x: f.x, y: 0.74, z: f.z, sx: 1.1, sy: 0.06, sz: 1.1, ry: f.rot }, "#4a3324");
+      props.prim(PRIM.sphere(7), { x: f.x, y: 0.95, z: f.z, sx: 1.0, sy: 0.55, sz: 1.0 }, "#3f9b3a");
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2 + rand();
+        props.prim(PRIM.box(), { x: f.x + Math.cos(a) * 0.35, y: 1.15 + rand() * 0.1, z: f.z + Math.sin(a) * 0.35, sx: 0.22, sy: 0.22, sz: 0.22, ry: a }, pick(FLOWERS));
+      }
+      collision.add({ type: "circle", x: f.x, z: f.z, r: 0.75, h: 1 });
+    } else if (kind === 2) {
+      // Trash can
+      props.prim(PRIM.cyl(10), { x: f.x, y: 0.55, z: f.z, sx: 0.6, sy: 0.95, sz: 0.6 }, "#2e5e3a");
+      props.prim(PRIM.cyl(10), { x: f.x, y: 1.06, z: f.z, sx: 0.66, sy: 0.08, sz: 0.66 }, "#24302a");
+      collision.add({ type: "circle", x: f.x, z: f.z, r: 0.38, h: 1.1 });
+    } else {
+      // Newspaper boxes, or a hydrant
+      if (rand() < 0.5) {
+        for (const [lx, col] of [[-0.35, "#c92a2a"], [0.35, "#1971c2"]]) {
+          const [x, z] = P(lx, 0);
+          props.prim(PRIM.box(), { x, y: 0.62, z, sx: 0.6, sy: 0.85, sz: 0.5, ry: f.rot }, col);
+          props.prim(PRIM.box(), { x, y: 0.72, z: z, sx: 0.44, sy: 0.3, sz: 0.52, ry: f.rot }, "#dbe4ea");
+        }
+        collision.add({ type: "box", x: f.x, z: f.z, hw: 0.7, hd: 0.3, rot: f.rot, h: 1.1 });
+      } else {
+        props.prim(PRIM.cyl(8), { x: f.x, y: 0.55, z: f.z, sx: 0.36, sy: 0.75, sz: 0.36 }, "#e03131");
+        props.prim(PRIM.hemi(8), { x: f.x, y: 0.92, z: f.z, sx: 0.4, sy: 0.3, sz: 0.4 }, "#e03131");
+        props.prim(PRIM.cyl(6), { x: f.x, y: 0.62, z: f.z, sx: 0.62, sy: 0.14, sz: 0.14, rz: Math.PI / 2 }, "#c92a2a");
+        collision.add({ type: "circle", x: f.x, z: f.z, r: 0.3, h: 1 });
+      }
+    }
+  });
   for (let x = 10; x < 238; x += 6.2) {
     for (const side of [-1, 1]) {
       if (rand() > 0.45 || distToRail(x, side * 4.8) < 6 || Math.abs(x - 60) < 7 || Math.abs(x - 120) < 7 || Math.abs(x - 172) < 6) continue;
@@ -665,7 +846,7 @@ export function buildWorld(scene) {
           const h = {
             x: cx, z: cz, w, d, h: twoStory ? 6.2 : 3.3 + rand() * 0.5, rot: side === "north" ? ROT.n : ROT.s,
             wall: pick(HOUSE_WALLS), roof: pick(HOUSE_ROOFS), roofType: rand() < 0.62 ? "gable" : "hip",
-            rh: 2 + rand() * 1.4, porch: rand() < 0.35, chimney: rand() < 0.22,
+            rh: 2 + rand() * 1.4, porch: rand() < 0.35, chimney: rand() < 0.22, fence: rand() < 0.3,
           };
           addHouse(h);
           houses++;
@@ -686,6 +867,33 @@ export function buildWorld(scene) {
           }
         }
       }
+    }
+  }
+
+  // ---------- street details: stop signs, stop bars, manholes ----------
+  const nsStreets = ROADS.filter((r) => r.kind === "street" && r.pts[0][0] === r.pts[1][0]);
+  const ewStreets = ROADS.filter((r) => (r.kind === "street" || r.kind === "main") && r.pts[0][1] === r.pts[1][1]);
+  for (const ns of nsStreets) {
+    const x = ns.pts[0][0];
+    for (const ew of ewStreets) {
+      const z = ew.pts[0][1];
+      const zMin = Math.min(ns.pts[0][1], ns.pts[1][1]), zMax = Math.max(ns.pts[0][1], ns.pts[1][1]);
+      const xMin = Math.min(ew.pts[0][0], ew.pts[1][0]), xMax = Math.max(ew.pts[0][0], ew.pts[1][0]);
+      if (z <= zMin || z >= zMax || x < xMin || x > xMax) continue;
+      if (inRect(x, z, downtown) || distToRail(x, z) < 14) continue;
+      for (const dir of [-1, 1]) {
+        // Approach from the north (dir -1) or south (dir 1), stop on the right.
+        const sz = z + dir * (ew.w / 2 + 1.6);
+        const sx = x - dir * (ns.w / 2 + 1.2);
+        props.prim(PRIM.cyl(6), { x: sx, y: 1.3, z: sz, sx: 0.1, sy: 2.6, sz: 0.1 }, "#c9ced3");
+        props.prim(PRIM.cyl(8), { x: sx, y: 2.7, z: sz, sx: 0.9, sy: 0.06, sz: 0.9, rx: Math.PI / 2, ry: Math.PI / 8 }, "#d32f2f");
+        props.prim(PRIM.cyl(8), { x: sx, y: 2.7, z: sz + dir * 0.035, sx: 0.72, sy: 0.02, sz: 0.72, rx: Math.PI / 2, ry: Math.PI / 8 }, "#ffffff");
+        props.prim(PRIM.cyl(8), { x: sx, y: 2.7, z: sz + dir * 0.045, sx: 0.64, sy: 0.02, sz: 0.64, rx: Math.PI / 2, ry: Math.PI / 8 }, "#d32f2f");
+        collision.add({ type: "circle", x: sx, z: sz, r: 0.2, h: 3 });
+        const bz = z + dir * (ew.w / 2 + 0.6);
+        ground.groundQuad([[x - dir * ns.w / 2, bz - 0.25], [x, bz - 0.25], [x, bz + 0.25], [x - dir * ns.w / 2, bz + 0.25]], Y.mark, PAL.white);
+      }
+      if (rand() < 0.5) ground.polygon(Array.from({ length: 10 }, (_, k) => [x + 1.6 + Math.cos((k / 10) * Math.PI * 2) * 0.55, z + 22 + Math.sin((k / 10) * Math.PI * 2) * 0.55]), Y.mark, "#3d3f45");
     }
   }
 
@@ -776,10 +984,12 @@ export function buildWorld(scene) {
   scene.add(new THREE.LineSegments(wireGeo, new THREE.LineBasicMaterial({ color: 0x2b2b2b })));
 
   // ---------- commit merged meshes ----------
-  const groundMesh = new THREE.Mesh(ground.build(), new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const detail = makeDetailTexture();
+  const timeUniform = { value: 0 };
+  const groundMesh = new THREE.Mesh(ground.build(), makeGroundMaterial(detail));
   groundMesh.receiveShadow = true;
   scene.add(groundMesh);
-  const waterMesh = new THREE.Mesh(water.build(), new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const waterMesh = new THREE.Mesh(water.build(), makeWaterMaterial(detail, timeUniform));
   waterMesh.receiveShadow = true;
   scene.add(waterMesh);
   const wallMesh = new THREE.Mesh(walls.build(), makeWallMaterial(atlas));
@@ -807,6 +1017,9 @@ export function buildWorld(scene) {
     triggers,
     sky,
     minimap,
+    update(time) {
+      timeUniform.value = time;
+    },
     stats: { houses, trees: treeCount, obstacles: collision.count },
   };
 

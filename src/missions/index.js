@@ -282,6 +282,12 @@ export function createMissions(ctx) {
         playHit();
         return true;
       }
+      // Ninjas still around: E is always a punch (a whiff if none in reach),
+      // never a call for the bike mid-fight.
+      if (gang.remaining > 0) {
+        ctx.punch(null);
+        return true;
+      }
     }
     return false;
   }

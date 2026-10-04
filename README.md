@@ -87,9 +87,11 @@ actually starts), so they never add weight to the initial page load.
 
 ## Sidney's voice
 
-While you play, Sidney pipes up every 3 to 5 seconds with a quick line (none
-longer than two seconds), cut from his real voicemails and picked at random
-without repeats. The radio dips a little under each line.
+Every 8 to 13 seconds Sidney pipes up with a short line (none longer than
+two seconds) cut from his real voicemails, picked at random without
+repeats. A radio-call card pops up in the lower right with his face and a
+caption of what he's saying, and the music ducks way down under him, then
+swells back. Pause the radio any time to hear him clearly.
 
 ## The Thicker Bradshall
 
@@ -106,21 +108,27 @@ likeness of the real person, in the same style as Sidney himself.
   pick your next turn, `S` to stop (`S` again turns around)
 - `Shift` — sprint (on foot) / boost (car)
 - `Space` — brake
-- `E` — ride / park / talk / order at the drive-thru window
+- `E` — ride / park / talk / order at the drive-thru window; with nothing
+  nearby, it calls Green Dog to you and you hop on
+- `F` — call the '70 to you and get in
 - `V` — camera (Town View, Bird's Eye, Street View)
 - `M` — map (mini map, town map, off)
-- `R` — next song
+- `P` — pause / play the radio · `R` — next song
 
 **Mobile**
-- D-pad — on foot, hold any of the 8 directions to walk that way (Sidney
-  steers himself around walls and trees and pops free if he's stuck)
+- D-pad — on foot it works from Sidney's point of view: ▲ walks the way
+  he's facing, ◀ ▶ turn him, ▼ backs up (he steers himself around walls
+  and trees and pops free if he's stuck)
 - Riding — tap ▲ once and Green Dog or the '70 rides itself along the
   streets in the right-hand lane. Tap ◀ or ▶ before an intersection to
   queue your next turn (it takes it automatically); tap ▼ to stop, ▼ again
   to turn around. On a mission, with no turn queued, it follows the yellow
   route on its own
 - `RUN` — sprint / boost
-- `E` button — ride / park / talk / order (the label changes to match)
+- `E` button — ride / park / talk / order (the label changes to match);
+  anywhere else it calls Green Dog to you
+- `CAR` — calls the '70 to you and you get in
+- `RADIO` — pause / play (▶▶ next to it skips the song)
 - `VIEW`, `MAP`, `RADIO` — same as the keys above
 
 ## Running locally

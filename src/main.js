@@ -14,11 +14,12 @@ import { toonify } from "./render/toon.js";
 import { treeFocus } from "./world/trees.js";
 import { createPost } from "./render/post.js";
 import { createMissions } from "./missions/index.js";
-import { createStickSteer, createStuckWatch } from "./assist.js";
+import { createStuckWatch } from "./assist.js";
+import { makeFaceTexture } from "./textures.js";
 import { createGators } from "./gators.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
-  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateSidVoice,
+  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateSidVoice, onSidVoice, toggleRadio, radioIsOn,
 } from "./audio.js";
 
 document.title = GAME_TITLE;
@@ -122,7 +123,7 @@ const missions = createMissions({
   // Turn to face the ninja and throw a punch.
   punch: (target) => {
     const p = player.group.position;
-    player.state.heading = Math.atan2(target.x - p.x, target.z - p.z);
+    if (target) player.state.heading = Math.atan2(target.x - p.x, target.z - p.z);
     player.group.rotation.y = player.state.heading;
     player.state.speed = 0;
     player.punch();
@@ -219,6 +220,31 @@ function interact() {
   }
   const ride = nearestRide();
   if (ride) mount(ride);
+  else callRide("bike"); // nothing close by: whistle for Green Dog
+}
+
+// Call a ride to wherever Sidney is and hop on. If he's on the other one,
+// he parks it first.
+function callRide(key) {
+  if (missions.blocking || mode === key) return;
+  if (mode !== "walk") dismount();
+  const { veh, name } = RIDES[key];
+  const p = player.group.position;
+  if (p.distanceTo(veh.group.position) > 3.4) {
+    const h = player.state.heading;
+    veh.group.position.set(p.x + Math.cos(h) * 1.4, 0.16, p.z - Math.sin(h) * 1.4);
+    veh.state.heading = h;
+    veh.group.rotation.set(0, h, 0);
+    hud.toast(key === "bike" ? "Green Dog rolls up" : "The '70 pulls up", 1400);
+  }
+  mount(key);
+}
+
+const radioBtn = document.getElementById("btnRadio");
+function syncRadioButton() {
+  const on = radioIsOn();
+  radioBtn.classList.toggle("off", !on);
+  radioBtn.innerHTML = on ? "&#10074;&#10074; RADIO" : "&#9654; RADIO";
 }
 
 function promptText() {
@@ -244,6 +270,28 @@ function promptText() {
 }
 
 onRadioTrackChange((t) => hud.toast(`ON THE RADIO: ${t.title} — ${t.artist}`));
+
+// Sidney on the radio: caption card with his face, lower right.
+const voiceCard = document.getElementById("voiceCard");
+const voiceText = document.getElementById("voiceText");
+{
+  const c = document.getElementById("voiceFace").getContext("2d");
+  const face = makeFaceTexture({ skin: "#9a6a46", glasses: true, mustache: true, browColor: "#141210" }).image;
+  c.fillStyle = "#21c4b5";
+  c.fillRect(0, 0, 112, 112);
+  c.drawImage(face, 6, 14, 100, 100);
+  c.fillStyle = "#1b1611"; // close-cropped hair
+  c.beginPath();
+  c.ellipse(56, 16, 52, 20, 0, 0, Math.PI * 2);
+  c.fill();
+  c.fillStyle = "#4d4741"; // shirt collar
+  c.fillRect(0, 104, 112, 8);
+}
+onSidVoice((line) => {
+  if (line) voiceText.textContent = line.text;
+  voiceCard.classList.toggle("show", !!line);
+  viewport.classList.toggle("talking", !!line);
+});
 
 // ---------- Trains and gates ----------
 let bellOn = false;
@@ -316,7 +364,6 @@ function adaptQuality(dt) {
 // ---------- Main loop ----------
 let last = performance.now();
 let time = 0;
-const stickSteer = createStickSteer();
 const stuckWatch = createStuckWatch();
 const IDLE = { x: 0, y: 0, sprint: false, brake: false, interact: false, view: false, map: false, radio: false };
 const extras = [];
@@ -330,18 +377,23 @@ function frame() {
   const polled = controls.poll();
   // Story cards hold everything except the button that closes them.
   let input = !started ? IDLE : missions.blocking ? { ...IDLE, interact: polled.interact } : polled;
-  // Touch stick: point where you want to go (camera-relative), and the
-  // walk/ride/drive code steers there with its guardrails.
+  // D-pad while walking works from Sidney's point of view: up walks the way
+  // he's facing, left / right turn him, down backs up.
   if (input === polled && polled.stick.on && mode === "walk") {
-    const s = stickSteer.heading(polled.stick, chaseCam.yaw);
-    input = s ? { ...polled, x: 0, y: 0, dir: s.dir, mag: s.mag } : { ...polled, x: 0, y: 0 };
+    input = { ...polled, x: polled.stick.x, y: polled.stick.y };
   }
 
   adaptQuality(dt);
   if (input.interact) interact();
   if (input.view) hud.toast(chaseCam.cycle());
   if (input.map) hud.toast(hud.cycleMap());
-  if (input.radio) { unlockAudio(); playRadio(); nextStation(); }
+  if (input.radio) { unlockAudio(); playRadio(); nextStation(); syncRadioButton(); }
+  if (input.radioToggle) {
+    unlockAudio();
+    hud.toast(toggleRadio() ? "RADIO ON" : "RADIO PAUSED", 1200);
+    syncRadioButton();
+  }
+  if (input.car) callRide("car");
 
   updateRail(dt, time);
   bradshall.update(dt);

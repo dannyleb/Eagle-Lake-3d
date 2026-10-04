@@ -6,10 +6,11 @@
 //   stick     { x, y, on } the D-pad as a direction while held (walking)
 //   taps      { up, down, left, right } one-shot presses this frame (riding:
 //             go, stop / turn around, queue a turn)
-//   sprint, brake, interact, view, map, radio
+//   sprint, brake, interact, view, map, radio (next song), radioToggle
+//   (pause / play), car (call the '70)
 export function createControls() {
   const keys = new Set();
-  const pressed = { interact: false, view: false, map: false, radio: false };
+  const pressed = { interact: false, view: false, map: false, radio: false, radioToggle: false, car: false };
   const taps = { up: false, down: false, left: false, right: false };
   let holdRun = false;
 
@@ -30,6 +31,8 @@ export function createControls() {
     if (e.code === "KeyV" || e.code === "KeyC") press("view");
     if (e.code === "KeyM") press("map");
     if (e.code === "KeyR") press("radio");
+    if (e.code === "KeyP") press("radioToggle");
+    if (e.code === "KeyF") press("car");
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
   window.addEventListener("blur", () => keys.clear());
@@ -47,7 +50,9 @@ export function createControls() {
   bindButton("btnRide", "interact");
   bindButton("btnView", "view");
   bindButton("btnMap", "map");
-  bindButton("btnRadio", "radio");
+  bindButton("btnRadio", "radioToggle");
+  bindButton("btnNext", "radio");
+  bindButton("btnCar", "car");
 
   const runBtn = document.getElementById("btnRun");
   if (runBtn) {

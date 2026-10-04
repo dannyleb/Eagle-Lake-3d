@@ -296,7 +296,8 @@ export function createPlayer(scene, spawn) {
       target = input.sprint || input.mag > 0.9 ? state.sprintSpeed : state.walkSpeed * (0.45 + 0.55 * input.mag);
     } else {
       state.heading += -input.x * 2.6 * dt;
-      target = input.y !== 0 ? (input.sprint ? state.sprintSpeed : state.walkSpeed) * Math.sign(input.y) : 0;
+      // Backing up is slower than walking forward.
+      target = input.y > 0 ? (input.sprint ? state.sprintSpeed : state.walkSpeed) : input.y < 0 ? -state.walkSpeed * 0.6 : 0;
     }
     state.speed += (target - state.speed) * Math.min(1, dt * 8);
 

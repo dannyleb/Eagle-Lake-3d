@@ -1,4 +1,7 @@
 import * as THREE from "three";
+import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
+
+const SKIN = 0xc9a87c;
 
 // The Thicker Bradshall — a local musician NPC, modeled the same way Sidney
 // is: an original, stylized low-poly tribute (bald head, goatee, ball cap,
@@ -25,7 +28,8 @@ export function buildBradshall() {
   neck.position.y = 0.78;
   hips.add(neck);
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), skin);
+  const faceTex = makeFaceTexture({ skin: "#c9a87c", sunglasses: true, goatee: true });
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.46, 0.4), makeHeadMaterials(faceTex, SKIN));
   head.position.y = 1.0;
   hips.add(head);
 

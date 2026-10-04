@@ -1,5 +1,8 @@
 import * as THREE from "three";
 import { resolveMove } from "./collision.js";
+import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
+
+const SKIN = 0xa8754f;
 
 // Sidney — an original, stylized low-poly tribute character (not a scanned
 // or photo-based likeness): stocky build, dark hair, thin glasses, a
@@ -34,7 +37,8 @@ export function buildSidney() {
   neck.position.y = 0.78;
   hips.add(neck);
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), skin);
+  const faceTex = makeFaceTexture({ skin: "#a8754f", glasses: true });
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.46, 0.4), makeHeadMaterials(faceTex, SKIN));
   head.position.y = 1.0;
   hips.add(head);
 

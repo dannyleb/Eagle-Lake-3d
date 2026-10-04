@@ -7,7 +7,7 @@ import { createControls } from "./controls.js";
 import { createPlayer } from "./player.js";
 import { createVehicle } from "./vehicles.js";
 import { createChaseCamera } from "./camera.js";
-import { unlockAudio, startCrossingBell, stopCrossingBell, playRadio, stopRadio, nextStation, currentTrack } from "./audio.js";
+import { unlockAudio, startCrossingBell, stopCrossingBell, playRadio, nextStation, currentTrack } from "./audio.js";
 import { buildObstacles } from "./collision.js";
 
 document.title = GAME_TITLE;
@@ -23,7 +23,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(COLORS.sky);
+scene.background = new THREE.Color(COLORS.sky); // fallback while the sky dome texture loads
 scene.fog = new THREE.Fog(COLORS.fog, WORLD.fogNear, WORLD.fogFar);
 
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 400);
@@ -71,6 +71,7 @@ let gateClosedAmount = 0; // 0 open -> 1 closed
 let started = false;
 
 const hudMode = document.getElementById("hudMode");
+const nowPlayingEl = document.getElementById("nowPlaying");
 const promptEl = document.getElementById("prompt");
 const trainBanner = document.getElementById("trainBanner");
 
@@ -103,7 +104,6 @@ function tryInteract() {
       veh.group.rotation.y = veh.state.heading;
       veh.group.position.copy(player.group.position);
       mode = target;
-      if (target === "car") playRadio();
     }
   } else {
     const veh = activeEntity();
@@ -112,7 +112,6 @@ function tryInteract() {
     player.state.heading = veh.state.heading;
     player.group.rotation.y = player.state.heading;
     veh.state.speed = 0;
-    if (mode === "car") stopRadio();
     mode = "walk";
   }
 }
@@ -125,9 +124,6 @@ function updatePrompt() {
     else if (player.group.position.distanceTo(bradshall.group.position) < 4) {
       promptEl.textContent = "That's The Thicker Bradshall — two of the radio's songs are his";
     } else promptEl.textContent = "";
-  } else if (mode === "car") {
-    const t = currentTrack();
-    promptEl.textContent = `Press E / tap ◉ to park — ♪ ${t.title} — ${t.artist} ♪ (R: change station)`;
   } else {
     promptEl.textContent = "Press E / tap ◉ to park";
   }
@@ -142,6 +138,8 @@ function updateHud() {
   if (mode === "walk") hudMode.textContent = "On foot — Sidney";
   else if (mode === "bike") hudMode.textContent = "Riding — Green Dog";
   else hudMode.textContent = "Driving — the '70";
+  const t = currentTrack();
+  nowPlayingEl.textContent = `♪ ${t.title} — ${t.artist} (R: change station)`;
 }
 updateHud();
 
@@ -187,7 +185,7 @@ function animate() {
   const polled = controls.poll();
   const input = started ? polled : { x: 0, y: 0, sprint: false, brake: false, interact: false, changeStation: false };
   if (input.interact) tryInteract();
-  if (started && input.changeStation && mode === "car") nextStation();
+  if (started && input.changeStation) nextStation();
 
   updateTrainAndGates(dt);
   bradshall.update(dt);
@@ -232,6 +230,7 @@ const startOverlay = document.getElementById("startOverlay");
 const startBtn = document.getElementById("startBtn");
 startBtn.addEventListener("click", () => {
   unlockAudio();
+  playRadio();
   started = true;
   startOverlay.classList.add("hidden");
 });

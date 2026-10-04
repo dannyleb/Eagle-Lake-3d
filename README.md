@@ -5,9 +5,12 @@ energy, scaled down to a small Texas railroad town. Explore on foot, hop on a
 beach cruiser named **Green Dog**, or take the '70 muscle car out for a spin,
 all while dodging the train that cuts straight through downtown.
 
-Built with [Three.js](https://threejs.org/), no framework, no heavy assets —
-just procedurally generated low-poly geometry and canvas-drawn signage, so it
-loads fast and runs smoothly on a phone browser.
+Built with [Three.js](https://threejs.org/), no framework, no heavy image
+assets — low-poly geometry with procedurally-drawn canvas textures (brick
+facades, windows, grass, asphalt, a sky with clouds, a horizon treeline, and
+actual drawn faces on the characters), so it still loads fast and runs
+smoothly on a phone browser despite looking like more than flat colored
+boxes.
 
 ## Play it
 
@@ -16,16 +19,16 @@ Pages deployment once it's live.
 
 ## The radio
 
-Get in the '70 and the radio comes on — a two-song local station:
+A local station plays continuously from the moment you hit "Start Driving" —
+on foot, on the bike, in the car, doesn't matter:
 
 - **"I'll Take It Back"** by Blake — built from Sidney's own voice
 - **"Peel On"** by The Thicker Bradshall — a friend of Sidney's from Eagle Lake
 - **"Nananananana"** by The Thicker Bradshall
 
-It plays through the station and loops; press `R` to skip to the other
-track. Both songs are lazy-loaded (only fetched the moment you first get in
-the car), so they never add weight to the initial page load. Get out and the
-radio fades out; the bike doesn't have one.
+It loops through the station automatically; press `R` any time to skip to
+the next track. All three songs are lazy-loaded (only fetched once playback
+actually starts), so they never add weight to the initial page load.
 
 ## The Thicker Bradshall
 

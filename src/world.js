@@ -1,11 +1,22 @@
 import * as THREE from "three";
 import { COLORS, WORLD, STREETS, RAIL, BUILDINGS, HOUSES, HOUSE_SIZE, WATER_TOWER, LAKE, SIGNAGE, BRADSHALL } from "./config.js";
 import { makeSignTexture, makeBannerTexture } from "./signage.js";
+import {
+  makeSkyTexture,
+  makeTreelineTexture,
+  makeGrassTexture,
+  makeAsphaltTexture,
+  makeSidewalkTexture,
+  makeFacadeTexture,
+  makeSidingTexture,
+} from "./textures.js";
 
 const box = new THREE.BoxGeometry(1, 1, 1);
 
-function addBox(group, { x, y = 0, z, w, h, d, color, name }) {
-  const mat = new THREE.MeshLambertMaterial({ color });
+function addBox(group, { x, y = 0, z, w, h, d, color, map, name }) {
+  const mat = map
+    ? new THREE.MeshLambertMaterial({ map })
+    : new THREE.MeshLambertMaterial({ color });
   const mesh = new THREE.Mesh(box, mat);
   mesh.scale.set(w, h, d);
   mesh.position.set(x, y + h / 2, z);
@@ -18,11 +29,28 @@ function addBox(group, { x, y = 0, z, w, h, d, color, name }) {
 
 function buildGround(scene) {
   const geo = new THREE.PlaneGeometry(WORLD.halfSize * 2, WORLD.halfSize * 2);
-  const mat = new THREE.MeshLambertMaterial({ color: COLORS.ground });
+  const mat = new THREE.MeshLambertMaterial({ map: makeGrassTexture() });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.rotation.x = -Math.PI / 2;
   mesh.receiveShadow = true;
   scene.add(mesh);
+}
+
+function buildSky(scene) {
+  const geo = new THREE.SphereGeometry(WORLD.halfSize * 2.6, 24, 16);
+  const mat = new THREE.MeshBasicMaterial({ map: makeSkyTexture(), side: THREE.BackSide, fog: false });
+  const dome = new THREE.Mesh(geo, mat);
+  scene.add(dome);
+}
+
+function buildTreeline(scene) {
+  const radius = WORLD.halfSize * 1.15;
+  const geo = new THREE.CylinderGeometry(radius, radius, 90, 48, 1, true);
+  const mat = new THREE.MeshBasicMaterial({ map: makeTreelineTexture(), side: THREE.DoubleSide, fog: true });
+  mat.map.repeat.set(10, 1);
+  const wall = new THREE.Mesh(geo, mat);
+  wall.position.y = 30;
+  scene.add(wall);
 }
 
 function buildLake(scene) {
@@ -37,16 +65,31 @@ function buildLake(scene) {
 }
 
 function buildRoads(group) {
-  const roadMat = new THREE.MeshLambertMaterial({ color: COLORS.road });
-  const lineMat = new THREE.MeshBasicMaterial({ color: COLORS.roadLine });
   const span = WORLD.halfSize * 2;
+  const asphalt = makeAsphaltTexture();
+  const sidewalkTex = makeSidewalkTexture();
+  const lineMat = new THREE.MeshBasicMaterial({ color: COLORS.roadLine });
 
   for (const s of STREETS.horizontal) {
+    const roadMat = new THREE.MeshLambertMaterial({ map: asphalt.clone() });
+    roadMat.map.repeat.set(span / 8, s.width / 8);
+    roadMat.map.needsUpdate = true;
     const road = new THREE.Mesh(new THREE.PlaneGeometry(span, s.width), roadMat);
     road.rotation.x = -Math.PI / 2;
     road.position.set(0, 0.02, s.z);
     road.receiveShadow = true;
     group.add(road);
+
+    for (const sign of [-1, 1]) {
+      const sidewalkMat = new THREE.MeshLambertMaterial({ map: sidewalkTex.clone() });
+      sidewalkMat.map.repeat.set(span / 3, 0.7);
+      sidewalkMat.map.needsUpdate = true;
+      const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(span, 2.2), sidewalkMat);
+      sidewalk.rotation.x = -Math.PI / 2;
+      sidewalk.position.set(0, 0.015, s.z + sign * (s.width / 2 + 1.1));
+      sidewalk.receiveShadow = true;
+      group.add(sidewalk);
+    }
 
     const line = new THREE.Mesh(new THREE.PlaneGeometry(span, 0.3), lineMat);
     line.rotation.x = -Math.PI / 2;
@@ -55,6 +98,9 @@ function buildRoads(group) {
   }
 
   for (const s of STREETS.vertical) {
+    const roadMat = new THREE.MeshLambertMaterial({ map: asphalt.clone() });
+    roadMat.map.repeat.set(s.width / 8, span / 8);
+    roadMat.map.needsUpdate = true;
     const road = new THREE.Mesh(new THREE.PlaneGeometry(s.width, span), roadMat);
     road.rotation.x = -Math.PI / 2;
     road.position.set(s.x, 0.02, 0);
@@ -180,7 +226,10 @@ function buildBuilding(scene, def) {
   const group = new THREE.Group();
   group.position.set(def.x, 0, def.z);
 
-  addBox(group, { x: 0, z: 0, w: def.w, h: def.h, d: def.d, color: def.color });
+  const cols = Math.max(2, Math.round(def.w / 4));
+  const rows = Math.max(1, Math.round(def.h / 4));
+  const facadeTex = makeFacadeTexture({ base: def.color, brick: def.kind !== "gasStation", cols, rows, doorCenter: !def.steeple });
+  addBox(group, { x: 0, z: 0, w: def.w, h: def.h, d: def.d, map: facadeTex });
   // Roof cap
   addBox(group, { x: 0, y: def.h, z: 0, w: def.w + 0.6, h: 0.5, d: def.d + 0.6, color: def.roof });
 
@@ -237,7 +286,7 @@ function buildBuilding(scene, def) {
 function buildHouse(scene, def) {
   const group = new THREE.Group();
   group.position.set(def.x, 0, def.z);
-  addBox(group, { w: HOUSE_SIZE.w, h: 3.2, d: HOUSE_SIZE.d, color: def.color });
+  addBox(group, { w: HOUSE_SIZE.w, h: 3.2, d: HOUSE_SIZE.d, map: makeSidingTexture(def.color) });
   const roof = new THREE.Mesh(
     new THREE.ConeGeometry(5.6, 2.4, 4),
     new THREE.MeshLambertMaterial({ color: def.roof })
@@ -339,6 +388,8 @@ function buildBuskingSign(scene) {
 }
 
 export function buildWorld(scene) {
+  buildSky(scene);
+  buildTreeline(scene);
   buildGround(scene);
   buildLake(scene);
 

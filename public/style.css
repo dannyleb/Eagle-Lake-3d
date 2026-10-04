@@ -393,3 +393,237 @@ body.touch .controlsGrid > div:first-child { display: none; }
   .controlsGrid { display: none; }
   #startBtn { height: 44px; }
 }
+
+/* ---------- Missions ---------- */
+#alarmBanner {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translate(-50%, -80px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  border: 3px solid var(--ink);
+  background: #d62828;
+  color: #fff;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.1em;
+  text-shadow: 0 2px 0 var(--ink);
+  box-shadow: 0 4px 0 var(--ink), 0 0 24px rgba(255, 60, 30, 0.7);
+  transition: transform 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+  pointer-events: none;
+  z-index: 3;
+  white-space: nowrap;
+}
+#alarmBanner.show { transform: translate(-50%, 0); animation: alarm 0.5s steps(1) infinite; }
+@keyframes alarm { 50% { background: #ffd43b; color: var(--ink); text-shadow: none; } }
+#alarmBanner .siren { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); }
+#alarmBanner.show .siren { animation: siren 0.25s steps(1) infinite; }
+@keyframes siren { 50% { background: #ff2a1a; } }
+
+#objective {
+  position: absolute;
+  left: 12px;
+  top: 52px;
+  max-width: min(46%, 300px);
+  padding: 8px 12px 9px;
+  border-radius: 12px;
+  background: rgba(27, 15, 46, 0.86);
+  border: 2px solid var(--yellow);
+  color: #fff;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+}
+#objective.show { opacity: 1; transform: none; }
+#objective.fresh { animation: objFresh 1.6s ease-out; }
+@keyframes objFresh { 0%, 40%, 80% { box-shadow: 0 0 0 4px var(--yellow); } 20%, 60%, 100% { box-shadow: 0 0 0 0 rgba(255, 212, 59, 0); } }
+#objective.urgent { border-color: #ff5a3c; animation: urgent 1s ease-in-out infinite; }
+@keyframes urgent { 50% { box-shadow: 0 0 0 4px rgba(255, 90, 60, 0.6); } }
+.objLabel { font-size: 10px; font-weight: 900; letter-spacing: 0.16em; color: var(--yellow); }
+#objText { font-size: 16px; font-weight: 900; line-height: 1.15; margin-top: 2px; }
+#objSub { font-size: 12px; font-weight: 700; color: var(--teal); margin-top: 3px; font-family: "Courier New", monospace; }
+
+#waypoint {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  display: none;
+  pointer-events: none;
+  z-index: 2;
+}
+#waypoint.show { display: block; }
+.wayGem {
+  position: absolute;
+  left: -11px;
+  top: -11px;
+  width: 22px;
+  height: 22px;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  transform: rotate(45deg);
+  animation: gem 1s ease-in-out infinite;
+}
+@keyframes gem { 50% { transform: rotate(45deg) scale(1.2); } }
+#wayDist {
+  position: absolute;
+  left: -40px;
+  top: 16px;
+  width: 80px;
+  text-align: center;
+  font-weight: 900;
+  font-size: 12px;
+  color: #fff;
+  text-shadow: 0 0 3px var(--ink), 0 0 3px var(--ink), 0 1px 0 var(--ink);
+  font-family: "Courier New", monospace;
+}
+.wayArrow {
+  display: none;
+  position: absolute;
+  left: -12px;
+  top: -40px;
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 18px solid var(--yellow);
+  filter: drop-shadow(0 0 1px var(--ink)) drop-shadow(0 0 1px var(--ink));
+  transform-origin: 12px 40px;
+  transform: rotate(var(--arrow, 0deg));
+}
+#waypoint.edge .wayArrow { display: block; }
+
+#storyCard {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(27, 15, 46, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 5;
+}
+#storyCard.show { opacity: 1; pointer-events: auto; }
+.storyInner {
+  max-width: 520px;
+  width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  padding: 18px 22px 20px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #7a3fc0, var(--purple));
+  border: 4px solid var(--ink);
+  box-shadow: 0 0 0 4px var(--yellow), 0 0 0 8px var(--ink), 0 12px 30px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  transform: scale(0.85);
+  transition: transform 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+#storyCard.show .storyInner { transform: scale(1); }
+#storyKicker { font-size: 11px; font-weight: 900; letter-spacing: 0.18em; color: var(--teal); }
+#storyTitle {
+  margin: 6px 0 8px;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.05;
+  color: var(--yellow);
+  transform: skew(-6deg);
+  text-shadow: 0 3px 0 var(--ink), 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 -2px 0 var(--ink);
+}
+#storyBody { font-size: 15px; line-height: 1.45; margin: 0 0 14px; }
+#storyGo { display: inline-flex; align-items: center; gap: 8px; height: 50px; font-size: 17px; }
+#storyGo .keycap { width: 28px; height: 28px; font-size: 15px; }
+
+#achievement {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(92%, 460px);
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff6c8, #ffd43b);
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  box-shadow: 0 6px 0 var(--ink), 0 0 40px rgba(255, 212, 59, 0.8);
+  opacity: 0;
+  transform: translate(-50%, -30px) scale(0.8);
+  pointer-events: none;
+  z-index: 6;
+}
+#achievement.show { animation: achIn 5.2s ease forwards; }
+@keyframes achIn {
+  0% { opacity: 0; transform: translate(-50%, -30px) scale(0.8); }
+  8% { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
+  12% { transform: translate(-50%, 0) scale(1); }
+  90% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -20px) scale(0.95); }
+}
+.medal {
+  flex: 0 0 auto;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #fff, #f2b600 55%, #b07d00);
+  border: 4px solid var(--ink);
+  font-size: 34px;
+  color: #fff;
+  text-shadow: 0 2px 0 var(--ink);
+}
+#achievement.show .medal { animation: spinIn 0.9s ease-out; }
+@keyframes spinIn { from { transform: rotateY(540deg) scale(0.4); } to { transform: none; } }
+.achKicker { font-size: 10px; font-weight: 900; letter-spacing: 0.16em; color: #8a5a00; }
+#achTitle { font-size: 24px; font-weight: 900; line-height: 1.05; margin: 2px 0 4px; }
+#achText { font-size: 13px; line-height: 1.35; font-weight: 600; }
+
+#viewport.hurt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(255, 0, 0, 0) 40%, rgba(255, 30, 30, 0.55));
+  animation: hurt 0.45s ease-out forwards;
+}
+@keyframes hurt { to { opacity: 0; } }
+
+@media (max-width: 560px) {
+  #alarmBanner { font-size: 13px; padding: 6px 10px; gap: 6px; }
+  #objective { top: 48px; max-width: 58%; padding: 6px 9px; }
+  #objText { font-size: 13px; }
+  #storyTitle { font-size: 23px; }
+  #storyBody { font-size: 13px; }
+  #achTitle { font-size: 19px; }
+  .medal { width: 48px; height: 48px; font-size: 26px; }
+}
+@media (max-height: 500px) {
+  #storyTitle { font-size: 20px; margin: 2px 0 4px; }
+  #storyBody { font-size: 12px; margin-bottom: 8px; }
+  #storyGo { height: 40px; }
+  #achievement { top: 8%; }
+}
+#viewport.alarm #toast { top: 66px; }
+#viewport.alarm #trainBanner { top: 112px; }
+#minimap.full { z-index: 4; }
+
+/* Phones: the alarm is a full-width strip and the HUD steps down under it. */
+@media (max-width: 560px) {
+  #alarmBanner { left: 8px; right: 8px; top: 8px; justify-content: center; transform: translateY(-80px); }
+  #alarmBanner.show { transform: none; }
+  #viewport.alarm #hudMode { top: 50px; }
+  #viewport.alarm #objective { top: 86px; }
+  #viewport.alarm #minimap.mini { top: 50px; }
+}
+#objective, #hudMode { z-index: 3; }

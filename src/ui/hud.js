@@ -125,7 +125,61 @@ export function createHud(minimapData) {
     ctx.restore();
   }
 
-  function drawMap(px, pz, bearing, extras) {
+  // Mission overlay: route line, destination star, enemy dots. `P` maps a
+  // world point to canvas pixels.
+  function drawMission(P, mission, scale) {
+    if (!mission) return;
+    if (mission.route && mission.route.length > 1) {
+      mctx.lineCap = "round";
+      mctx.lineJoin = "round";
+      for (const [w, col] of [[Math.max(4, scale * 5), "rgba(27,16,48,0.85)"], [Math.max(2.2, scale * 3), "#ffd43b"]]) {
+        mctx.strokeStyle = col;
+        mctx.lineWidth = w;
+        mctx.beginPath();
+        mission.route.forEach(([x, z], i) => {
+          const [a, b] = P(x, z);
+          if (i === 0) mctx.moveTo(a, b);
+          else mctx.lineTo(a, b);
+        });
+        mctx.stroke();
+      }
+    }
+    for (const e of mission.enemies || []) {
+      const [a, b] = P(e.x, e.z);
+      mctx.fillStyle = "#1b1030";
+      mctx.beginPath();
+      mctx.arc(a, b, Math.max(3, scale * 2.6), 0, Math.PI * 2);
+      mctx.fill();
+      mctx.fillStyle = "#d62828";
+      mctx.beginPath();
+      mctx.arc(a, b, Math.max(2, scale * 1.7), 0, Math.PI * 2);
+      mctx.fill();
+    }
+    if (mission.target) {
+      let [a, b] = P(mission.target.x, mission.target.z);
+      const W = el.map.width, H = el.map.height;
+      a = Math.min(W - 8, Math.max(8, a));
+      b = Math.min(H - 8, Math.max(8, b));
+      const r = Math.max(7, scale * 6);
+      mctx.save();
+      mctx.translate(a, b);
+      mctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const rr = i % 2 === 0 ? r : r * 0.45;
+        const ang = (i / 10) * Math.PI * 2 - Math.PI / 2;
+        mctx.lineTo(Math.cos(ang) * rr, Math.sin(ang) * rr);
+      }
+      mctx.closePath();
+      mctx.fillStyle = "#ffd43b";
+      mctx.strokeStyle = "#1b1030";
+      mctx.lineWidth = 2;
+      mctx.fill();
+      mctx.stroke();
+      mctx.restore();
+    }
+  }
+
+  function drawMap(px, pz, bearing, extras, mission) {
     const W = el.map.width, H = el.map.height;
     if (mapMode === 0 || W < 2) return;
     mctx.clearRect(0, 0, W, H);
@@ -134,6 +188,10 @@ export function createHud(minimapData) {
       const [mx, mz] = toMap(px, pz);
       mctx.drawImage(base, mx - span / 2, mz - span / 2, span, span, 0, 0, W, H);
       const s = W / span;
+      drawMission((x, z) => {
+        const [ex, ez] = toMap(x, z);
+        return [W / 2 + (ex - mx) * s, H / 2 + (ez - mz) * s];
+      }, mission, W / 160);
       for (const e of extras) {
         const [ex, ez] = toMap(e.x, e.z);
         const sx = W / 2 + (ex - mx) * s, sz = H / 2 + (ez - mz) * s;
@@ -176,6 +234,7 @@ export function createHud(minimapData) {
         mctx.fillStyle = "#2b1450";
         mctx.fillText(l.label, lx, lz - 8);
       }
+      drawMission(proj, mission, Math.min(W, H) / 320);
       for (const e of extras) {
         const [ex, ez] = proj(e.x, e.z);
         mctx.fillStyle = e.color;
@@ -189,7 +248,7 @@ export function createHud(minimapData) {
   }
 
   return {
-    update({ x, z, heading, speedFrac, now, time, extras }) {
+    update({ x, z, heading, speedFrac, now, time, extras, mission }) {
       // Bearing measured clockwise from north (north is -z).
       const bearing = Math.atan2(Math.sin(heading), -Math.cos(heading));
       el.rose.style.transform = `rotate(${(-bearing * 180) / Math.PI}deg)`;
@@ -204,7 +263,7 @@ export function createHud(minimapData) {
       }
       if (time - lastMap > 0.08) {
         lastMap = time;
-        drawMap(x, z, bearing, extras);
+        drawMap(x, z, bearing, extras, mission);
       }
     },
     // prompt: { text, action } — action is the verb on the yellow E button

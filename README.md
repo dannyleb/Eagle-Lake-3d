@@ -25,6 +25,27 @@ textures, so a whole town (about 275 houses, 1,700 trees, two rail lines, a
 lake, farms, and an airport) loads in a few seconds and runs on a phone. On
 slower devices the render resolution steps down automatically.
 
+## Missions
+
+The game opens at Veterans Memorial Park, with Sidney listening to The
+Thicker Bradshall busk by the pond and Green Dog parked beside him. A few
+seconds in, the missions start:
+
+1. **Fire Alarm.** The siren at Station 1 goes off, a flashing alarm
+   banner appears, and the station's roof lights start blinking. Get to the
+   fire station on McCarty Avenue. Unlocks **FIRE CHIEF** (and a white
+   chief's helmet).
+2. **The Eagle Stop.** Ninjas have taken over the Eagle Stop drive-thru on
+   90A West. Get there and defeat all six: press E to take one down on
+   foot, or run them down on the bike or in the car. They circle, dart in
+   for flying kicks, and flip out of the way of traffic. Unlocks **HEAD OF
+   SECURITY**.
+
+Every objective gets a story card, an objective tracker, an on-screen
+waypoint with distance, yellow arrows painted along the shortest street
+route, and the same route on the minimap and town map. New missions are a
+few lines each in `src/missions/index.js`.
+
 ## The map
 
 The street grid, rail lines, and landmark positions follow the real town,
@@ -107,10 +128,10 @@ Everything placed on top of that layout is invented:
   fictional**, generated at runtime from drawn text on a `<canvas>` — there
   are no scanned photos, no real logos, and no copied signage anywhere in
   the game.
-- The old walk-up/drive-thru beer-and-cigarettes store some longtime
-  residents remember is reimagined here as **"Eagle's Nest Drive-Thru"** — a
-  fictional, satirical stand-in, not a reproduction of any real, named
-  business, past or present.
+- The old drive-thru beer-and-cigarettes store some longtime residents
+  remember appears as the **Eagle Stop**, by request, with an original
+  drawn sign and no logos. Everything that happens there (ninjas included)
+  is fiction.
 - **Sidney** is an original stylized character — stocky build, glasses, a
   work shirt, a shoulder radio — inspired by the general silhouette of a
   small-town volunteer firefighter. It is a low-poly game-art tribute, not a
@@ -136,6 +157,7 @@ src/map/        town layout: roads, rails, lake, areas, location names
 src/world/      world builder (merged geometry, facade atlas, surfaces, sky, trees, rails)
 src/render/     cel shading: toon materials and the ink-outline post pass
 src/ui/         HUD: location plate, compass, meter, minimap, town map
+src/missions/   mission engine, street routing, route arrows, mission UI
 src/*.js        player, NPC, vehicles, train, camera, audio, controls
 public/         the static site that actually ships (index.html, style.css, bundle.js)
 build.mjs        esbuild bundler config

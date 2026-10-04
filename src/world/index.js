@@ -281,7 +281,8 @@ export function buildWorld(scene) {
   // McCarty toward downtown) clear of big canopies.
   const spawnView = (x, z) =>
     (x > -48 && x < 14 && z > -124 && z < -40) ||
-    (x > -352 && x < -308 && z > -10 && z < 70); // Eagle's Nest lot and lane
+    (x > -352 && x < -308 && z > -10 && z < 70) || // Eagle Stop lot and lane
+    (x > 276 && x < 300 && z > -194 && z < -170); // where Sidney starts, by Bradshall
   const tree = (x, z, s = 1, kind = "round") => {
     if (!spawnView(x, z) && freeSpot(x, z, 1.4 * s)) {
       forest.add(x, z, s, kind);
@@ -449,6 +450,16 @@ export function buildWorld(scene) {
   addSign({ ...(() => { const [x, z] = L(fire, 0, fire.d / 2 + 0.07); return { x, z }; })(), y: 6.4, rot: fire.rot, w: 14, h: 1.5, title: "Eagle Lake Vol. Fire Dept.", sub: "STATION 1 • SIDNEY'S HOUSE", bg: "#ffffff", fg: "#b5342c" });
   ground.groundQuad([[-16, -111], [-6, -111], [-6, -81], [-16, -81]].map(([x, z]) => [x, z]).reverse(), Y.lot, PAL.concrete);
   minimap.landmarks.push({ x: -27, z: -96, label: "Fire Station" });
+  // Alarm lights on the station's roof edge (blink when the fire alarm sounds).
+  const fireLights = [new THREE.MeshBasicMaterial({ color: 0x3a0606 }), new THREE.MeshBasicMaterial({ color: 0x3a0606 })];
+  [-11, 11].forEach((lx, i) => {
+    const [x, z] = L(fire, lx, fire.d / 2 - 0.5);
+    props.prim(PRIM.box(), { x, y: 7.75, z, sx: 1.6, sy: 0.5, sz: 1.2, ry: fire.rot }, "#3a3f45");
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.8, 1.0), fireLights[i]);
+    lamp.position.set(x, 8.4, z);
+    lamp.rotation.y = fire.rot;
+    scene.add(lamp);
+  });
 
   // ---------- downtown storefront rows ----------
   const DOWNTOWN_NAMES = {
@@ -720,7 +731,7 @@ export function buildWorld(scene) {
   walls.box({ x: 690, z: -44, w: 6, h: 30, d: 6, color: "#d4d9dd", topColor: "#a7aeb4" });
   collision.add({ type: "box", x: 690, z: -44, hw: 3, hd: 3, h: 30 });
 
-  // ---------- the Eagle's Nest drive-thru (a satirical stand-in) ----------
+  // ---------- the Eagle Stop drive-thru ----------
   buildDriveThru();
 
   // ---------- highway businesses ----------
@@ -1020,6 +1031,7 @@ export function buildWorld(scene) {
 
   return {
     collision,
+    fireLights,
     crossings: railInfo.crossings,
     lampMats: railInfo.lampMats,
     triggers,
@@ -1031,7 +1043,7 @@ export function buildWorld(scene) {
     stats: { houses, trees: treeCount, obstacles: collision.count },
   };
 
-  // ---------- local: Eagle's Nest drive-thru ----------
+  // ---------- local: Eagle Stop drive-thru ----------
   function buildDriveThru() {
     const cx = -330, cz = 32;
     const roomW = 8, depth = 32, h = 5;
@@ -1043,8 +1055,8 @@ export function buildWorld(scene) {
     // One roof over both rooms and the drive-through bay
     props.prim(PRIM.box(), { x: cx, y: h + 0.3, z: cz, sx: 25, sy: 0.6, sz: depth + 2 }, "#a8553e");
     props.prim(PRIM.box(), { x: cx, y: h + 1.4, z: cz + depth / 2 + 0.2, sx: 25, sy: 2.2, sz: 0.4 }, "#cf8a3a");
-    addSign({ x: cx, y: h + 1.45, z: cz + depth / 2 + 0.42, rot: 0, w: 15, h: 2, title: "Eagle's Nest Drive-Thru", sub: "BEER • ICE • SMOKES • BAIT", bg: "#2b2b2b", fg: "#ffd34d" });
-    addSign({ x: cx + 8, y: 2.6, z: cz + depth / 2 + 0.06, rot: 0, w: 4.2, h: 1.6, title: "Closed", sub: "THANKS FOR THE MEMORIES", bg: "#ffffff", fg: "#c0392b" });
+    addSign({ x: cx, y: h + 1.45, z: cz + depth / 2 + 0.42, rot: 0, w: 15, h: 2, title: "Eagle Stop", sub: "DRIVE-THRU • BEER • ICE • BAIT", bg: "#2b2b2b", fg: "#ffd34d" });
+    addSign({ x: cx + 8, y: 2.6, z: cz + depth / 2 + 0.06, rot: 0, w: 4.2, h: 1.6, title: "Open", sub: "COLD BEER • ICE • BAIT", bg: "#ffffff", fg: "#2e7d32" });
     // Inside the bay: the cashier's window on one wall, glass coolers on the other.
     const cashier = new THREE.Mesh(new THREE.PlaneGeometry(depth - 2, h - 0.4), new THREE.MeshLambertMaterial({ map: driveThruWallTexture("cashier") }));
     cashier.position.set(cx - 3.98, h / 2, cz);
@@ -1060,9 +1072,9 @@ export function buildWorld(scene) {
     props.prim(PRIM.box(), { x: cx + 13, y: 0.6, z: 52, sx: 1.6, sy: 1.2, sz: 1 }, "#e9eef2");
     triggers.push({
       x0: cx - 3.5, z0: cz - depth / 2, x1: cx + 3.5, z1: cz + depth / 2,
-      text: "Eagle's Nest Drive-Thru — closed for good. The cashier's window is still here, though.",
+      text: "The Eagle Stop drive-thru. Pull up to the cashier's window in the car or on the bike.",
     });
-    minimap.landmarks.push({ x: cx, z: cz, label: "Eagle's Nest" });
+    minimap.landmarks.push({ x: cx, z: cz, label: "Eagle Stop" });
   }
 }
 

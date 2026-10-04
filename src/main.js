@@ -13,6 +13,7 @@ import { createHud } from "./ui/hud.js";
 import { toonify } from "./render/toon.js";
 import { treeFocus } from "./world/trees.js";
 import { createPost } from "./render/post.js";
+import { createMissions } from "./missions/index.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
   playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION,
@@ -93,6 +94,37 @@ let driveThruCount = 0;
 
 const active = () => (mode === "walk" ? player : RIDES[mode].veh);
 
+// ---------- Missions ----------
+const missions = createMissions({
+  scene, camera, viewport, collision, hud, player, world,
+  getMode: () => mode,
+  getPos: () => active().group.position,
+  getVehicle: () => {
+    if (mode === "walk") return null;
+    const v = RIDES[mode].veh;
+    return { x: v.group.position.x, z: v.group.position.z, speed: v.state.speed, radius: v.state.radius };
+  },
+  // Turn to face the ninja and throw a punch.
+  punch: (target) => {
+    const p = player.group.position;
+    player.state.heading = Math.atan2(target.x - p.x, target.z - p.z);
+    player.group.rotation.y = player.state.heading;
+    player.state.speed = 0;
+    player.punch();
+  },
+  // A ninja's flying kick shoves Sidney back a couple of meters.
+  kickPlayer: (dx, dz) => {
+    const p = player.group.position;
+    const l = Math.hypot(dx, dz) || 1;
+    const r = collision.resolveMove(p.x, p.z, p.x + (dx / l) * 2.4, p.z + (dz / l) * 2.4, player.state.radius);
+    p.x = r.x;
+    p.z = r.z;
+    viewport.classList.remove("hurt");
+    void viewport.offsetWidth;
+    viewport.classList.add("hurt");
+  },
+});
+
 function nearestRide() {
   const p = player.group.position;
   let best = null, bestD = 3.4;
@@ -145,7 +177,7 @@ const DRIVE_THRU_MENU = [
   "Cashier: \"Six-pack of Lone Goose Lager. Don't open it in the car.\"",
   "Cashier: \"Pack of Prairie Lights. Those'll kill ya, hon.\"",
   "Cashier: \"Bag of ice and a Big Red. Ten-four.\"",
-  "Cashier: \"Sack of boiled peanuts, on the house. We're closed anyway.\"",
+  "Cashier: \"Sack of boiled peanuts, on the house, Chief.\"",
 ];
 
 function nearBradshall() {
@@ -158,6 +190,7 @@ function inTrigger() {
 }
 
 function interact() {
+  if (missions.interact()) return;
   const trig = inTrigger();
   if (mode !== "walk" && trig) {
     driveThruCount++;
@@ -177,6 +210,8 @@ function interact() {
 }
 
 function promptText() {
+  const mp = missions.prompt();
+  if (mp) return mp;
   const trig = inTrigger();
   if (mode !== "walk") {
     if (trig) return { text: "Roll up to the cashier's window", action: "ORDER" };
@@ -275,7 +310,9 @@ function frame() {
   const dt = Math.min((nowMs - last) / 1000, 0.05);
   last = nowMs;
   time += dt;
-  const input = started ? controls.poll() : (controls.poll(), IDLE);
+  const polled = controls.poll();
+  // Story cards hold everything except the button that closes them.
+  const input = !started ? IDLE : missions.blocking ? { ...IDLE, interact: polled.interact } : polled;
 
   adaptQuality(dt);
   if (input.interact) interact();
@@ -296,6 +333,7 @@ function frame() {
   chaseCam.update(pos, ent.state.heading, dt, mode, collision);
   camera.updateMatrixWorld();
   treeFocus.value.set(pos.x, pos.y + 1.2, pos.z).applyMatrix4(camera.matrixWorldInverse);
+  missions.update(dt, time);
   sky.follow(camera, dt);
   world.update(time);
   sun.target.position.set(pos.x, 0, pos.z);
@@ -316,6 +354,7 @@ function frame() {
     x: pos.x, z: pos.z, heading: ent.state.heading,
     speedFrac: Math.abs(ent.state.speed) / maxSpeed,
     now: `${t.title} — ${t.artist}`, time, extras,
+    mission: { route: missions.route, target: missions.target, enemies: missions.enemies },
   });
 
   post.render(scene, camera);
@@ -325,7 +364,7 @@ frame();
 if (location.search.includes("debug")) {
   window.__debug = {
     THREE, scene, camera, renderer, post, player, bike, car, bradshall, trains, crossings, chaseCam, hud, world,
-    mount, dismount, getMode: () => mode,
+    mount, dismount, missions, getMode: () => mode,
     teleport(x, z, heading = 0) {
       const e = active();
       e.group.position.x = x;
@@ -346,6 +385,7 @@ function start() {
   playRadio();
   overlay.classList.add("hidden");
   window.removeEventListener("keydown", start);
+  missions.start();
 }
 overlay.addEventListener("click", start);
 overlay.addEventListener("touchend", (e) => { e.preventDefault(); start(); }, { passive: false });

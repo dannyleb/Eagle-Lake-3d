@@ -161,3 +161,126 @@ export function playTrack(index) {
   fadeTo(0.55, 300);
   if (onTrackChange) onTrackChange(STATION[trackIndex]);
 }
+
+// ---------- Mission sounds (all procedural) ----------
+
+// Lower the radio while something important is happening (the siren).
+export function duckRadio(on) {
+  if (!radioEl || !radioOn) return;
+  fadeTo(on ? 0.22 : 0.55, 600);
+}
+
+// Fire-station siren: two detuned sawtooths swept up and down by a slow
+// LFO, through a lowpass so it wails instead of buzzing.
+let siren = null;
+export function startSiren() {
+  const c = getCtx();
+  if (!c || siren) return;
+  const out = c.createGain();
+  out.gain.value = 0.0001;
+  const lp = c.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 1800;
+  lp.connect(out).connect(c.destination);
+  const lfo = c.createOscillator();
+  lfo.frequency.value = 0.32;
+  const depth = c.createGain();
+  depth.gain.value = 330;
+  lfo.connect(depth);
+  const oscs = [0, 7].map((det) => {
+    const o = c.createOscillator();
+    o.type = "sawtooth";
+    o.frequency.value = 820;
+    o.detune.value = det;
+    depth.connect(o.frequency);
+    o.connect(lp);
+    o.start();
+    return o;
+  });
+  lfo.start();
+  out.gain.exponentialRampToValueAtTime(0.06, c.currentTime + 0.8);
+  siren = { out, oscs, lfo };
+}
+
+export function setSirenVolume(v) {
+  const c = getCtx();
+  if (!c || !siren) return;
+  siren.out.gain.setTargetAtTime(Math.max(0.0001, Math.min(0.08, v)), c.currentTime, 0.2);
+}
+
+export function stopSiren() {
+  const c = getCtx();
+  if (!c || !siren) return;
+  const s = siren;
+  siren = null;
+  s.out.gain.setTargetAtTime(0.0001, c.currentTime, 0.25);
+  setTimeout(() => {
+    for (const o of [...s.oscs, s.lfo]) o.stop();
+  }, 1500);
+}
+
+function tone(freq, start, len, { type = "square", vol = 0.06, slide = 0 } = {}) {
+  const c = getCtx();
+  if (!c) return;
+  const t0 = c.currentTime + start;
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t0);
+  if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t0 + len);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0 + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+  o.connect(g).connect(c.destination);
+  o.start(t0);
+  o.stop(t0 + len + 0.05);
+}
+
+function noise(start, len, { vol = 0.12, freq = 1200, q = 0.8, type = "bandpass" } = {}) {
+  const c = getCtx();
+  if (!c) return;
+  const t0 = c.currentTime + start;
+  const buf = c.createBuffer(1, Math.ceil(c.sampleRate * len), c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const f = c.createBiquadFilter();
+  f.type = type;
+  f.frequency.value = freq;
+  f.Q.value = q;
+  const g = c.createGain();
+  g.gain.value = vol;
+  src.connect(f).connect(g).connect(c.destination);
+  src.start(t0);
+}
+
+// Achievement fanfare: a quick rising arpeggio and a held chord.
+export function playFanfare() {
+  [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.16, { type: "square", vol: 0.05 }));
+  for (const f of [523, 659, 784]) tone(f, 0.4, 0.7, { type: "triangle", vol: 0.06 });
+  tone(1047, 0.4, 0.7, { type: "square", vol: 0.025 });
+}
+
+// New objective: two-note ping.
+export function playObjective() {
+  tone(880, 0, 0.12, { type: "triangle", vol: 0.07 });
+  tone(1320, 0.12, 0.22, { type: "triangle", vol: 0.07 });
+}
+
+// Punch / ram impact.
+export function playHit() {
+  noise(0, 0.12, { vol: 0.35, freq: 900, q: 0.7 });
+  tone(140, 0, 0.14, { type: "sine", vol: 0.12, slide: 0.5 });
+}
+
+// Ninja vanishing in a puff of smoke.
+export function playPoof() {
+  noise(0, 0.45, { vol: 0.14, freq: 2600, q: 0.5, type: "highpass" });
+}
+
+// A ninja's kick landing on Sidney.
+export function playOof() {
+  tone(220, 0, 0.18, { type: "square", vol: 0.04, slide: 0.6 });
+  noise(0, 0.1, { vol: 0.2, freq: 600 });
+}

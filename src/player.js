@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { toonify } from "./render/toon.js";
 import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
 
 // Sidney — a stylized tribute built from the photos: heavyset, glasses and a
@@ -185,6 +186,43 @@ export function createPlayer(scene, spawn) {
 
   const state = { group, heading: spawn.heading, speed: 0, walkSpeed: 4.8, sprintSpeed: 8.2, walkCycle: 0, radius: 0.45, pose: "walk" };
   let pedal = 0;
+  let punchT = 0;
+  let helmet = null;
+
+  // A quick right hook (mission takedowns).
+  function punch() {
+    punchT = 0.32;
+  }
+
+  // White fire-chief helmet: dome, long back brim, front shield, top comb.
+  function setChief(on) {
+    if (!on || helmet) return;
+    helmet = new THREE.Group();
+    const white = new THREE.MeshLambertMaterial({ color: 0xf7f7f2 });
+    const gold = new THREE.MeshLambertMaterial({ color: 0xe0b23c });
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), white);
+    dome.scale.set(0.62, 0.5, 0.62);
+    dome.position.set(0, 1.45, -0.01);
+    helmet.add(dome);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.52, 0.05, 20), white);
+    brim.scale.set(0.95, 1, 1.3);
+    brim.position.set(0, 1.46, -0.1);
+    helmet.add(brim);
+    const comb = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.56), white);
+    comb.position.set(0, 1.71, -0.02);
+    helmet.add(comb);
+    const shield = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.3, 0.04), gold);
+    shield.position.set(0, 1.64, 0.3);
+    shield.rotation.x = -0.25;
+    helmet.add(shield);
+    const mark = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.02), new THREE.MeshLambertMaterial({ color: 0xb5342c }));
+    mark.position.set(0, 1.64, 0.325);
+    mark.rotation.x = -0.25;
+    helmet.add(mark);
+    helmet.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    toonify(helmet);
+    parts.hips.add(helmet);
+  }
 
   function setPose(pose) {
     state.pose = pose;
@@ -229,7 +267,8 @@ export function createPlayer(scene, spawn) {
     group.position.z = r.z;
     group.rotation.y = state.heading;
 
-    if (Math.abs(state.speed) > 0.1) {
+    const walking = Math.abs(state.speed) > 0.1;
+    if (walking) {
       state.walkCycle += dt * (6 + Math.abs(state.speed) * 0.9);
       const swing = Math.sin(state.walkCycle) * 0.55;
       parts.legL.rotation.x = swing;
@@ -241,7 +280,16 @@ export function createPlayer(scene, spawn) {
       for (const p of [parts.legL, parts.legR, parts.armL, parts.armR]) p.rotation.x *= 0.8;
       parts.hips.position.y = 0.95;
     }
+    if (punchT > 0) {
+      punchT = Math.max(0, punchT - dt);
+      const k = Math.sin((1 - punchT / 0.32) * Math.PI);
+      parts.armR.rotation.x = -1.65 * k;
+      parts.armR.rotation.z = 0.15 * k;
+      parts.hips.rotation.y = -0.45 * k;
+    } else {
+      parts.hips.rotation.y = 0;
+    }
   }
 
-  return { group, state, update, setPose, animateRide };
+  return { group, state, update, setPose, animateRide, punch, setChief };
 }

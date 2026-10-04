@@ -336,6 +336,25 @@ export function makeWheelTexture(spokes = 5, hubHex = "#cfcfcf", faceHex = "#1a1
   return tex;
 }
 
+// A striped canvas awning fabric, the kind strung on poles over a storefront
+// sidewalk in small-town Main Street photos.
+const awningCache = new Map();
+export function makeAwningTexture(hex) {
+  if (awningCache.has(hex)) return awningCache.get(hex);
+  const c = canvas(128, 64);
+  const ctx = c.getContext("2d");
+  const base = new THREE.Color(hex);
+  const light = base.clone().lerp(new THREE.Color("#f2e9d8"), 0.55);
+  for (let x = 0; x < 128; x += 16) {
+    ctx.fillStyle = (x / 16) % 2 === 0 ? `#${base.getHexString()}` : `#${light.getHexString()}`;
+    ctx.fillRect(x, 0, 16, 64);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tileTexture(tex, 3, 1);
+  awningCache.set(hex, tex);
+  return tex;
+}
+
 // A plain horizontal-slat grille, for the front of the car.
 export function makeGrilleTexture() {
   const c = canvas(128, 64);

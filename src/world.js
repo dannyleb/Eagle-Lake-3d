@@ -9,6 +9,7 @@ import {
   makeSidewalkTexture,
   makeFacadeTexture,
   makeSidingTexture,
+  makeAwningTexture,
 } from "./textures.js";
 
 const box = new THREE.BoxGeometry(1, 1, 1);
@@ -232,6 +233,41 @@ function buildBuilding(scene, def) {
   addBox(group, { x: 0, z: 0, w: def.w, h: def.h, d: def.d, map: facadeTex });
   // Roof cap
   addBox(group, { x: 0, y: def.h, z: 0, w: def.w + 0.6, h: 0.5, d: def.d + 0.6, color: def.roof });
+
+  // A stepped decorative parapet, the way a real small-town Main St
+  // storefront steps its roofline up above a plain cornice.
+  const hasOwnCanopy = def.kind === "driveThru" || def.kind === "gasStation" || def.steeple;
+  if (!hasOwnCanopy) {
+    addBox(group, { x: 0, y: def.h + 0.5, z: 0, w: def.w * 0.5, h: 0.9, d: def.d + 0.5, color: def.roof });
+    addBox(group, { x: 0, y: def.h + 1.3, z: 0, w: def.w * 0.26, h: 0.6, d: def.d + 0.5, color: def.roof });
+
+    // A striped canvas awning on poles over the sidewalk, the single most
+    // recognizable feature of Eagle Lake's actual Main St storefronts.
+    // Added to both faces, same as the sign, since either side of a
+    // building can be the one facing the street the player is on.
+    if (def.kind !== "firehouse") {
+      const awningTex = makeAwningTexture(def.signColor);
+      const awningW = def.w * 0.92;
+      const poleMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2b, metalness: 0.6, roughness: 0.5 });
+      for (const dir of [1, -1]) {
+        const awning = new THREE.Mesh(
+          new THREE.BoxGeometry(awningW, 0.08, 1.6),
+          new THREE.MeshLambertMaterial({ map: awningTex })
+        );
+        awning.position.set(0, def.h * 0.42, dir * (def.d / 2 + 0.85));
+        awning.rotation.x = dir * -0.08;
+        group.add(awning);
+        const awningFront = new THREE.Mesh(new THREE.BoxGeometry(awningW, 0.3, 0.04), new THREE.MeshLambertMaterial({ map: awningTex }));
+        awningFront.position.set(0, def.h * 0.42 - 0.25, dir * (def.d / 2 + 1.55));
+        group.add(awningFront);
+        for (const side of [-1, 1]) {
+          const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, def.h * 0.42, 6), poleMat);
+          pole.position.set(side * awningW * 0.46, def.h * 0.21, dir * (def.d / 2 + 1.55));
+          group.add(pole);
+        }
+      }
+    }
+  }
 
   if (def.steeple) {
     const steeple = new THREE.Mesh(

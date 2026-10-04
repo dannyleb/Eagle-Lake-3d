@@ -356,15 +356,15 @@ export function playFail() {
 // drawn from a shuffled bag so none repeats back to back. The music ducks
 // down under each line so you can hear him.
 export const SID_LINES = [
-  { src: "sid01", text: "Hey, Bucky Boy! Have a Thanksgiving." },
+  { src: "sid01", text: "Hey, Blakey Boy! Have a Thanksgiving." },
   { src: "sid02", text: "Give me a call back later. Bye." },
-  { src: "sid03", text: "Hey, Bucky Boy, happy New Year, brother!" },
+  { src: "sid03", text: "Hey, Blakey Boy, happy New Year, brother!" },
   { src: "sid04", text: "Bye!" },
   { src: "sid05", text: "Hey Blake, give me a call back." },
   { src: "sid08", text: "Give me a call back. Bye." },
   { src: "sid09", text: "Hey Blake, give me a call back." },
   { src: "sid10", text: "Bye." },
-  { src: "sid11", text: "Hey, Bucky Boy, give me a call back." },
+  { src: "sid11", text: "Hey, Blakey Boy, give me a call back." },
   { src: "sid15", text: "Go home. Give me a call back." },
   { src: "sid16", text: "Bye." },
 ];
@@ -452,3 +452,10 @@ export function playPop() {
 
 // Testing: what the radio is actually putting out right now.
 export const radioOutput = () => (radioGain ? radioGain.gain.value : radioEl ? radioEl.volume : 0);
+
+// Crowd cheer at the end of a show: layered noise swells with whistles.
+export function playCheer() {
+  for (let i = 0; i < 6; i++) noise(i * 0.12, 1.4 - i * 0.12, { vol: 0.09, freq: 900 + i * 300, q: 0.5 });
+  tone(1900, 0.3, 0.35, { type: "sine", vol: 0.04, slide: 1.3 });
+  tone(2200, 0.9, 0.3, { type: "sine", vol: 0.035, slide: 1.25 });
+}

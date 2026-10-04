@@ -382,6 +382,8 @@ export function makeFaceTexture(opts) {
     blush = false,
     stubble = false,
     tattoos = false,
+    muttonChops = false,
+    hairColor = "#2a2015",
   } = opts;
   const w = 256, h = 256;
   const c = canvas(w, h);
@@ -485,6 +487,24 @@ export function makeFaceTexture(opts) {
     ctx.moveTo(w / 2 - 10, eyeY - 2);
     ctx.lineTo(w / 2 + 10, eyeY - 2);
     ctx.stroke();
+  }
+
+  if (muttonChops) {
+    // Big mutton-chop sideburns running down the cheeks into the mustache.
+    ctx.fillStyle = hairColor;
+    for (const sign of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(w / 2 + sign * w * 0.47, h * 0.3);
+      ctx.lineTo(w / 2 + sign * w * 0.36, h * 0.3);
+      ctx.quadraticCurveTo(w / 2 + sign * w * 0.3, h * 0.58, w / 2 + sign * w * 0.12, h * 0.66);
+      ctx.lineTo(w / 2 + sign * w * 0.12, h * 0.75);
+      ctx.quadraticCurveTo(w / 2 + sign * w * 0.42, h * 0.78, w / 2 + sign * w * 0.5, h * 0.55);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h * 0.655, 30, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   if (tattoos) {

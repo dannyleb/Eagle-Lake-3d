@@ -27,6 +27,13 @@ slower devices the render resolution steps down automatically.
 
 ## Missions
 
+The start screen asks you to pick a character: **Sidney** (volunteer
+firefighter) or **The Thicker Bradshall** (country musician). Arrow keys or
+1 / 2 pick on a keyboard; tap a card on a phone. Each character has his own
+mission chain.
+
+### Sidney
+
 The game opens at Veterans Memorial Park, with Sidney listening to The
 Thicker Bradshall busk by the pond and Green Dog parked beside him. A few
 seconds in, the missions start:
@@ -44,6 +51,20 @@ seconds in, the missions start:
    Sidney's house (northeast side, yellow "SIDNEY'S" yard sign) before the
    countdown hits zero. Miss it and you get another shot. Unlocks the
    **CHAMPIONSHIP BELT**, which he wears from then on.
+
+### The Thicker Bradshall
+
+1. **Gig at the Ferris Hotel.** Ride downtown to the Ferris Hotel on
+   McCarty (red brick, "LIVE MUSIC FRIDAYS", his name on the chalkboard
+   under the canopy). Once he's off the bike he swings the guitar around
+   and plays one of his songs for the crowd. Unlocks **PAID: $50**.
+2. **Go Get the Gear.** The band gear is in the little house out back at
+   77 S McCarty, a property with a main house a little south of town.
+   Ride out, walk up to the shed, and grab it. Unlocks a can of
+   **DR. PEBBER** (24 flavors, one more than the other guy).
+
+Both locations are placed approximately and are easy to move in
+`src/world/index.js`.
 
 Watch the lake shore: alligators sun themselves all the way around it.
 They'll hiss with jaws wide open if you get close, and snap if you get
@@ -87,7 +108,7 @@ actually starts), so they never add weight to the initial page load.
 
 ## Sidney's voice
 
-Every 8 to 13 seconds Sidney pipes up with a short line (none longer than
+When you play as Sidney, every 8 to 13 seconds he pipes up with a short line (none longer than
 two seconds) cut from his real voicemails, picked at random without
 repeats. A radio-call card pops up in the lower right with his face and a
 caption of what he's saying, and the music ducks way down under him, then
@@ -104,10 +125,12 @@ there are photos to go from. Adding someone is one entry in `PEOPLE` in
 
 ## The Thicker Bradshall
 
-A local musician busks by the pond at Veterans Memorial Park — walk up to
-him and press `E` to have him put one of his songs on. He's an original,
-stylized tribute (trucker cap, shades, goatee, acoustic guitar), not a
-likeness of the real person, in the same style as Sidney himself.
+A local country musician. Playing as Sidney, he busks by the pond at
+Veterans Memorial Park; walk up and press `E` to have him put one of his
+songs on. Playing as him, the guitar rides slung across his back until
+showtime. He's an original, stylized tribute (cowboy hat, big mutton
+chops, pearl-snap western shirt, buckle, boots, stickered acoustic guitar),
+not a likeness of the real person, in the same style as Sidney himself.
 
 ## Controls
 

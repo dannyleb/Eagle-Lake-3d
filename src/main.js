@@ -6,7 +6,7 @@ import { inCrossingZone } from "./world/rail.js";
 import { createNPC } from "./npc.js";
 import { createTrain } from "./train.js";
 import { createControls } from "./controls.js";
-import { createPlayer } from "./player.js";
+import { createPlayer, CHARACTERS } from "./player.js";
 import { createVehicle } from "./vehicles.js";
 import { createChaseCamera } from "./camera.js";
 import { createHud } from "./ui/hud.js";
@@ -195,7 +195,9 @@ const DRIVE_THRU_MENU = [
   "Cashier: \"Sack of boiled peanuts, on the house, Chief.\"",
 ];
 
+let character = "sidney";
 function nearBradshall() {
+  if (character === "bradshall") return false; // can't busk with yourself
   return player.group.parent === scene && player.group.position.distanceTo(bradshall.group.position) < 4.2;
 }
 
@@ -413,7 +415,8 @@ function frame() {
   // on rails and can't get stuck.)
   const pushing = mode === "walk" && ((input.dir != null && input.mag > 0.3) || Math.abs(input.y) > 0.3);
   stuckWatch.update(dt, pushing, ent.group.position, collision, ent.state.radius, input.dir ?? ent.state.heading);
-  updateSidVoice(dt, started && !missions.blocking);
+  // Sid's voicemail lines are Sidney's voice: only when playing Sidney.
+  updateSidVoice(dt, started && !missions.blocking && character === "sidney");
   if (mode === "bike") player.animateRide(bike.state.speed, dt);
   if (hopOffWhenStopped) {
     if (mode === "walk") hopOffWhenStopped = false;
@@ -450,7 +453,7 @@ function frame() {
   sun.target.position.set(pos.x, 0, pos.z);
   sun.position.copy(sun.target.position).add(SUN_OFFSET);
 
-  hud.setMode(mode === "walk" ? "ON FOOT · SIDNEY" : RIDES[mode].label, mode !== "walk");
+  hud.setMode(mode === "walk" ? `ON FOOT · ${CHARACTERS[character].name}` : RIDES[mode].label, mode !== "walk");
   hud.setPrompt(promptText());
   if (mode === "walk") hud.setTurn(null);
   else {
@@ -463,7 +466,7 @@ function frame() {
   }
   if (mode !== "bike") extras.push({ x: bike.group.position.x, z: bike.group.position.z, r: 2.4, color: "#2ecc71" });
   if (mode !== "car") extras.push({ x: car.group.position.x, z: car.group.position.z, r: 2.6, color: "#1f8a4c" });
-  extras.push({ x: bradshall.group.position.x, z: bradshall.group.position.z, r: 2.6, color: "#8e44ad" });
+  if (bradshall.group.visible) extras.push({ x: bradshall.group.position.x, z: bradshall.group.position.z, r: 2.6, color: "#8e44ad" });
   for (const f of townsfolk.list) extras.push({ x: f.group.position.x, z: f.group.position.z, r: 2.2, color: "#4dabf7" });
   const maxSpeed = mode === "walk" ? player.state.sprintSpeed : ent.state.maxSpeed * 1.3;
   const t = currentTrack();
@@ -493,21 +496,69 @@ if (location.search.includes("debug")) {
   };
 }
 
-// ---------- Start: any click, tap or key starts the radio and the game ----------
+// ---------- Start: pick a character (tap a card, or arrows + Enter) ----------
 const overlay = document.getElementById("startOverlay");
-function start() {
+const picks = [...document.querySelectorAll(".charPick")];
+let highlighted = 0;
+function highlight(i) {
+  highlighted = (i + picks.length) % picks.length;
+  picks.forEach((p, k) => p.classList.toggle("on", k === highlighted));
+}
+// Portraits on the cards, drawn from the same face art as the 3D models.
+function drawPortrait(canvas, opts, hair) {
+  const c = canvas.getContext("2d");
+  const face = makeFaceTexture(opts).image;
+  c.fillStyle = "#21c4b5";
+  c.fillRect(0, 0, 112, 112);
+  c.drawImage(face, 6, 18, 100, 100);
+  hair(c);
+}
+drawPortrait(document.getElementById("pickSidney"), { skin: "#9a6a46", glasses: true, mustache: true, browColor: "#141210" }, (c) => {
+  c.fillStyle = "#1b1611";
+  c.beginPath();
+  c.ellipse(56, 20, 52, 20, 0, 0, Math.PI * 2);
+  c.fill();
+});
+drawPortrait(document.getElementById("pickBradshall"), { skin: "#e0ad86", muttonChops: true, hairColor: "#5a3a22", browColor: "#4a2f1a" }, (c) => {
+  c.fillStyle = "#caa46a"; // cowboy hat
+  c.beginPath();
+  c.ellipse(56, 26, 58, 11, 0, 0, Math.PI * 2);
+  c.fill();
+  c.fillRect(28, 0, 56, 26);
+  c.fillStyle = "#3b2614";
+  c.fillRect(28, 18, 56, 6);
+});
+
+function start(id = picks[highlighted]?.dataset.char || "sidney") {
   if (started) return;
   started = true;
+  character = CHARACTERS[id] ? id : "sidney";
+  if (character !== "sidney") {
+    player.setCharacter(character);
+    if (character === "bradshall") bradshall.group.visible = false; // he's you now
+    document.querySelector("#voiceCard .vName").firstChild.textContent = CHARACTERS[character].name + " ";
+  }
+  missions.setCharacter(character);
   unlockAudio();
   playRadio();
   overlay.classList.add("hidden");
-  window.removeEventListener("keydown", start);
+  window.removeEventListener("keydown", onStartKey);
   // ?debug&mission=3 starts at the third mission (testing only).
   const q = new URLSearchParams(location.search);
   missions.start(q.has("debug") ? Math.max(0, (parseInt(q.get("mission"), 10) || 1) - 1) : 0);
 }
-overlay.addEventListener("click", start);
-overlay.addEventListener("touchend", (e) => { e.preventDefault(); start(); }, { passive: false });
-window.addEventListener("keydown", start);
+function onStartKey(e) {
+  if (e.code === "ArrowLeft" || e.code === "KeyA") highlight(highlighted - 1);
+  else if (e.code === "ArrowRight" || e.code === "KeyD") highlight(highlighted + 1);
+  else if (e.code === "Digit1") start("sidney");
+  else if (e.code === "Digit2") start("bradshall");
+  else if (e.code === "Enter" || e.code === "Space" || e.code === "KeyE") start();
+}
+picks.forEach((p, i) => {
+  p.addEventListener("click", (e) => { e.stopPropagation(); start(p.dataset.char); });
+  p.addEventListener("touchend", (e) => { e.preventDefault(); e.stopPropagation(); start(p.dataset.char); }, { passive: false });
+  p.addEventListener("mouseenter", () => highlight(i));
+});
+window.addEventListener("keydown", onStartKey);
 // Belt and braces: if audio was blocked, the next touch anywhere retries it.
 window.addEventListener("pointerdown", () => { if (started) { unlockAudio(); if (radioIsOn()) playRadio(); } }, { once: true });

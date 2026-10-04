@@ -129,9 +129,14 @@ export function createRouteView(scene) {
     ringRadius = t.r || 6;
   }
 
-  function update(dt, time) {
+  // near: how far the player is from the beacon (the light pillar fades out
+  // up close so it never swallows the view at the destination).
+  function update(dt, time, near = Infinity) {
     tex.offset.x -= dt * 1.4; // chevrons march toward the destination
     if (beacon.visible) {
+      const fade = Math.min(1, Math.max(0, (near - 6) / 22));
+      pillar.material.opacity = fade;
+      pillar.visible = fade > 0.02;
       marker.position.y = 9 + Math.sin(time * 2.4) * 0.8;
       marker.rotation.y += dt * 1.8;
       const pulse = 1 + (time * 0.8) % 1 * 0.25;

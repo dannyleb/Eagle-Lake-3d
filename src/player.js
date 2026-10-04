@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { toonify } from "./render/toon.js";
+import { buildBradshall, GUITAR_FRONT, GUITAR_BACK } from "./npc.js";
 import { clearHeading, wrapAngle } from "./assist.js";
 import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
 
@@ -179,8 +180,15 @@ export function buildSidney() {
   return { group, parts: { hips, armL, armR, legL, legR, torso } };
 }
 
+export const CHARACTERS = {
+  sidney: { name: "SIDNEY", build: buildSidney },
+  bradshall: { name: "THE THICKER BRADSHALL", build: () => buildBradshall({ playable: true }) },
+};
+
 export function createPlayer(scene, spawn) {
-  const { group, parts } = buildSidney();
+  const built = buildSidney();
+  const group = built.group;
+  let parts = built.parts;
   group.position.set(spawn.x, 0.16, spawn.z);
   group.rotation.y = spawn.heading;
   scene.add(group);
@@ -193,6 +201,36 @@ export function createPlayer(scene, spawn) {
   // A quick right hook (mission takedowns).
   function punch() {
     punchT = 0.32;
+  }
+
+  // Swap the body to another playable character (keeps the same group, so
+  // everything holding a reference to it keeps working).
+  function setCharacter(id) {
+    const ch = CHARACTERS[id];
+    if (!ch) return;
+    const m = ch.build();
+    while (group.children.length) group.remove(group.children[0]);
+    for (const c of [...m.group.children]) group.add(c);
+    group.scale.copy(m.group.scale);
+    parts = m.parts;
+    helmet = null;
+    belt = null;
+    toonify(group);
+  }
+
+  // Playing a show: guitar swings to the front and he strums.
+  let performing = false;
+  function perform(on) {
+    performing = on;
+    const g = parts.guitar;
+    if (!g) return;
+    const place = on ? GUITAR_FRONT : GUITAR_BACK;
+    g.position.set(...place.pos);
+    g.rotation.set(...place.rot);
+    if (!on) {
+      parts.armL.rotation.set(0, 0, 0);
+      parts.armR.rotation.set(0, 0, 0);
+    }
   }
 
   // Gold championship belt: black strap, big center plate with a red jewel,
@@ -276,6 +314,9 @@ export function createPlayer(scene, spawn) {
     }
     parts.hips.position.y = 0.95;
     group.scale.setScalar(pose === "drive" ? 0.55 : BASE_SCALE);
+    // The cowboy hat (and the slung guitar) won't fit under the '70's roof.
+    if (parts.hat) parts.hat.visible = pose !== "drive";
+    if (parts.guitar) parts.guitar.visible = pose !== "drive" || performing;
   }
 
   // Pedaling on Green Dog: legs circle with the cranks.
@@ -331,6 +372,18 @@ export function createPlayer(scene, spawn) {
       for (const p of [parts.legL, parts.legR, parts.armL, parts.armR]) p.rotation.x *= 0.8;
       parts.hips.position.y = 0.95;
     }
+    if (performing) {
+      state.speed = 0;
+      group.position.x = oldX;
+      group.position.z = oldZ;
+      state.walkCycle += dt;
+      parts.armL.rotation.set(-0.95, 0, -0.35);
+      parts.armR.rotation.set(-0.55 + Math.sin(state.walkCycle * 9) * 0.22, 0, 0.25);
+      parts.legL.rotation.x = 0;
+      parts.legR.rotation.x = Math.max(0, Math.sin(state.walkCycle * 4.5)) * -0.25; // tapping a boot
+      parts.hips.position.y = 0.95 + Math.abs(Math.sin(state.walkCycle * 4.5)) * 0.03;
+      return;
+    }
     if (punchT > 0) {
       punchT = Math.max(0, punchT - dt);
       const k = Math.sin((1 - punchT / 0.32) * Math.PI);
@@ -342,5 +395,5 @@ export function createPlayer(scene, spawn) {
     }
   }
 
-  return { group, state, update, setPose, animateRide, punch, setChief, setBelt };
+  return { group, state, update, setPose, animateRide, punch, setChief, setBelt, setCharacter, perform, get performing() { return performing; } };
 }

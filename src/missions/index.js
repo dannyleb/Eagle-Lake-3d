@@ -5,6 +5,7 @@ import { createNinjaGang } from "../ninja.js";
 import {
   startSiren, stopSiren, setSirenVolume, duckRadio,
   playFanfare, playPop, playObjective, playHit, playPoof, playOof, playTick, playFail,
+  playTrack, playCheer,
 } from "../audio.js";
 
 // ---------------------------------------------------------------------------
@@ -14,6 +15,7 @@ import {
 //          { at: (ctx) => ({ x, z }) }   ...or a spot looked up at run time
 //          { timed: true }               ...against the clock (see failStory)
 //   defeat { label, gang }               knock out every ninja in a gang
+//   perform { label, seconds, track }    play a show on the spot (Bradshall)
 // To add a mission, append to MISSIONS.
 // ---------------------------------------------------------------------------
 
@@ -97,6 +99,50 @@ export const MISSIONS = [
   },
 ];
 
+// The Thicker Bradshall's missions (when you pick him at the start).
+export const BRADSHALL_MISSIONS = [
+  {
+    id: "ferris-gig",
+    story: {
+      kicker: "BRADSHALL \u00b7 MISSION 1",
+      title: "GIG AT THE FERRIS HOTEL",
+      body:
+        "The Ferris Hotel on McCarty booked you for tonight, and the room's already filling up. " +
+        "Tune up, grab a ride and get downtown. Play 'em a good one.",
+      go: "LET'S PICK",
+    },
+    steps: [
+      { type: "goto", label: "Get to the Ferris Hotel", at: (ctx) => ctx.world.ferris, r: 10 },
+      { type: "perform", label: "Play the show!", seconds: 9, track: 1 },
+    ],
+    achievement: {
+      title: "PAID: $50",
+      text: "The crowd stomped for an encore and the manager peeled off a fifty. Rent's covered. Mostly.",
+    },
+  },
+  {
+    id: "gear-run",
+    story: {
+      kicker: "BRADSHALL \u00b7 MISSION 2",
+      title: "GO GET THE GEAR",
+      body:
+        "Next weekend's a bigger room, and the amp and the good mic are out in the little house " +
+        "behind the place at 77 S McCarty. Head down there and haul it out.",
+      go: "ON IT",
+    },
+    steps: [
+      { type: "goto", label: "Get to 77 S McCarty", at: (ctx) => ctx.world.gearLot, r: 16 },
+      { type: "goto", label: "Grab the gear from the little house", at: (ctx) => ctx.world.gearHouse, r: 3 },
+    ],
+    achievement: {
+      title: "DR. PEBBER",
+      text: "Gear's loaded, and there was a cold can of Dr. Pebber in the mini fridge. 24 flavors \u2014 one more than the other guy.",
+    },
+  },
+];
+
+export const MISSION_SETS = { sidney: MISSIONS, bradshall: BRADSHALL_MISSIONS };
+
 // ctx: { scene, camera, viewport, collision, hud, player, getMode, getPos,
 //        getVehicle, punch, kickPlayer, world }
 export function createMissions(ctx) {
@@ -174,7 +220,7 @@ export function createMissions(ctx) {
   // from: mission index to start at (debug builds can skip ahead).
   async function run(from = 0) {
     await wait(3.5);
-    for (const m of MISSIONS.slice(from)) {
+    for (const m of (MISSION_SETS[ctx.character] || MISSIONS).slice(from)) {
       await runMission(m);
       await wait(2.5);
     }
@@ -185,8 +231,8 @@ export function createMissions(ctx) {
 
   // --- per-frame ---
   function update(dt, time) {
-    route.update(dt, time);
     const pos = ctx.getPos();
+    route.update(dt, time, step && step.type === "goto" ? Math.hypot(pos.x - step.x, pos.z - step.z) : Infinity);
     const mode = ctx.getMode();
 
     // Station lights and siren level follow the alarm.
@@ -240,7 +286,8 @@ export function createMissions(ctx) {
       }
       // Distance along the streets (straight-line once you're off the network).
       const sinceRoute = routeFrom ? Math.hypot(pos.x - routeFrom[0], pos.z - routeFrom[1]) : 0;
-      const remaining = routePts ? Math.max(d, routeLen - sinceRoute) : d;
+      // Close in (or off the street, like a back yard), straight-line is what you want to see.
+      const remaining = routePts && d > 25 ? Math.max(d, routeLen - sinceRoute) : d;
       ui.setObjective(step.label, `${Math.round(remaining)} m`, !!alarmOn || !!step.timed);
       ui.waypoint({ x: step.x, y: 10, z: step.z }, ctx.camera, remaining);
       if (d < step.r) {
@@ -257,6 +304,27 @@ export function createMissions(ctx) {
           if (sec <= 10 && sec > 0) playTick(sec <= 5);
         }
         if (step.timeLeft <= 0) step.resolve("failed");
+      }
+    } else if (step.type === "perform") {
+      if (step.left == null && ctx.getMode() !== "walk") {
+        // Wait until he's off the bike / out of the car before the set.
+        ui.setObjective(step.label, "Setting up...", true);
+        ui.waypoint(null);
+        return;
+      }
+      if (step.left == null) {
+        step.left = step.seconds;
+        ctx.player.perform(true);
+        if (step.track != null) playTrack(step.track);
+        ctx.hud.toast("\u266B The room goes quiet... one, two, three, four!", 2600);
+      }
+      step.left -= dt;
+      ui.setObjective(step.label, `${Math.max(0, Math.ceil(step.left))} s left in the set`, true);
+      ui.waypoint(null);
+      if (step.left <= 0) {
+        ctx.player.perform(false);
+        playCheer();
+        step.resolve("done");
       }
     } else if (step.type === "defeat") {
       const g = state[step.gang];
@@ -325,6 +393,9 @@ export function createMissions(ctx) {
 
   return {
     start: run,
+    setCharacter(c) {
+      ctx.character = c;
+    },
     routeDirAt,
     // Testing: set the countdown on a timed step.
     debugSetTime(t) {

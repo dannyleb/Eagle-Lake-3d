@@ -515,7 +515,29 @@ export function buildWorld(scene) {
   row({ along: "x", from: -27, to: -8, line: -10.4, facing: "s", depth: 22 });
   row({ along: "x", from: -27, to: -8, line: 10.4, facing: "n", depth: 22 });
   row({ along: "z", from: -55, to: -34, line: -9.4, facing: "e", depth: 20, names: DOWNTOWN_NAMES.mcW });
-  row({ along: "z", from: -55, to: -34, line: 9.4, facing: "w", depth: 20, names: DOWNTOWN_NAMES.mcE });
+  // The Ferris Hotel: three stories of brick on N McCarty, with a porch
+  // canopy over the entrance where the band sets up.
+  const ferris = addBuilding({ x: 19.4, z: -44.5, w: 21, d: 20, h: 13, rot: ROT.w, wall: "#a8452f", roof: "#6d6f74", front: "office", frontSeg: 7, frontSegH: 4.3, sides: "office" });
+  {
+    const [sx, sz] = L(ferris, 0, ferris.d / 2 + 0.07);
+    addSign({ x: sx, y: 11.2, z: sz, rot: ferris.rot, w: 13, h: 1.7, title: "The Ferris Hotel", sub: "EST. 1912 \u2022 LIVE MUSIC FRIDAYS", bg: "#1c2a44", fg: "#ffd34d" });
+    const [cx, cz] = L(ferris, 0, ferris.d / 2 + 1.6);
+    props.prim(PRIM.box(), { x: cx, y: 3.6, z: cz, sx: 12, sy: 0.2, sz: 3.2, ry: ferris.rot }, "#1c2a44");
+    for (const lx of [-5.6, 5.6]) {
+      const [px, pz] = L(ferris, lx, ferris.d / 2 + 3.0);
+      props.prim(PRIM.cyl(8), { x: px, y: 1.8, z: pz, sx: 0.18, sy: 3.6, sz: 0.18 }, "#e9ecef");
+    }
+    // Bulb string along the canopy edge.
+    for (let k = -5; k <= 5; k++) {
+      const [bx, bz] = L(ferris, k * 1.1, ferris.d / 2 + 3.15);
+      props.prim(PRIM.sphere(5), { x: bx, y: 3.35 - Math.abs(Math.sin(k * 0.9)) * 0.15, z: bz, sx: 0.2, sy: 0.2, sz: 0.2 }, "#fff2a8");
+    }
+    // Chalkboard out front.
+    const [bx, bz] = L(ferris, -3, ferris.d / 2 + 4.6);
+    addSign({ x: bx, y: 0.9, z: bz, rot: ferris.rot, w: 1.2, h: 1.2, title: "TONIGHT", sub: "THE THICKER BRADSHALL", bg: "#2b2b2b", fg: "#ffffff", twoSided: true });
+    minimap.landmarks.push({ x: ferris.x, z: ferris.z, label: "Ferris Hotel" });
+  }
+  const [ferrisFrontX, ferrisFrontZ] = L(ferris, 0, ferris.d / 2 + 3.5);
   row({ along: "x", from: 24, to: 142, line: 51.1, facing: "s", depth: 16, names: DOWNTOWN_NAMES.postN });
   row({ along: "x", from: 24, to: 142, line: 68.9, facing: "n", depth: 16, names: DOWNTOWN_NAMES.postS });
 
@@ -831,6 +853,22 @@ export function buildWorld(scene) {
     }
   }
 
+  // ---------- 77 S McCarty: a main house and the little house out back
+  // (where the band keeps its gear), on the quiet south end of McCarty ----------
+  const gearMain = addBuilding({ x: -21, z: 150, w: 12, d: 10, h: 3.8, rot: ROT.e, wall: "#f2e6c9", roof: "#7b4a2b", front: "house", frontSeg: 12, frontSegH: 3.8, roofType: "gable", rh: 2.6, overhang: 0.55 });
+  const gearShed = addBuilding({ x: -38, z: 157, w: 7, d: 6, h: 3, rot: ROT.e, wall: "#9fc6a2", roof: "#5a6170", front: "house", frontSeg: 7, frontSegH: 3, roofType: "gable", rh: 1.6, overhang: 0.4 });
+  ground.groundQuad([[-6.5, 165.5], [-6.5, 161.5], [-34.5, 161.5], [-34.5, 165.5]], Y.lot, PAL.gravel);
+  {
+    // Mailbox with the house number, and a hand-painted sign on the shed.
+    props.prim(PRIM.box(), { x: -8.2, y: 0.55, z: 145, sx: 0.12, sy: 1.1, sz: 0.12 }, "#6b4a2e");
+    props.prim(PRIM.box(), { x: -8.2, y: 1.18, z: 145, sx: 0.62, sy: 0.32, sz: 0.32 }, "#2b2b2b");
+    addSign({ x: -8.2, y: 1.75, z: 145, rot: ROT.e, w: 1.4, h: 0.6, title: "77", sub: "S McCARTY", bg: "#ffffff", fg: "#2b2b2b", twoSided: true });
+    const [sx, sz] = L(gearShed, 0, gearShed.d / 2 + 0.06);
+    addSign({ x: sx, y: 2.4, z: sz, rot: gearShed.rot, w: 3.2, h: 0.8, title: "Band Gear", sub: "KNOCK FIRST", bg: "#3b2614", fg: "#f2e9d8" });
+    minimap.landmarks.push({ x: gearShed.x, z: gearShed.z, label: "77 S McCarty" });
+  }
+  const [gearDoorX, gearDoorZ] = L(gearShed, 0, gearShed.d / 2 + 1.4);
+
   // ---------- residential blocks ----------
   const halfW = (name, fallback) => (ROADS.find((r) => r.name === name)?.w ?? fallback) / 2;
   const ewNames = { "-240": "5th St", "-180": "4th St", "-120": "3rd St", "-60": "2nd St", "0": "Main St", "60": "Post Office St", "120": "A St", "180": "Lakeside Dr" };
@@ -1057,6 +1095,9 @@ export function buildWorld(scene) {
     collision,
     fireLights,
     sidneyHouse,
+    ferris: { x: ferrisFrontX, z: ferrisFrontZ },
+    gearHouse: { x: gearDoorX, z: gearDoorZ },
+    gearLot: { x: -6, z: 150 },
     crossings: railInfo.crossings,
     lampMats: railInfo.lampMats,
     triggers,

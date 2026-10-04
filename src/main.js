@@ -17,9 +17,10 @@ import { createMissions } from "./missions/index.js";
 import { createStuckWatch } from "./assist.js";
 import { makeFaceTexture } from "./textures.js";
 import { createGators } from "./gators.js";
+import { createTownsfolk } from "./townsfolk.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
-  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateSidVoice, onSidVoice, toggleRadio, radioIsOn,
+  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateSidVoice, onSidVoice, toggleRadio, radioIsOn, radioOutput,
 } from "./audio.js";
 
 document.title = GAME_TITLE;
@@ -85,6 +86,7 @@ const bradshall = createNPC(scene, BRADSHALL);
 const chaseCam = createChaseCamera(camera);
 const hud = createHud(world.minimap);
 const gators = createGators(scene, collision);
+const townsfolk = createTownsfolk(scene, collision);
 toonify(scene);
 
 const RIDES = {
@@ -211,6 +213,11 @@ function interact() {
     return;
   }
   if (mode !== "walk") return dismount();
+  const local = townsfolk.nearest(player.group.position.x, player.group.position.z);
+  if (local) {
+    hud.toast(`${local.name}: "${townsfolk.talk(local)}"`, 4200);
+    return;
+  }
   if (nearBradshall()) {
     // Alternate between his two songs.
     const idx = STATION.findIndex((t, i) => t.artist === "The Thicker Bradshall" && i !== STATION.indexOf(currentTrack()));
@@ -261,6 +268,8 @@ function promptText() {
     if (trig) return { text: "Roll up to the cashier's window", action: "ORDER" };
     return null;
   }
+  const local = townsfolk.nearest(player.group.position.x, player.group.position.z);
+  if (local) return { text: `Talk to ${local.name}`, action: "TALK" };
   if (nearBradshall()) return { text: "Ask The Thicker Bradshall to play one", action: "TALK" };
   const ride = nearestRide();
   if (ride === "bike") return { text: "Hop on Green Dog", action: "RIDE" };
@@ -419,6 +428,12 @@ function frame() {
   camera.updateMatrixWorld();
   treeFocus.value.set(pos.x, pos.y + 1.2, pos.z).applyMatrix4(camera.matrixWorldInverse);
   missions.update(dt, time);
+  townsfolk.update(dt, {
+    px: pos.x,
+    pz: pos.z,
+    vehicle: mode === "walk" ? null : { x: pos.x, z: pos.z, speed: ent.state.speed },
+    onDodge: (f) => hud.toast(`${f.name}: "Whoa! Watch it, Sidney!"`, 1600),
+  });
   gators.update(dt, {
     px: pos.x,
     pz: pos.z,
@@ -449,6 +464,7 @@ function frame() {
   if (mode !== "bike") extras.push({ x: bike.group.position.x, z: bike.group.position.z, r: 2.4, color: "#2ecc71" });
   if (mode !== "car") extras.push({ x: car.group.position.x, z: car.group.position.z, r: 2.6, color: "#1f8a4c" });
   extras.push({ x: bradshall.group.position.x, z: bradshall.group.position.z, r: 2.6, color: "#8e44ad" });
+  for (const f of townsfolk.list) extras.push({ x: f.group.position.x, z: f.group.position.z, r: 2.2, color: "#4dabf7" });
   const maxSpeed = mode === "walk" ? player.state.sprintSpeed : ent.state.maxSpeed * 1.3;
   const t = currentTrack();
   hud.update({
@@ -465,7 +481,7 @@ frame();
 if (location.search.includes("debug")) {
   window.__debug = {
     THREE, scene, camera, renderer, post, player, bike, car, bradshall, trains, crossings, chaseCam, hud, world,
-    mount, dismount, missions, gators, distToRoad, getMode: () => mode, gameTime: () => time,
+    mount, dismount, missions, gators, townsfolk, distToRoad, radioOutput, radioIsOn, getMode: () => mode, gameTime: () => time,
     teleport(x, z, heading = 0) {
       const e = active();
       e.group.position.x = x;
@@ -494,4 +510,4 @@ overlay.addEventListener("click", start);
 overlay.addEventListener("touchend", (e) => { e.preventDefault(); start(); }, { passive: false });
 window.addEventListener("keydown", start);
 // Belt and braces: if audio was blocked, the next touch anywhere retries it.
-window.addEventListener("pointerdown", () => { if (started) { unlockAudio(); playRadio(); } }, { once: true });
+window.addEventListener("pointerdown", () => { if (started) { unlockAudio(); if (radioIsOn()) playRadio(); } }, { once: true });

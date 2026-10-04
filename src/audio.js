@@ -92,10 +92,25 @@ let trackIndex = 0;
 let radioOn = false;
 let onTrackChange = null;
 
+// The radio is an <audio> element routed through a Web Audio gain node.
+// iOS Safari ignores .volume on media elements, so all fading, ducking and
+// muting goes through the gain node instead (works everywhere).
+let radioGain = null;
 function getRadioEl() {
   if (!radioEl) {
     radioEl = new Audio(STATION[trackIndex].src);
     radioEl.volume = 0;
+    const c = getCtx();
+    if (c && c.createMediaElementSource) {
+      try {
+        radioGain = c.createGain();
+        radioGain.gain.value = 0;
+        c.createMediaElementSource(radioEl).connect(radioGain).connect(c.destination);
+        radioEl.volume = 1;
+      } catch (e) {
+        radioGain = null;
+      }
+    }
     radioEl.preload = "none";
     radioEl.addEventListener("ended", () => {
       trackIndex = (trackIndex + 1) % STATION.length;
@@ -110,8 +125,18 @@ function getRadioEl() {
 let radioTarget = 0.55; // where the radio level is headed (siren ducking etc.)
 let radioLevel = 0; // current radio level before voice ducking
 let voiceDuck = 1; // 1 = full, ~0.2 while Sidney is talking
+// Sidney's line window on the audio clock: the music dips just before he
+// speaks and swells back after, timed by the audio hardware, not frames.
+let talkFrom = -1, talkTo = -1;
 function applyRadioVolume() {
-  if (radioEl) radioEl.volume = Math.max(0, Math.min(1, radioLevel * voiceDuck));
+  const c = radioGain ? radioGain.context : null;
+  const talking = c && c.currentTime >= talkFrom && c.currentTime <= talkTo;
+  if (radioGain) {
+    const v = Math.max(0, Math.min(1, radioLevel * (talking ? 0.18 : 1)));
+    radioGain.gain.setTargetAtTime(v, c.currentTime, talking ? 0.04 : 0.3);
+  } else if (radioEl) {
+    radioEl.volume = Math.max(0, Math.min(1, radioLevel * voiceDuck));
+  }
 }
 function fadeTo(target, ms) {
   clearInterval(fadeTimer);
@@ -149,7 +174,10 @@ export function playRadio() {
 export function stopRadio() {
   radioOn = false;
   if (!radioEl) return;
-  fadeTo(0, 400);
+  fadeTo(0, 300);
+  // Pause outright shortly after, even if the fade timer is throttled
+  // (background tabs, low-power mode).
+  setTimeout(() => { if (!radioOn && radioEl) radioEl.pause(); }, 350);
 }
 
 // RADIO button: pause / resume. Returns true if the radio is now on.
@@ -401,12 +429,15 @@ export function updateSidVoice(dt, active) {
   src.playbackRate.value = 0.97 + Math.random() * 0.06; // a little variety
   const g = c.createGain();
   // Let the duck land before he speaks.
-  const t0 = c.currentTime + 0.12;
+  const t0 = c.currentTime + 0.15;
   g.gain.value = 1.0;
   src.connect(g).connect(c.destination);
   src.start(t0);
   sidLast = i;
-  sidBusy = 0.12 + src.buffer.duration / src.playbackRate.value;
+  sidBusy = 0.15 + src.buffer.duration / src.playbackRate.value;
+  talkFrom = c.currentTime;
+  talkTo = c.currentTime + sidBusy + 0.1;
+  applyRadioVolume();
   // Next line 8-13 s after this one starts.
   sidNext = Math.max(2, 8 + Math.random() * 5 - sidBusy);
   if (onSidLine) onSidLine(SID_LINES[i]);
@@ -418,3 +449,6 @@ export function playPop() {
   tone(1800, 0, 0.12, { type: "triangle", vol: 0.05, slide: 0.4 });
   noise(0.42, 0.07, { vol: 0.35, freq: 2600, q: 0.6, type: "highpass" });
 }
+
+// Testing: what the radio is actually putting out right now.
+export const radioOutput = () => (radioGain ? radioGain.gain.value : radioEl ? radioEl.volume : 0);

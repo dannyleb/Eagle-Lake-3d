@@ -381,6 +381,7 @@ export function makeFaceTexture(opts) {
     mustache = false,
     blush = false,
     stubble = false,
+    tattoos = false,
   } = opts;
   const w = 256, h = 256;
   const c = canvas(w, h);
@@ -484,6 +485,41 @@ export function makeFaceTexture(opts) {
     ctx.moveTo(w / 2 - 10, eyeY - 2);
     ctx.lineTo(w / 2 + 10, eyeY - 2);
     ctx.stroke();
+  }
+
+  if (tattoos) {
+    // Face tattoos: teardrop, a pair of stars, forehead script, cheek tribal.
+    const ink = "#121a2e";
+    ctx.fillStyle = ink;
+    ctx.strokeStyle = ink;
+    const tx = w / 2 + w * 0.17, ty = eyeY + 26;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty - 11);
+    ctx.quadraticCurveTo(tx + 9, ty + 5, tx, ty + 11);
+    ctx.quadraticCurveTo(tx - 9, ty + 5, tx, ty - 11);
+    ctx.fill();
+    const star = (sx, sy, r) => {
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const rr = i % 2 ? r * 0.45 : r;
+        const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+        ctx.lineTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr);
+      }
+      ctx.closePath();
+      ctx.fill();
+    };
+    star(w / 2 - w * 0.3, eyeY - 4, 15);
+    star(w / 2 - w * 0.38, eyeY + 26, 10);
+    ctx.font = "italic bold 30px Georgia, serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Eagle Lake", w / 2, h * 0.27);
+    ctx.lineWidth = 7;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(w * 0.62, h * (0.58 + i * 0.07));
+      ctx.quadraticCurveTo(w * 0.8, h * (0.52 + i * 0.07), w * 0.94, h * (0.6 + i * 0.07));
+      ctx.stroke();
+    }
   }
 
   if (sunglasses) {

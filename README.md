@@ -93,6 +93,15 @@ repeats. A radio-call card pops up in the lower right with his face and a
 caption of what he's saying, and the music ducks way down under him, then
 swells back. Pause the radio any time to hear him clearly.
 
+## Townsfolk
+
+Locals stroll the sidewalks around town, turning at random corners, each
+with a name tag: **Brian Weed**, **Greg Bradbury** and **Tattoo Face
+Man**. Walk up and press E to chat; they'll jump out of the way if you
+come through on the bike or in the car. Their looks are placeholders until
+there are photos to go from. Adding someone is one entry in `PEOPLE` in
+`src/townsfolk.js`.
+
 ## The Thicker Bradshall
 
 A local musician busks by the pond at Veterans Memorial Park — walk up to

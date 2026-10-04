@@ -14,6 +14,13 @@ loads fast and runs smoothly on a phone browser.
 Open `public/index.html` after building (see below), or visit the GitHub
 Pages deployment once it's live.
 
+## The radio
+
+Get in the '70 and the radio comes on — "I'll Take It Back," a song built
+from Sidney's own voice. It's lazy-loaded (only fetched the moment you first
+get in the car), so it doesn't add weight to the initial page load. Get out
+and it fades out; the bike doesn't have a radio.
+
 ## Controls
 
 **Desktop**

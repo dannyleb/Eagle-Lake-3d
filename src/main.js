@@ -6,7 +6,7 @@ import { createControls } from "./controls.js";
 import { createPlayer } from "./player.js";
 import { createVehicle } from "./vehicles.js";
 import { createChaseCamera } from "./camera.js";
-import { unlockAudio, startCrossingBell, stopCrossingBell } from "./audio.js";
+import { unlockAudio, startCrossingBell, stopCrossingBell, playRadio, stopRadio } from "./audio.js";
 import { buildObstacles } from "./collision.js";
 
 document.title = GAME_TITLE;
@@ -101,6 +101,7 @@ function tryInteract() {
       veh.group.rotation.y = veh.state.heading;
       veh.group.position.copy(player.group.position);
       mode = target;
+      if (target === "car") playRadio();
     }
   } else {
     const veh = activeEntity();
@@ -109,6 +110,7 @@ function tryInteract() {
     player.state.heading = veh.state.heading;
     player.group.rotation.y = player.state.heading;
     veh.state.speed = 0;
+    if (mode === "car") stopRadio();
     mode = "walk";
   }
 }
@@ -119,6 +121,8 @@ function updatePrompt() {
     if (target === "bike") promptEl.textContent = "Press E / tap ◉ to hop on Green Dog";
     else if (target === "car") promptEl.textContent = "Press E / tap ◉ to drive the '70";
     else promptEl.textContent = "";
+  } else if (mode === "car") {
+    promptEl.textContent = "Press E / tap ◉ to park — ♪ I'll Take It Back ♪";
   } else {
     promptEl.textContent = "Press E / tap ◉ to park";
   }

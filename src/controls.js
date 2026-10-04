@@ -2,7 +2,6 @@
 export function createControls() {
   const keys = new Set();
   let interactPressed = false;
-  let interactConsumedThisFrame = false;
 
   window.addEventListener("keydown", (e) => {
     keys.add(e.code);
@@ -12,7 +11,6 @@ export function createControls() {
   window.addEventListener("keyup", (e) => keys.delete(e.code));
 
   const state = {
-    move: { x: 0, y: 0 }, // x = strafe/turn, y = forward/back
     sprint: false,
     brake: false,
   };

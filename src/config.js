@@ -116,6 +116,8 @@ export const BUILDINGS = [
   },
 ];
 
+export const HOUSE_SIZE = { w: 7, d: 6.5 };
+
 export const HOUSES = [
   { x: -94, z: 34, color: 0xd8c3a5, roof: 0x6b4a3a },
   { x: -110, z: 34, color: 0xc9d8c3, roof: 0x4a3a3a },

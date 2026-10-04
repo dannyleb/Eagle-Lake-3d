@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { resolveMove } from "./collision.js";
 
 // "Green Dog" — Sidney's beach-cruiser bicycle. Modeled after the classic
 // white-frame / red-fender cruiser look, an original low-poly build (no
@@ -153,7 +154,7 @@ export function createVehicle(scene, type, spawn) {
     radius: isBike ? 0.7 : 1.4,
   };
 
-  function update(dt, input, worldBounds) {
+  function update(dt, input, worldBounds, obstacles) {
     const throttle = input.y;
     const targetSpeed = throttle * maxSpeed * (input.sprint && !isBike ? 1.25 : 1);
     const diff = targetSpeed - state.speed;
@@ -165,10 +166,16 @@ export function createVehicle(scene, type, spawn) {
     const turnDir = state.speed >= 0 ? 1 : -1;
     state.heading += -input.x * turnRate * speedFactor * turnDir * dt;
 
+    const oldX = group.position.x;
+    const oldZ = group.position.z;
     const dx = Math.sin(state.heading) * state.speed * dt;
     const dz = Math.cos(state.heading) * state.speed * dt;
-    group.position.x = THREE.MathUtils.clamp(group.position.x + dx, -worldBounds, worldBounds);
-    group.position.z = THREE.MathUtils.clamp(group.position.z + dz, -worldBounds, worldBounds);
+    const newX = THREE.MathUtils.clamp(oldX + dx, -worldBounds, worldBounds);
+    const newZ = THREE.MathUtils.clamp(oldZ + dz, -worldBounds, worldBounds);
+    const resolved = obstacles ? resolveMove(oldX, oldZ, newX, newZ, state.radius, obstacles) : { x: newX, z: newZ };
+    if (resolved.x !== newX || resolved.z !== newZ) state.speed *= 0.4; // soft thump off a wall
+    group.position.x = resolved.x;
+    group.position.z = resolved.z;
     group.rotation.y = state.heading;
 
     const wheelSpin = (state.speed * dt) / 0.42;

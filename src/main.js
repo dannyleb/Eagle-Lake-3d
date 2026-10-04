@@ -7,6 +7,7 @@ import { createPlayer } from "./player.js";
 import { createVehicle } from "./vehicles.js";
 import { createChaseCamera } from "./camera.js";
 import { unlockAudio, startCrossingBell, stopCrossingBell } from "./audio.js";
+import { buildObstacles } from "./collision.js";
 
 document.title = GAME_TITLE;
 
@@ -54,6 +55,7 @@ scene.add(sun.target);
 // --- World ---
 const { gates } = buildWorld(scene);
 const train = createTrain(scene);
+const obstacles = buildObstacles();
 
 // --- Entities ---
 const controls = createControls();
@@ -64,6 +66,7 @@ const chaseCam = createChaseCamera(camera);
 
 let mode = "walk"; // "walk" | "bike" | "car"
 let gateClosedAmount = 0; // 0 open -> 1 closed
+let started = false;
 
 const hudMode = document.getElementById("hudMode");
 const promptEl = document.getElementById("prompt");
@@ -172,16 +175,18 @@ function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  const input = controls.poll();
+  const polled = controls.poll();
+  const input = started ? polled : { x: 0, y: 0, sprint: false, brake: false, interact: false };
   if (input.interact) tryInteract();
 
   updateTrainAndGates(dt);
 
   const entity = activeEntity();
   const prevPos = entity.group.position.clone();
-  entity.update(dt, input, WORLD_BOUNDS);
+  const wasInCrossing = mode !== "walk" && insideCrossingBox(prevPos);
+  entity.update(dt, input, WORLD_BOUNDS, obstacles);
 
-  if (mode !== "walk" && gateClosedAmount > 0.4 && insideCrossingBox(entity.group.position)) {
+  if (mode !== "walk" && gateClosedAmount > 0.4 && !wasInCrossing && insideCrossingBox(entity.group.position)) {
     entity.group.position.copy(prevPos);
     entity.state.speed = 0;
   }
@@ -191,7 +196,14 @@ function animate() {
   updatePrompt();
   updateHud();
 
-  chaseCam.update(entity.group.position, entity.state.heading, dt, mode === "car" ? 8.5 : mode === "bike" ? 6.5 : 5.2, mode === "car" ? 3.6 : 3.0);
+  chaseCam.update(
+    entity.group.position,
+    entity.state.heading,
+    dt,
+    mode === "car" ? 8.5 : mode === "bike" ? 6.5 : 5.2,
+    mode === "car" ? 3.6 : 3.0,
+    obstacles
+  );
 
   sun.target.position.copy(entity.group.position);
   sun.position.copy(entity.group.position).add(new THREE.Vector3(80, 120, 40));
@@ -209,5 +221,6 @@ const startOverlay = document.getElementById("startOverlay");
 const startBtn = document.getElementById("startBtn");
 startBtn.addEventListener("click", () => {
   unlockAudio();
+  started = true;
   startOverlay.classList.add("hidden");
 });

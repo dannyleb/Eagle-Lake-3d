@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { COLORS, WORLD, STREETS, RAIL, BUILDINGS, HOUSES, WATER_TOWER, LAKE, SIGNAGE } from "./config.js";
+import { COLORS, WORLD, STREETS, RAIL, BUILDINGS, HOUSES, HOUSE_SIZE, WATER_TOWER, LAKE, SIGNAGE } from "./config.js";
 import { makeSignTexture, makeBannerTexture } from "./signage.js";
 
 const box = new THREE.BoxGeometry(1, 1, 1);
@@ -237,7 +237,7 @@ function buildBuilding(scene, def) {
 function buildHouse(scene, def) {
   const group = new THREE.Group();
   group.position.set(def.x, 0, def.z);
-  addBox(group, { w: 7, h: 3.2, d: 6.5, color: def.color });
+  addBox(group, { w: HOUSE_SIZE.w, h: 3.2, d: HOUSE_SIZE.d, color: def.color });
   const roof = new THREE.Mesh(
     new THREE.ConeGeometry(5.6, 2.4, 4),
     new THREE.MeshLambertMaterial({ color: def.roof })

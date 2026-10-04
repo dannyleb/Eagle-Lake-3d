@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { resolveMove } from "./collision.js";
 
 // Sidney — an original, stylized low-poly tribute character (not a scanned
 // or photo-based likeness): stocky build, dark hair, thin glasses, a
@@ -96,17 +97,22 @@ export function createPlayer(scene, spawn) {
     radius: 0.5,
   };
 
-  function update(dt, input, worldBounds) {
+  function update(dt, input, worldBounds, obstacles) {
     const turning = -input.x;
     state.heading += turning * 2.4 * dt;
 
     const targetSpeed = input.y !== 0 ? (input.sprint ? state.sprintSpeed : state.walkSpeed) * Math.sign(input.y) : 0;
     state.speed += (targetSpeed - state.speed) * Math.min(1, dt * 8);
 
+    const oldX = group.position.x;
+    const oldZ = group.position.z;
     const dx = Math.sin(state.heading) * state.speed * dt;
     const dz = Math.cos(state.heading) * state.speed * dt;
-    group.position.x = THREE.MathUtils.clamp(group.position.x + dx, -worldBounds, worldBounds);
-    group.position.z = THREE.MathUtils.clamp(group.position.z + dz, -worldBounds, worldBounds);
+    const newX = THREE.MathUtils.clamp(oldX + dx, -worldBounds, worldBounds);
+    const newZ = THREE.MathUtils.clamp(oldZ + dz, -worldBounds, worldBounds);
+    const resolved = obstacles ? resolveMove(oldX, oldZ, newX, newZ, state.radius, obstacles) : { x: newX, z: newZ };
+    group.position.x = resolved.x;
+    group.position.z = resolved.z;
     group.rotation.y = state.heading;
 
     const moving = Math.abs(state.speed) > 0.1;

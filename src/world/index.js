@@ -221,6 +221,7 @@ export function buildWorld(scene) {
       for (let k = 0; k < n; k++) {
         const lx = side * (1.8 + k * 1.5 + rand() * 0.4);
         if (Math.abs(lx) > h.w / 2 - 0.4) continue;
+        if (h.porch && Math.abs(lx) < h.w * 0.31 + 0.7) continue; // not through the porch
         const [x, z] = L(h, lx, h.d / 2 + 0.75);
         const r = 0.7 + rand() * 0.35;
         props.prim(PRIM.sphere(6), { x, y: r * 0.55, z, sx: r * 1.5, sy: r * 1.2, sz: r * 1.3 }, pick(BUSH));
@@ -242,7 +243,7 @@ export function buildWorld(scene) {
     if (h.fence) {
       const fz = h.d / 2 + yard - 1.0;
       for (const side of [-1, 1]) {
-        const a = 1.0, b = h.w / 2 + 0.6;
+        const a = 1.0, b = h.w / 2 + 0.1; // stop short of the driveway
         const [mx, mz] = L(h, side * (a + b) / 2, fz);
         for (const y of [0.35, 0.8]) props.prim(PRIM.box(), { x: mx, y, z: mz, sx: b - a, sy: 0.08, sz: 0.06, ry: h.rot }, "#ffffff");
         for (let lx = a; lx <= b; lx += 0.42) {
@@ -882,16 +883,23 @@ export function buildWorld(scene) {
       if (z <= zMin || z >= zMax || x < xMin || x > xMax) continue;
       if (inRect(x, z, downtown) || distToRail(x, z) < 14) continue;
       for (const dir of [-1, 1]) {
-        // Approach from the north (dir -1) or south (dir 1), stop on the right.
+        // dir 1: northbound traffic arriving from the south (heading -z), whose
+        // right-hand side is east (+x). dir -1: southbound, right side is west.
         const sz = z + dir * (ew.w / 2 + 1.6);
-        const sx = x - dir * (ns.w / 2 + 1.2);
+        const sx = x + dir * (ns.w / 2 + 1.2);
         props.prim(PRIM.cyl(6), { x: sx, y: 1.3, z: sz, sx: 0.1, sy: 2.6, sz: 0.1 }, "#c9ced3");
-        props.prim(PRIM.cyl(8), { x: sx, y: 2.7, z: sz, sx: 0.9, sy: 0.06, sz: 0.9, rx: Math.PI / 2, ry: Math.PI / 8 }, "#d32f2f");
-        props.prim(PRIM.cyl(8), { x: sx, y: 2.7, z: sz + dir * 0.035, sx: 0.72, sy: 0.02, sz: 0.72, rx: Math.PI / 2, ry: Math.PI / 8 }, "#ffffff");
-        props.prim(PRIM.cyl(8), { x: sx, y: 2.7, z: sz + dir * 0.045, sx: 0.64, sy: 0.02, sz: 0.64, rx: Math.PI / 2, ry: Math.PI / 8 }, "#d32f2f");
+        // Octagon: spin about its own axis for a flat top, then stand it up
+        // facing the approaching traffic (a red face, a white ring, red again).
+        for (const [dz, size, thick, col] of [[0, 0.9, 0.06, "#d32f2f"], [0.035, 0.72, 0.02, "#ffffff"], [0.045, 0.64, 0.02, "#d32f2f"]]) {
+          const m = new THREE.Matrix4().makeTranslation(sx, 2.7, sz + dir * dz)
+            .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2))
+            .multiply(new THREE.Matrix4().makeRotationY(Math.PI / 8))
+            .multiply(new THREE.Matrix4().makeScale(size, thick, size));
+          props.geom(PRIM.cyl(8), m, col);
+        }
         collision.add({ type: "circle", x: sx, z: sz, r: 0.2, h: 3 });
         const bz = z + dir * (ew.w / 2 + 0.6);
-        ground.groundQuad([[x - dir * ns.w / 2, bz - 0.25], [x, bz - 0.25], [x, bz + 0.25], [x - dir * ns.w / 2, bz + 0.25]], Y.mark, PAL.white);
+        ground.groundQuad([[x + dir * ns.w / 2, bz - 0.25], [x, bz - 0.25], [x, bz + 0.25], [x + dir * ns.w / 2, bz + 0.25]], Y.mark, PAL.white);
       }
       if (rand() < 0.5) ground.polygon(Array.from({ length: 10 }, (_, k) => [x + 1.6 + Math.cos((k / 10) * Math.PI * 2) * 0.55, z + 22 + Math.sin((k / 10) * Math.PI * 2) * 0.55]), Y.mark, "#3d3f45");
     }

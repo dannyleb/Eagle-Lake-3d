@@ -7,7 +7,8 @@ import * as THREE from "three";
 // its screen-space Laplacian is zero on planes and spikes at silhouettes
 // and creases. That single measure draws both outer contours and the
 // inner fold lines of buildings, roofs, cars and characters, with no extra
-// geometry pass. A light color grade (saturation, contrast, warm lift) and
+// geometry pass. The target is 4x multisampled (that is the game's
+// anti-aliasing; three resolves the depth buffer too). A light color grade (saturation, contrast, warm lift) and
 // a soft vignette finish the frame.
 
 const vert = /* glsl */ `
@@ -80,7 +81,7 @@ export function createPost(renderer) {
   const target = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
     depthTexture,
-    samples: 0,
+    samples: 4,
   });
   const material = new THREE.ShaderMaterial({
     vertexShader: vert,

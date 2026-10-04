@@ -242,7 +242,7 @@ export function buildSky(scene, sunDir = new THREE.Vector3(-0.42, 0.78, 0.33)) {
   const flocks = [];
   for (let f = 0; f < FLOCKS; f++) {
     const heading = r() * Math.PI * 2;
-    flocks.push({ heading, offset: (r() - 0.5) * 500, alt: 70 + r() * 50, speed: 13 + r() * 5, t: r() * 1400, n: 6 + Math.floor(r() * 4) });
+    flocks.push({ heading, offset: (r() - 0.5) * 500, alt: 70 + r() * 50, speed: 13 + r() * 5, t: r() * 1400, n: 6 + Math.floor(r() * 4), ox: null, oz: 0 });
   }
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
@@ -254,15 +254,21 @@ export function buildSky(scene, sunDir = new THREE.Vector3(-0.42, 0.78, 0.33)) {
     let k = 0;
     for (const fl of flocks) {
       fl.t += fl.speed * dt;
-      if (fl.t > 1400) {
-        fl.t = 0;
-        fl.heading += 1 + r() * 2;
-        fl.offset = (r() - 0.5) * 500;
+      // Each pass is a fixed straight line in the world, laid out across
+      // wherever the camera was when the pass began (so the geese don't
+      // drift along with you when you drive).
+      if (fl.ox === null || fl.t > 1400) {
+        if (fl.ox !== null) {
+          fl.t = 0;
+          fl.heading += 1 + r() * 2;
+          fl.offset = (r() - 0.5) * 500;
+        }
+        fl.ox = cx;
+        fl.oz = cz;
       }
       const fx = Math.sin(fl.heading), fz = Math.cos(fl.heading);
-      // Path passes the player's area, entering 700 units out.
       const along = fl.t - 700;
-      const lx = cx + fx * along + fz * fl.offset, lz = cz + fz * along - fx * fl.offset;
+      const lx = fl.ox + fx * along + fz * fl.offset, lz = fl.oz + fz * along - fx * fl.offset;
       q.setFromAxisAngle(up, fl.heading);
       for (let i = 0; i < PER; i++) {
         if (i >= fl.n) {

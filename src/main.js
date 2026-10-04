@@ -25,7 +25,9 @@ if (touch) document.body.classList.add("touch");
 // ---------- Renderer, sized to the viewport inside the bezel ----------
 const canvas = document.getElementById("gameCanvas");
 const viewport = document.getElementById("viewport");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+// Anti-aliasing happens in the post pass's multisampled target, so the
+// canvas itself doesn't need it.
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
 let pixelRatio = Math.min(window.devicePixelRatio, touch ? 1.5 : 2);
 renderer.setPixelRatio(pixelRatio);
 renderer.shadowMap.enabled = true;
@@ -240,9 +242,14 @@ function blockCrossings(entity, oldX, oldZ) {
 // ---------- Adaptive resolution ----------
 // If the frame rate sags (older phones), step the render resolution down
 // rather than stutter. Checked every 3 seconds, never below 1x.
-let perfTime = 0, perfFrames = 0;
+let perfTime = 0, perfFrames = 0, perfWarmup = 3;
 function adaptQuality(dt) {
   if (!started) return;
+  // Ignore the first seconds: shaders compile and audio loads then.
+  if (perfWarmup > 0) {
+    perfWarmup -= dt;
+    return;
+  }
   perfTime += dt;
   perfFrames++;
   if (perfTime < 3) return;

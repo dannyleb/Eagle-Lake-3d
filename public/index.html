@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Eagle Lake: Green Dog Run</title>
+  <meta name="description" content="A lightweight browser-based 3D free-roam game set in a satirical small Texas railroad town inspired by Eagle Lake, TX." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="hud">
+    <div id="hudMode">On foot &mdash; Sidney</div>
+    <div id="prompt"></div>
+  </div>
+
+  <div id="trainBanner">TRAIN APPROACHING &mdash; CROSSING GATES DOWN</div>
+
+  <div id="touchControls">
+    <div id="joyBase"><div id="joyStick"></div></div>
+    <div id="actionButtons">
+      <button id="sprintBtn" class="roundBtn">RUN</button>
+      <button id="interactBtn" class="roundBtn big">&#9679;</button>
+    </div>
+  </div>
+
+  <div id="startOverlay">
+    <div id="startCard">
+      <h1>Eagle Lake</h1>
+      <h2>Green Dog Run</h2>
+      <p>A love letter to a small Texas railroad town &mdash; free-roam on foot, by beach cruiser, or behind the wheel of a '70 muscle car. Watch for the train downtown.</p>
+      <div class="controlsGrid">
+        <div><strong>Desktop</strong><br/>WASD / Arrows &mdash; move<br/>Shift &mdash; sprint<br/>E &mdash; enter / exit</div>
+        <div><strong>Mobile</strong><br/>Joystick &mdash; move<br/>RUN &mdash; sprint<br/>&#9679; &mdash; enter / exit</div>
+      </div>
+      <button id="startBtn">Start Driving</button>
+      <p class="fine">All place names and businesses are original, satirical creations inspired by small-town Texas &mdash; not depictions of any real business.</p>
+    </div>
+  </div>
+
+  <script type="module" src="bundle.js"></script>
+</body>
+</html>

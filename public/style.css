@@ -1,0 +1,86 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  overflow: hidden; background: #9fd1e8;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  touch-action: none;
+}
+#gameCanvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+#hud {
+  position: fixed; top: 14px; left: 14px; z-index: 5;
+  color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  pointer-events: none; user-select: none;
+}
+#hudMode { font-size: 18px; font-weight: 700; letter-spacing: 0.02em; }
+#prompt { margin-top: 6px; font-size: 15px; opacity: 0; transition: opacity 0.2s; }
+
+#trainBanner {
+  position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+  background: #b5342c; color: #fff; padding: 8px 18px; border-radius: 6px;
+  font-weight: 800; letter-spacing: 0.04em; font-size: 15px;
+  opacity: 0; transition: opacity 0.25s; z-index: 6; pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+}
+
+#touchControls {
+  position: fixed; inset: 0; z-index: 5; pointer-events: none;
+  display: none;
+}
+body.touch #touchControls { display: block; }
+
+#joyBase {
+  position: fixed; left: 24px; bottom: 24px; width: 110px; height: 110px;
+  border-radius: 50%; background: rgba(255,255,255,0.18);
+  border: 2px solid rgba(255,255,255,0.4);
+  pointer-events: auto; touch-action: none;
+}
+#joyStick {
+  position: absolute; left: 50%; top: 50%; width: 50px; height: 50px;
+  margin: -25px 0 0 -25px; border-radius: 50%;
+  background: rgba(255,255,255,0.65); border: 2px solid rgba(0,0,0,0.2);
+  transition: transform 0.05s linear;
+}
+
+#actionButtons {
+  position: fixed; right: 20px; bottom: 24px; display: flex; gap: 14px;
+  align-items: flex-end; pointer-events: auto;
+}
+.roundBtn {
+  border: none; border-radius: 50%; background: rgba(255,255,255,0.75);
+  color: #1f3d2e; font-weight: 800; font-size: 13px;
+  width: 58px; height: 58px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.roundBtn.big { width: 74px; height: 74px; font-size: 26px; background: rgba(255,210,70,0.92); }
+.roundBtn:active { transform: scale(0.92); }
+
+#startOverlay {
+  position: fixed; inset: 0; z-index: 20;
+  background: linear-gradient(180deg, #1f3d2e, #0e1f17);
+  display: flex; align-items: center; justify-content: center;
+  color: #f2e9d8; padding: 20px;
+  transition: opacity 0.4s ease, visibility 0.4s;
+}
+#startOverlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+#startCard { max-width: 480px; text-align: center; }
+#startCard h1 { font-size: 40px; margin: 0; letter-spacing: 0.03em; color: #ffd34d; }
+#startCard h2 { font-size: 20px; margin: 2px 0 16px; font-weight: 500; color: #cfe8d8; }
+#startCard p { font-size: 15px; line-height: 1.5; color: #e4ddc8; }
+#startCard .fine { font-size: 12px; color: #9fae9f; margin-top: 18px; }
+
+.controlsGrid {
+  display: flex; gap: 18px; justify-content: center; margin: 18px 0;
+  font-size: 13px; line-height: 1.6; text-align: left;
+}
+.controlsGrid > div {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px; padding: 10px 14px;
+}
+
+#startBtn {
+  background: #ffd34d; color: #1f2a1f; border: none; border-radius: 30px;
+  font-size: 18px; font-weight: 800; padding: 14px 36px; cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+}
+#startBtn:active { transform: scale(0.97); }

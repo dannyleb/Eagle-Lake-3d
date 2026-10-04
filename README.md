@@ -101,9 +101,9 @@ likeness of the real person, in the same style as Sidney himself.
 ## Controls
 
 **Desktop**
-- `WASD` / Arrow keys — move; on the bike or in the car, `W` goes, `S`
-  brakes (or turns around when stopped), and a tap of `A`/`D` takes the next
-  left/right
+- `WASD` / Arrow keys — walk
+- Riding: `W` to start rolling (it keeps going on its own), `A` / `D` to
+  pick your next turn, `S` to stop (`S` again turns around)
 - `Shift` — sprint (on foot) / boost (car)
 - `Space` — brake
 - `E` — ride / park / talk / order at the drive-thru window
@@ -112,14 +112,15 @@ likeness of the real person, in the same style as Sidney himself.
 - `R` — next song
 
 **Mobile**
-- On-screen joystick — point it where you want to go (relative to the
-  screen). On foot, Sidney walks that way and steers himself around walls,
-  trees and parked cars (and pops free if he's ever stuck). On Green Dog
-  or in the '70 you're on rails: locked to the streets in the right-hand
-  lane, the stick sets your speed and picks the turn at each
-  intersection; pull it back to turn around
+- D-pad — on foot, hold any of the 8 directions to walk that way (Sidney
+  steers himself around walls and trees and pops free if he's stuck)
+- Riding — tap ▲ once and Green Dog or the '70 rides itself along the
+  streets in the right-hand lane. Tap ◀ or ▶ before an intersection to
+  queue your next turn (it takes it automatically); tap ▼ to stop, ▼ again
+  to turn around. On a mission, with no turn queued, it follows the yellow
+  route on its own
 - `RUN` — sprint / boost
-- `RIDE` — ride / park / talk / order
+- `E` button — ride / park / talk / order (the label changes to match)
 - `VIEW`, `MAP`, `RADIO` — same as the keys above
 
 ## Running locally

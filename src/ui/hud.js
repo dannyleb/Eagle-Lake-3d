@@ -89,12 +89,14 @@ export function createHud(minimapData) {
     ride: $("btnRide"),
     rideLabel: $("rideLabel"),
     promptText: $("promptText"),
+    turn: $("turnChip"),
     map: $("minimap"),
   };
   const base = drawBase(minimapData);
   const mctx = el.map.getContext("2d");
   let mapMode = 1; // 0 off, 1 mini, 2 full town
   let defaultAction = "RIDE";
+  let lastTurn = null;
   let lastLoc = 0, lastMap = 0, toastTimer = null, lastPrompt = "", lastMode = "", lastNow = "";
 
   function applyMapMode() {
@@ -279,6 +281,16 @@ export function createHud(minimapData) {
       el.prompt.classList.toggle("info", !action);
       el.ride.classList.toggle("hot", !!action);
       el.rideLabel.textContent = action || defaultAction;
+    },
+    // Riding: which way the next intersection will go.
+    setTurn(kind) {
+      if (kind === lastTurn) return;
+      lastTurn = kind;
+      el.turn.className = kind ? `show ${kind}` : "";
+      el.turn.innerHTML =
+        kind === "left" ? "<b>&#9664;</b> NEXT LEFT" :
+        kind === "right" ? "NEXT RIGHT <b>&#9654;</b>" :
+        kind === "route" ? "<b>&#10148;</b> FOLLOWING ROUTE" : "";
     },
     setMode(text, riding) {
       if (text === lastMode) return;

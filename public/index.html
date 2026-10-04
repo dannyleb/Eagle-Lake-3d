@@ -55,7 +55,11 @@
         </div>
       </div>
       <canvas id="minimap" class="mini"></canvas>
-      <div id="joyBase"><div id="joyStick"></div></div>
+      <div id="turnChip"></div>
+      <div id="dpad" aria-label="Direction pad">
+        <div class="arrow up"></div><div class="arrow right"></div><div class="arrow down"></div><div class="arrow left"></div>
+        <div class="hub"></div>
+      </div>
     </main>
 
     <footer id="bottombar">
@@ -73,8 +77,8 @@
       <h2>Green Dog Run</h2>
       <p>Free-roam a sun-baked Texas railroad town on foot, on a fire-department beach cruiser, or behind the wheel of a green '70 big-block. Two freight lines cut through town &mdash; mind the gates.</p>
       <div class="controlsGrid">
-        <div><strong>Keyboard</strong><br/>WASD / Arrows &mdash; move<br/>Shift &mdash; run / floor it<br/>Space &mdash; brake<br/>E &mdash; ride / park / talk<br/>V &mdash; camera &middot; M &mdash; map<br/>R &mdash; next song</div>
-        <div><strong>Touch</strong><br/>Stick &mdash; move<br/>RUN &mdash; run / floor it<br/>RIDE &mdash; ride / park / talk<br/>VIEW &middot; MAP &middot; RADIO</div>
+        <div><strong>Keyboard</strong><br/>WASD / Arrows &mdash; walk<br/>Riding: W go &middot; A / D next turn &middot; S stop<br/>Shift &mdash; run / floor it<br/>Space &mdash; brake<br/>E &mdash; ride / park / talk<br/>V &mdash; camera &middot; M &mdash; map<br/>R &mdash; next song</div>
+        <div><strong>Touch</strong><br/>D-pad &mdash; walk any direction<br/>Riding: &#9650; go &middot; &#9664; &#9654; next turn &middot; &#9660; stop / turn around<br/>RUN &mdash; run / floor it<br/>E &mdash; ride / park / talk</div>
       </div>
       <button id="startBtn" class="chunk yellow">PRESS ANYWHERE TO START</button>
       <p class="fine">Every business and place name is an original satirical creation inspired by small-town Texas &mdash; not a depiction of any real business. Street layout loosely follows the real town.</p>

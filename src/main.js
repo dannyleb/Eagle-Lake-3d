@@ -217,6 +217,12 @@ function interact() {
 function promptText() {
   const mp = missions.prompt();
   if (mp) return mp;
+  if (mode !== "walk") {
+    const v = RIDES[mode].veh.state;
+    if (!v.cruise && v.speed < 0.5 && !inTrigger()) {
+      return { text: touch ? "Tap \u25B2 to ride \u00b7 \u25C0 \u25B6 picks your next turn" : "W to ride \u00b7 A / D picks your next turn \u00b7 S stops" };
+    }
+  }
   const trig = inTrigger();
   if (mode !== "walk") {
     if (trig) return { text: "Roll up to the cashier's window", action: "ORDER" };
@@ -319,7 +325,7 @@ function frame() {
   let input = !started ? IDLE : missions.blocking ? { ...IDLE, interact: polled.interact } : polled;
   // Touch stick: point where you want to go (camera-relative), and the
   // walk/ride/drive code steers there with its guardrails.
-  if (input === polled && polled.stick.on) {
+  if (input === polled && polled.stick.on && mode === "walk") {
     const s = stickSteer.heading(polled.stick, chaseCam.yaw);
     input = s ? { ...polled, x: 0, y: 0, dir: s.dir, mag: s.mag } : { ...polled, x: 0, y: 0 };
   }
@@ -334,7 +340,7 @@ function frame() {
   bradshall.update(dt);
 
   const ent = active();
-  ent.update(dt, input, WORLD.bounds, collision, { blocked: gateBlocks });
+  ent.update(dt, input, WORLD.bounds, collision, { blocked: gateBlocks, routeDir: missions.routeDirAt });
   // On foot: pushing but going nowhere for a moment? Pop free. (Vehicles are
   // on rails and can't get stuck.)
   const pushing = mode === "walk" && ((input.dir != null && input.mag > 0.3) || Math.abs(input.y) > 0.3);
@@ -365,6 +371,11 @@ function frame() {
 
   hud.setMode(mode === "walk" ? "ON FOOT · SIDNEY" : RIDES[mode].label, mode !== "walk");
   hud.setPrompt(promptText());
+  if (mode === "walk") hud.setTurn(null);
+  else {
+    const v = RIDES[mode].veh.state;
+    hud.setTurn(v.turnIntent === -1 ? "left" : v.turnIntent === 1 ? "right" : v.followingRoute && v.cruise ? "route" : null);
+  }
   extras.length = 0;
   for (const t of Object.values(trains)) {
     if (t.moving) { const h = t.headPos(); extras.push({ x: h.x, z: h.z, r: 4, color: "#e8262a" }); }

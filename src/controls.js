@@ -1,22 +1,35 @@
-// Unified input: keyboard (desktop) + touch joystick and the on-screen bezel
-// buttons (which work for mouse and touch alike).
+// Unified input: keyboard (desktop), the on-screen D-pad (touch and mouse),
+// and the bezel buttons.
+//
+// poll() returns:
+//   x, y      keyboard axes (walking uses these as tank controls)
+//   stick     { x, y, on } the D-pad as a direction while held (walking)
+//   taps      { up, down, left, right } one-shot presses this frame (riding:
+//             go, stop / turn around, queue a turn)
+//   sprint, brake, interact, view, map, radio
 export function createControls() {
   const keys = new Set();
   const pressed = { interact: false, view: false, map: false, radio: false };
+  const taps = { up: false, down: false, left: false, right: false };
   let holdRun = false;
 
   const press = (name) => {
     if (name in pressed) pressed[name] = true;
   };
 
+  const KEY_TAPS = {
+    KeyW: "up", ArrowUp: "up", KeyS: "down", ArrowDown: "down",
+    KeyA: "left", ArrowLeft: "left", KeyD: "right", ArrowRight: "right",
+  };
   window.addEventListener("keydown", (e) => {
     keys.add(e.code);
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
     if (e.repeat) return;
+    if (KEY_TAPS[e.code]) taps[KEY_TAPS[e.code]] = true;
     if (e.code === "KeyE" || e.code === "Enter") press("interact");
     if (e.code === "KeyV" || e.code === "KeyC") press("view");
     if (e.code === "KeyM") press("map");
     if (e.code === "KeyR") press("radio");
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(e.code)) e.preventDefault();
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
   window.addEventListener("blur", () => keys.clear());
@@ -47,43 +60,62 @@ export function createControls() {
     window.addEventListener("mouseup", off);
   }
 
-  // Touch joystick
-  const joyBase = document.getElementById("joyBase");
-  const joyStick = document.getElementById("joyStick");
-  const joy = { x: 0, y: 0, id: null };
-  const R = 46;
-  function joyMoveTo(cx, cy) {
-    const rect = joyBase.getBoundingClientRect();
-    let dx = cx - (rect.left + rect.width / 2);
-    let dy = cy - (rect.top + rect.height / 2);
-    const d = Math.hypot(dx, dy);
-    if (d > R) {
-      dx = (dx / d) * R;
-      dy = (dy / d) * R;
+  // ---------- D-pad ----------
+  // One finger anywhere on the pad: the angle from the center picks one of
+  // eight directions (the four arrows plus diagonals for walking). Sliding
+  // onto a new arrow counts as a fresh tap of that arrow.
+  const pad = document.getElementById("dpad");
+  const dir = { x: 0, y: 0, id: null, sector: -1 };
+  const ARROWS = ["right", "down", "left", "up"]; // sector 0 = east, clockwise on screen
+  function setSector(sector) {
+    if (sector === dir.sector) return;
+    dir.sector = sector;
+    if (pad) pad.querySelectorAll(".arrow").forEach((a) => a.classList.remove("on"));
+    if (sector < 0) {
+      dir.x = 0;
+      dir.y = 0;
+      return;
     }
-    joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
-    joy.x = dx / R;
-    joy.y = -dy / R;
+    const ang = (sector * Math.PI) / 4;
+    dir.x = Math.round(Math.cos(ang) * 100) / 100;
+    dir.y = -Math.round(Math.sin(ang) * 100) / 100;
+    if (sector % 2 === 0) {
+      const name = ARROWS[sector / 2];
+      taps[name] = true;
+      const a = pad && pad.querySelector(`.arrow.${name}`);
+      if (a) a.classList.add("on");
+    } else if (pad) {
+      // Diagonal: light both neighbours.
+      for (const n of [ARROWS[(sector - 1) / 2], ARROWS[((sector + 1) / 2) % 4]]) pad.querySelector(`.arrow.${n}`)?.classList.add("on");
+    }
   }
-  function joyEnd() {
-    joy.id = null;
-    joy.x = 0;
-    joy.y = 0;
-    joyStick.style.transform = "translate(0px, 0px)";
+  function padAt(cx, cy) {
+    const r = pad.getBoundingClientRect();
+    const dx = cx - (r.left + r.width / 2), dy = cy - (r.top + r.height / 2);
+    if (Math.hypot(dx, dy) < r.width * 0.12) return setSector(-1); // dead center
+    const ang = Math.atan2(dy, dx);
+    setSector(((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8);
   }
-  if (joyBase) {
-    joyBase.addEventListener("touchstart", (e) => {
+  if (pad) {
+    pad.addEventListener("touchstart", (e) => {
       const t = e.changedTouches[0];
-      joy.id = t.identifier;
-      joyMoveTo(t.clientX, t.clientY);
+      dir.id = t.identifier;
+      dir.sector = -1;
+      padAt(t.clientX, t.clientY);
       e.preventDefault();
     }, { passive: false });
-    joyBase.addEventListener("touchmove", (e) => {
-      for (const t of e.changedTouches) if (t.identifier === joy.id) joyMoveTo(t.clientX, t.clientY);
+    pad.addEventListener("touchmove", (e) => {
+      for (const t of e.changedTouches) if (t.identifier === dir.id) padAt(t.clientX, t.clientY);
       e.preventDefault();
     }, { passive: false });
-    joyBase.addEventListener("touchend", joyEnd);
-    joyBase.addEventListener("touchcancel", joyEnd);
+    const end = () => { dir.id = null; setSector(-1); };
+    pad.addEventListener("touchend", end);
+    pad.addEventListener("touchcancel", end);
+    // Mouse works too (handy on desktop and for testing).
+    let mouseDown = false;
+    pad.addEventListener("mousedown", (e) => { mouseDown = true; dir.sector = -1; padAt(e.clientX, e.clientY); e.preventDefault(); });
+    window.addEventListener("mousemove", (e) => { if (mouseDown) padAt(e.clientX, e.clientY); });
+    window.addEventListener("mouseup", () => { if (mouseDown) { mouseDown = false; setSector(-1); } });
   }
 
   return {
@@ -93,17 +125,16 @@ export function createControls() {
       if (keys.has("KeyS") || keys.has("ArrowDown")) y -= 1;
       if (keys.has("KeyA") || keys.has("ArrowLeft")) x -= 1;
       if (keys.has("KeyD") || keys.has("ArrowRight")) x += 1;
-      if (Math.abs(joy.x) > Math.abs(x)) x = joy.x;
-      if (Math.abs(joy.y) > Math.abs(y)) y = joy.y;
       const out = {
-        x: Math.max(-1, Math.min(1, x)),
-        y: Math.max(-1, Math.min(1, y)),
+        x, y,
         sprint: keys.has("ShiftLeft") || keys.has("ShiftRight") || holdRun,
         brake: keys.has("Space"),
-        stick: { x: joy.x, y: joy.y, on: joy.id !== null },
+        stick: { x: dir.x, y: dir.y, on: dir.sector >= 0 },
+        taps: { ...taps },
         ...pressed,
       };
       for (const k of Object.keys(pressed)) pressed[k] = false;
+      for (const k of Object.keys(taps)) taps[k] = false;
       return out;
     },
   };

@@ -293,8 +293,30 @@ export function createMissions(ctx) {
     return null;
   }
 
+  // Which way the mission route leaves the intersection at (x, z), as a
+  // heading, or null with no destination. Routed from the intersection
+  // itself (cached per intersection), so it doesn't matter which street the
+  // rider happens to be closest to.
+  let dirCache = { key: "", dir: null };
+  function routeDirAt(x, z) {
+    if (!step || step.type !== "goto") return null;
+    const key = `${x},${z},${step.x},${step.z}`;
+    if (dirCache.key === key) return dirCache.dir;
+    const pts = findRoute(x, z, step.x, step.z);
+    let dir = null;
+    for (const [qx, qz] of pts) {
+      if (Math.hypot(qx - x, qz - z) > 0.5) {
+        dir = Math.atan2(qx - x, qz - z);
+        break;
+      }
+    }
+    dirCache = { key, dir };
+    return dir;
+  }
+
   return {
     start: run,
+    routeDirAt,
     // Testing: set the countdown on a timed step.
     debugSetTime(t) {
       if (step && step.timed) step.timeLeft = t;

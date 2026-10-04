@@ -656,3 +656,73 @@ body.touch .controlsGrid > div:first-child { display: none; }
   #timer { left: auto; right: 10px; top: 132px; transform: translateX(140px); }
   #timer.show { transform: none; }
 }
+
+/* ---------- D-pad (replaces the joystick) ---------- */
+#dpad {
+  display: none;
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  width: 138px;
+  height: 138px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22), rgba(27, 15, 46, 0.5));
+  border: 3px solid rgba(255, 255, 255, 0.55);
+  touch-action: none;
+  z-index: 4;
+}
+body.touch #dpad { display: block; }
+#dpad .arrow {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff1a6, var(--yellow) 60%, #d69e0c);
+  border: 3px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+}
+#dpad .arrow::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-bottom: 13px solid var(--ink);
+  transform: translate(-50%, -60%);
+}
+#dpad .arrow.up { left: 46px; top: 4px; }
+#dpad .arrow.down { left: 46px; bottom: 4px; }
+#dpad .arrow.down::after { transform: translate(-50%, -40%) rotate(180deg); }
+#dpad .arrow.left { left: 4px; top: 46px; }
+#dpad .arrow.left::after { transform: translate(-60%, -50%) rotate(-90deg); }
+#dpad .arrow.right { right: 4px; top: 46px; }
+#dpad .arrow.right::after { transform: translate(-40%, -50%) rotate(90deg); }
+#dpad .arrow.on { background: #fff; transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+#dpad .hub { position: absolute; left: 55px; top: 55px; width: 28px; height: 28px; border-radius: 50%; background: rgba(27, 15, 46, 0.6); }
+#joyBase { display: none !important; }
+body.touch #prompt { left: 166px; }
+
+#turnChip {
+  position: absolute;
+  left: 50%;
+  bottom: 62px;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--yellow);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  display: none;
+  pointer-events: none;
+  z-index: 3;
+  white-space: nowrap;
+}
+#turnChip.show { display: block; animation: blink 0.8s steps(1) infinite; }
+#turnChip.route { background: var(--teal); animation: none; }
+#turnChip b { font-size: 16px; }
+@keyframes blink { 50% { background: #fff; } }
+body.touch #turnChip { left: auto; right: 12px; transform: none; bottom: 76px; }

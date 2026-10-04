@@ -331,10 +331,10 @@ export function buildCar() {
 }
 
 // Vehicles run "on rails": they're locked to the street network and stay
-// in the right-hand lane. The stick (or W/S) sets speed; its direction, or
-// A/D held as you approach a corner, picks which way to go at the next
-// intersection. Pull the stick backward (or hold S when stopped) to turn
-// around. Dead ends turn you around automatically. Nothing can push you off
+// in the right-hand lane, and they drive themselves. Tap up once and they
+// cruise; tap left/right to queue the next turn; tap down to stop (again
+// to turn around). On a mission, with no turn queued, they follow the
+// route. Dead ends turn you around automatically. Nothing can push you off
 // the road, so there's nothing to get stuck on.
 export function createVehicle(scene, type, spawn) {
   const group = type === "bike" ? buildBike() : buildCar();
@@ -349,7 +349,8 @@ export function createVehicle(scene, type, spawn) {
   const state = { group, heading: spawn.heading, speed: 0, type, maxSpeed, radius: isBike ? 0.7 : 1.45, lean: 0 };
 
   let rail = null; // { a, b, s, road, len, ux, uz }
-  let turnIntent = 0, turnTimer = 0; // keyboard: -1 left, +1 right
+  let turnIntent = 0; // queued turn: -1 left, +1 right, 0 none
+  let cruise = false; // rolling on its own after a tap of up
   const railPos = new THREE.Vector3();
 
   function setRail(a, b, s, road) {
@@ -398,34 +399,32 @@ export function createVehicle(scene, type, spawn) {
     if (!rail) attach();
     const travel = travelHeading();
 
-    // --- intent: where the player wants to go and how fast ---
-    let want = travel, throttle = 0, reverse = false;
-    if (input.dir != null) {
-      want = input.dir;
-      throttle = input.mag;
-      if (Math.abs(wrapAngle(want - travel)) > 2.3) {
-        // Stick pulled back: brake, then turn around.
-        if (state.speed < 2.5) reverse = true;
-        else throttle = -1;
-      }
-    } else {
-      // A tap of A/D is remembered until the next real intersection.
-      if (input.x) { turnIntent = Math.sign(input.x); turnTimer = 6; }
-      turnTimer -= dt;
-      if (turnTimer <= 0) turnIntent = 0;
-      want = travel - turnIntent * (Math.PI / 2);
-      if (input.y > 0) throttle = 1;
-      else if (input.y < 0) {
-        if (state.speed < 1) reverse = true;
-        else throttle = -1;
+    // --- intent (D-pad / WASD taps) ---
+    // Up: start cruising. Down: stop; down again when stopped: turn around
+    // and go. Left/right: queue a turn for the next intersection (tap the
+    // same way again to cancel). Nothing queued: follow the mission route if
+    // there is one, else go straight.
+    const t = input.taps || {};
+    if (t.up) cruise = true;
+    if (t.down) {
+      if (state.speed > 1.5 && cruise) cruise = false;
+      else {
+        turnAround();
+        state.speed = 0;
+        cruise = true;
+        turnIntent = 0;
       }
     }
-    if (input.brake) throttle = -1;
-    state.turnIntent = turnIntent; // for the HUD / debugging
-    if (reverse) {
-      turnAround();
-      state.speed = 0;
-    }
+    if (t.left) turnIntent = turnIntent === -1 ? 0 : -1;
+    if (t.right) turnIntent = turnIntent === 1 ? 0 : 1;
+    if (input.brake) cruise = false;
+    let routeWant = null;
+    if (!turnIntent && opts.routeDir) routeWant = opts.routeDir(rail.b.x, rail.b.z);
+    const want = turnIntent ? travel - turnIntent * (Math.PI / 2) : routeWant ?? travel;
+    const throttle = cruise ? 1 : -1;
+    state.turnIntent = turnIntent;
+    state.cruise = cruise;
+    state.followingRoute = !turnIntent && routeWant != null;
 
     // --- speed ---
     const top = maxSpeed * (input.sprint && !isBike ? 1.3 : 1);
@@ -460,14 +459,17 @@ export function createVehicle(scene, type, spawn) {
       left -= room;
       const nxt = pickNext(want);
       if (!nxt) {
-        // Dead end: swing around.
+        // Dead end: swing around and keep rolling.
         setRail(rail.b, rail.a, 0, rail.road);
         state.speed *= 0.35;
+        turnIntent = 0;
         break;
       }
-      const choices = rail.b.edges.length - 1;
-      setRail(rail.b, nxt.to, 0, nxt.road);
-      if (choices >= 2) turnIntent = 0; // used up at a real intersection
+      const node = rail.b;
+      const choices = node.edges.length - 1;
+      setRail(node, nxt.to, 0, nxt.road);
+      // A queued turn is used up once we actually make it.
+      if (turnIntent && choices >= 2 && Math.abs(wrapAngle(travelHeading() - want)) < Math.PI / 4) turnIntent = 0;
     }
     railPoint(railPos);
     if (opts.blocked && opts.blocked(railPos.x, railPos.z)) {
@@ -509,6 +511,6 @@ export function createVehicle(scene, type, spawn) {
     state,
     update,
     // Drop off the rails (parked); the next update re-attaches wherever it is.
-    park() { rail = null; state.speed = 0; },
+    park() { rail = null; state.speed = 0; cruise = false; turnIntent = 0; },
   };
 }

@@ -20,6 +20,7 @@ Get in the '70 and the radio comes on — a two-song local station:
 
 - **"I'll Take It Back"** by Blake — built from Sidney's own voice
 - **"Peel On"** by The Thicker Bradshall — a friend of Sidney's from Eagle Lake
+- **"Nananananana"** by The Thicker Bradshall
 
 It plays through the station and loops; press `R` to skip to the other
 track. Both songs are lazy-loaded (only fetched the moment you first get in

@@ -51,6 +51,7 @@ export function stopCrossingBell() {
 export const STATION = [
   { src: "audio/take-it-back.mp3", title: "I'll Take It Back", artist: "Blake" },
   { src: "audio/peel-on.mp3", title: "Peel On", artist: "The Thicker Bradshall" },
+  { src: "audio/nananananana.mp3", title: "Nananananana", artist: "The Thicker Bradshall" },
 ];
 
 let radioEl = null;

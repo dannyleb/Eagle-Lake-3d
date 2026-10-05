@@ -57,7 +57,9 @@ seconds in, the missions start:
 1. **Gig at the Ferris Hotel.** Ride downtown to the Ferris Hotel on
    McCarty (red brick, "LIVE MUSIC FRIDAYS", his name on the chalkboard
    under the canopy). Once he's off the bike he swings the guitar around
-   and plays one of his songs for the crowd. Unlocks **PAID: $50**.
+   and plays a 30-second set of "I Got Drunk with the Crowd" while the
+   room whoops, whistles and claps along, then a big roar and applause
+   as the song fades out. Unlocks **PAID: $50**.
 2. **Go Get the Gear.** The band gear is in the little house out back at
    77 S McCarty, a property with a main house a little south of town.
    Ride out, walk up to the shed, and grab it. Unlocks a can of
@@ -117,9 +119,10 @@ on foot, on the bike, in the car, doesn't matter:
 - **"I'll Take It Back"** by Blake — built from Sidney's own voice
 - **"Peel On"** by The Thicker Bradshall — a friend of Sidney's from Eagle Lake
 - **"Nananananana"** by The Thicker Bradshall
+- **"I Got Drunk with the Crowd"** by Blake (also the song at the Ferris Hotel show)
 
 It loops through the station automatically; press `R` any time to skip to
-the next track. All three songs are lazy-loaded (only fetched once playback
+the next track. All the songs are lazy-loaded (only fetched once playback
 actually starts), so they never add weight to the initial page load.
 
 ## Sidney's voice

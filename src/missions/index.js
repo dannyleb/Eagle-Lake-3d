@@ -5,7 +5,7 @@ import { createNinjaGang } from "../ninja.js";
 import {
   startSiren, stopSiren, setSirenVolume, duckRadio,
   playFanfare, playPop, playObjective, playHit, playPoof, playOof, playTick, playFail,
-  playTrack, playCheer,
+  playTrack, playCheer, startCrowd, endShowSong, SHOW_TRACK,
 } from "../audio.js";
 
 // ---------------------------------------------------------------------------
@@ -114,7 +114,7 @@ export const BRADSHALL_MISSIONS = [
     },
     steps: [
       { type: "goto", label: "Get to the Ferris Hotel", at: (ctx) => ctx.world.ferris, r: 10 },
-      { type: "perform", label: "Play the show!", seconds: 9, track: 1 },
+      { type: "perform", label: "Play the show!", seconds: 30, track: SHOW_TRACK },
     ],
     achievement: {
       title: "PAID: $50",
@@ -341,17 +341,22 @@ export function createMissions(ctx) {
         return;
       }
       if (step.left == null) {
+        // Counted on the wall clock so the set stays in step with the song
+        // even when frames drop.
+        step.endAt = performance.now() + step.seconds * 1000;
         step.left = step.seconds;
         ctx.player.perform(true);
         if (step.track != null) playTrack(step.track);
+        startCrowd();
         ctx.hud.toast("\u266B The room goes quiet... one, two, three, four!", 2600);
       }
-      step.left -= dt;
+      step.left = (step.endAt - performance.now()) / 1000;
       ui.setObjective(step.label, `${Math.max(0, Math.ceil(step.left))} s left in the set`, true);
       ui.waypoint(null);
       if (step.left <= 0) {
         ctx.player.perform(false);
         playCheer();
+        endShowSong();
         step.resolve("done");
       }
     } else if (step.type === "defeat") {

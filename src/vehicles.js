@@ -346,7 +346,7 @@ export function createVehicle(scene, type, spawn) {
   const maxSpeed = isBike ? 20 : 52;
   const accel = isBike ? 14 : 24;
   const wheels = group.userData.wheels || [];
-  const state = { group, heading: spawn.heading, speed: 0, type, maxSpeed, radius: isBike ? 0.7 : 1.45, lean: 0 };
+  const state = { group, heading: spawn.heading, speed: 0, type, maxSpeed, radius: isBike ? 0.7 : 1.45, lean: 0, boost: 1 };
 
   let rail = null; // { a, b, s, road, len, ux, uz }
   let turnIntent = 0; // queued turn: -1 left, +1 right, 0 none
@@ -427,7 +427,7 @@ export function createVehicle(scene, type, spawn) {
     state.followingRoute = !turnIntent && routeWant != null;
 
     // --- speed ---
-    const top = maxSpeed * (input.sprint && !isBike ? 1.3 : 1);
+    const top = maxSpeed * (input.sprint && !isBike ? 1.3 : 1) * state.boost; // boost: Dr. Pebber can
     let target = Math.max(0, throttle) * top;
     // Park drives and the drive-thru lane are slow zones.
     if (rail.road && rail.road.kind === "spur") target = Math.min(target, 14);
@@ -440,7 +440,7 @@ export function createVehicle(scene, type, spawn) {
         target = Math.min(target, Math.max(8, top * (1 - 0.55 * (turn / Math.PI))));
       }
     }
-    const rate = throttle < 0 ? accel * 3 : accel;
+    const rate = throttle < 0 ? accel * 3 : accel * state.boost * state.boost;
     const diff = target - state.speed;
     state.speed += Math.sign(diff) * Math.min(Math.abs(diff), rate * dt);
     state.speed = Math.max(0, state.speed);

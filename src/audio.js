@@ -459,3 +459,16 @@ export function playCheer() {
   tone(1900, 0.3, 0.35, { type: "sine", vol: 0.04, slide: 1.3 });
   tone(2200, 0.9, 0.3, { type: "sine", vol: 0.035, slide: 1.25 });
 }
+
+// Cracking open a can: the tab pop, a fizz, and a rising whoosh for the boost.
+export function playFizz() {
+  noise(0, 0.05, { vol: 0.4, freq: 3000, q: 1.2 });
+  noise(0.04, 0.6, { vol: 0.16, freq: 5200, q: 0.3, type: "highpass" });
+  tone(300, 0.05, 0.45, { type: "sawtooth", vol: 0.035, slide: 3 });
+  tone(600, 0.1, 0.4, { type: "triangle", vol: 0.04, slide: 2.2 });
+}
+
+// Boost wearing off: a short falling tone.
+export function playBoostEnd() {
+  tone(700, 0, 0.3, { type: "triangle", vol: 0.04, slide: 0.5 });
+}

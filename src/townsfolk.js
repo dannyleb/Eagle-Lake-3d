@@ -11,6 +11,8 @@ import { TOWN } from "./map/layout.js";
 // To add someone, append to PEOPLE: a name, where they start, a look, and
 // a few lines.
 
+// A line is plain text, or [character, text] for one only that character
+// hears. "{you}" becomes the player's name.
 export const PEOPLE = [
   {
     name: "Brian Weed",
@@ -20,8 +22,8 @@ export const PEOPLE = [
       hat: "cap", hatColor: 0x2f4f2f, hair: 0x5a3b22, face: { beard: true, browColor: "#4a3018" },
     },
     lines: [
-      "Sidney! You seen my truck keys anywhere?",
-      "Hot one today, Chief. Hot one.",
+      "{you}! You seen my truck keys anywhere?",
+      "Hot one today, {you}. Hot one.",
       "Train's runnin' late again. Set your watch by it, my foot.",
       "You fixin' to ride that bike all the way to Columbus?",
     ],
@@ -34,9 +36,10 @@ export const PEOPLE = [
       hat: null, hair: 0x8a8a86, shadesOnHead: true, face: { mustache: true, browColor: "#6b6b66" },
     },
     lines: [
-      "Mornin', Sidney. Big game Friday, you comin'?",
+      "Mornin', {you}. Big game Friday, you comin'?",
       "They finally patched that pothole on Main. Only took three years.",
-      "Tell Bradshall to play the one about peelin'.",
+      ["sidney", "Tell Bradshall to play the one about peelin'."],
+      ["bradshall", "Play the one about peelin' tonight, would ya?"],
       "Goose season's comin'. Better get your blind ready.",
     ],
   },
@@ -48,10 +51,162 @@ export const PEOPLE = [
       hat: null, hair: null, earring: true, armInk: true, face: { tattoos: true, goatee: true, browColor: "#2a1d14" },
     },
     lines: [
-      "Don't stare, Chief. It's art.",
+      "Don't stare, {you}. It's art.",
       "Got a new one this week. Guess where.",
       "Stay off that lake shore. Them gators don't play.",
       "Ninjas at the Eagle Stop? Wild town, man.",
+    ],
+  },
+  // Everyday locals (made up).
+  {
+    name: "Miss Darlene",
+    start: [30, -4],
+    look: { skin: "#f1c6a4", shirt: 0xe86a9a, pants: 0x34495e, shoes: 0xf2f2f2, hair: 0xd9a441, longHair: true, face: { blush: true, browColor: "#a7782c" } },
+    lines: [
+      "Lunch special at the Dairy Quake is cheese fries, hon. Don't miss it.",
+      "I've poured coffee in this town for thirty-one years, {you}.",
+      "You look thirsty. Grab one of them floatin' Dr. Pebbers.",
+    ],
+  },
+  {
+    name: "Coach Pete",
+    start: [120, -90],
+    look: { skin: "#c98f62", shirt: 0x6a1b9a, pants: 0x9e9e9e, shoes: 0xf2f2f2, hat: "cap", hatColor: 0x6a1b9a, face: { mustache: true, sunglasses: true } },
+    lines: [
+      "Two-a-days start Monday. Tell the boys.",
+      "Hustle, {you}! Hustle!",
+      "We'll take district this year. Write it down.",
+    ],
+  },
+  {
+    name: "Pastor Ray",
+    start: [-60, -40],
+    look: { skin: "#8d5a3b", shirt: 0xf2f2ee, pants: 0x23272e, shoes: 0x1b1b1b, hair: 0x2b2b2b, face: { glasses: true } },
+    lines: [
+      "Potluck Sunday, {you}. Bring the good potato salad.",
+      "Bless your heart. And your bicycle.",
+      "Choir could use a voice like yours.",
+    ],
+  },
+  {
+    name: "Old Man Wendel",
+    start: [180, 30],
+    look: { skin: "#e6b996", shirt: 0x8d6e63, plaid: true, pants: 0x4e5b31, shoes: 0x3e2723, hat: "cowboy", hatColor: 0xd8c39a, hair: 0xe0e0e0, face: { mustache: true, glasses: true, browColor: "#cfcfcf" } },
+    lines: [
+      "Back in my day the train stopped right here on Main.",
+      "That lake used to be bigger. Or I was smaller.",
+      "Kids these days and their bicycles.",
+    ],
+  },
+  {
+    name: "Rhonda",
+    start: [90, 2],
+    look: { skin: "#6d4127", shirt: 0x00897b, pants: 0x212121, shoes: 0x7b1fa2, hair: 0x1b1b1b, longHair: true, earring: true, face: { browColor: "#1b1b1b" } },
+    lines: [
+      "The bank closes at three, {you}. Three.",
+      "Did you see the price of rice this year? Lord.",
+      "My cousin swears she saw a ninja behind the Feed & Seed.",
+    ],
+  },
+  {
+    name: "Duck Dale",
+    start: [-120, 60],
+    look: { skin: "#d9a57c", shirt: 0x556b2f, plaid: true, pants: 0x5d4037, shoes: 0x3e2723, hat: "cap", hatColor: 0x8d6e63, face: { beard: true, browColor: "#5a3b22" } },
+    lines: [
+      "Snow geese are thick out past the dryers this year.",
+      "You hear that? Specklebellies.",
+      "I got a blind out by the gravel pits. Don't tell nobody.",
+    ],
+  },
+  {
+    name: "Big Earl",
+    start: [-180, -60],
+    look: { skin: "#f0c29d", shirt: 0xc62828, pants: 0x1a237e, shoes: 0x212121, hat: "cowboy", hatColor: 0x2b2b2b, face: { goatee: true, browColor: "#3a2a1c" } },
+    lines: [
+      "I could eat a whole cheese fry basket by myself. I have.",
+      "That '70 of yours sounds mean, {you}.",
+      "Somebody's gotta fix the stop sign on 3rd.",
+    ],
+  },
+  {
+    name: "Tripp",
+    start: [0, 90],
+    look: { skin: "#f6d0b0", shirt: 0x1e88e5, pants: 0x90a4ae, shoes: 0xff5722, hat: "cap", hatColor: 0xff5722, face: { blush: true } },
+    lines: [
+      "Summer's so boring here. Wanna race?",
+      "I drank three Dr. Pebbers and I can see sounds.",
+      "Is it true there's gators in the lake? Like, real ones?",
+    ],
+  },
+  {
+    name: "Nurse Patrice",
+    start: [-240, 150],
+    look: { skin: "#9c6644", shirt: 0x4fc3f7, pants: 0x4fc3f7, shoes: 0xf2f2f2, hair: 0x2b1d14, longHair: true, face: { glasses: true } },
+    lines: [
+      "Wear a helmet on that bike, {you}. I mean it.",
+      "Twelve-hour shift. Don't talk to me till the Dairy Quake.",
+      "Drink some water between them sodas.",
+    ],
+  },
+  {
+    name: "Farmer Gus",
+    start: [-240, -150],
+    look: { skin: "#d39b6c", shirt: 0xf5f5f5, pants: 0x1565c0, shoes: 0x5d4037, hat: "cowboy", hatColor: 0xf0e2b6, face: { stubble: true, browColor: "#6b4a2a" } },
+    lines: [
+      "Rice is lookin' good if the rain holds off.",
+      "Water's up in the canals. Good year.",
+      "Seen my dog? Brown, answers to Biscuit.",
+    ],
+  },
+  {
+    name: "Aunt Bev",
+    start: [240, 90],
+    look: { skin: "#f3c9a8", shirt: 0xab47bc, pants: 0xeceff1, shoes: 0xf2f2f2, hair: 0xb0bec5, longHair: true, face: { glasses: true, blush: true, browColor: "#9e9e9e" } },
+    lines: [
+      "You eatin' enough, {you}? You look thin.",
+      "Come by for pie. Pecan. Don't argue.",
+      ["sidney", "That Bradshall boy sure can sing."],
+      ["bradshall", "You sure can sing, honey. Your mama'd be proud."],
+    ],
+  },
+  {
+    name: "Deputy Doug",
+    start: [60, -150],
+    look: { skin: "#c58c5c", shirt: 0x8d7b5a, pants: 0x3e3326, shoes: 0x1b1b1b, hat: "cowboy", hatColor: 0x6d5a3c, face: { sunglasses: true, mustache: true } },
+    lines: [
+      "Speed limit's thirty in town, {you}. Even on a soda buzz.",
+      "Keep it clean out there.",
+      "Nothin' ever happens here. Except ninjas, apparently.",
+    ],
+  },
+  {
+    name: "Tammy Jo",
+    start: [150, 120],
+    look: { skin: "#f6c9a3", shirt: 0xffb300, pants: 0x3949ab, shoes: 0xe91e63, hair: 0x6d3a1e, longHair: true, face: { blush: true, browColor: "#5a2f17" } },
+    lines: [
+      "Car wash fundraiser Saturday! Bring the '70.",
+      "I love your hat. Well, I love somebody's hat.",
+      "The Ferris Hotel's got live music Fridays, y'all.",
+    ],
+  },
+  {
+    name: "Hector",
+    start: [-120, -120],
+    look: { skin: "#a86e45", shirt: 0x37474f, pants: 0x263238, shoes: 0x1b1b1b, hat: "cap", hatColor: 0xd32f2f, hair: 0x1b1b1b, face: { mustache: true } },
+    lines: [
+      "That '70 needs a tune-up. Bring it by the shop.",
+      "Green Dog's chain's lookin' dry, {you}.",
+      "Busy week. Everybody hit a pothole on Main.",
+    ],
+  },
+  {
+    name: "Lou Ellen",
+    start: [210, -30],
+    look: { skin: "#7a4a2c", shirt: 0x43a047, pants: 0x5d4037, shoes: 0x3e2723, hair: 0xbdbdbd, face: { glasses: true } },
+    lines: [
+      "The museum's free on Thursdays. Nobody comes.",
+      "Eagle Lake: Goose Hunting Capital of the World. Says so on the sign.",
+      "I remember when the Santa Fe still ran.",
     ],
   },
 ];
@@ -152,6 +307,22 @@ export function buildPerson(look) {
     hair.scale.set(0.52, 0.3, 0.48);
     hair.position.set(0, 1.4, -0.02);
     hips.add(hair);
+  }
+  if (look.longHair) {
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.62, 0.14), new THREE.MeshLambertMaterial({ color: look.hair }));
+    back.position.set(0, 1.08, -0.24);
+    hips.add(back);
+  }
+  if (look.hat === "cowboy") {
+    const hm = new THREE.MeshLambertMaterial({ color: look.hatColor });
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.035, 20), hm);
+    brim.scale.set(1, 1, 0.85);
+    brim.position.y = 1.45;
+    hips.add(brim);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.25, 0.26, 14), hm);
+    crown.scale.set(1, 1, 1.15);
+    crown.position.y = 1.58;
+    hips.add(crown);
   }
   if (look.hat === "cap") {
     const capMat = new THREE.MeshLambertMaterial({ color: look.hatColor });
@@ -272,8 +443,10 @@ export function createTownsfolk(scene, collision, people = PEOPLE) {
     if (Math.random() < 0.25) f.side *= -1; // cross the street now and then
   }
 
-  // ctx: { px, pz, vehicle: {x,z,speed}|null, onDodge(f) }
+  // ctx: { px, pz, vehicle: {x,z,speed}|null, onDodge(f), onGreet(f) }
+  let greetCd = 6;
   function update(dt, ctx) {
+    greetCd -= dt;
     for (const f of folks) {
       f.t += dt;
       const p = f.group.position;
@@ -340,7 +513,16 @@ export function createTownsfolk(scene, collision, people = PEOPLE) {
         for (const q of [P.legL, P.legR, P.armL, P.armR]) q.rotation.x *= 0.85;
         if (f.pause > 0) P.armR.rotation.z = -0.3 + Math.sin(f.t * 5) * 0.2; // gesturing while talking
       }
+      // Say hi when you pass close by (now and then, so it doesn't nag).
+      f.greetCd = (f.greetCd ?? 0) - dt;
+      if (ctx.onGreet && dPlayer < 7 && f.greetCd <= 0 && greetCd <= 0 && f.hop <= 0 && !(ctx.vehicle && Math.abs(ctx.vehicle.speed) > 12)) {
+        f.greetCd = 60;
+        greetCd = 9;
+        ctx.onGreet(f);
+      }
       f.tag.visible = dPlayer < 45;
+      // Far away: keep walking, skip drawing (saves draw calls on phones).
+      f.group.visible = dPlayer < 150;
     }
   }
 
@@ -353,11 +535,17 @@ export function createTownsfolk(scene, collision, people = PEOPLE) {
     return best;
   }
 
-  // Next line from this person (cycles through their lines).
-  function talk(f) {
+  // Next line from this person (cycles through their lines), for whoever
+  // you're playing: { id, short }.
+  function talk(f, who = { id: "sidney", short: "Sidney" }) {
     f.pause = 4.5;
-    f.lineIdx = (f.lineIdx + 1) % f.lines.length;
-    return f.lines[f.lineIdx];
+    for (let k = 0; k < f.lines.length; k++) {
+      f.lineIdx = (f.lineIdx + 1) % f.lines.length;
+      const l = f.lines[f.lineIdx];
+      if (typeof l === "string") return l.replaceAll("{you}", who.short);
+      if (l[0] === who.id) return l[1].replaceAll("{you}", who.short);
+    }
+    return "Hey there.";
   }
 
   return { update, nearest, talk, list: folks };

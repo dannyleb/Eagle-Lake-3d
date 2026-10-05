@@ -877,3 +877,34 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
   .charPick canvas { width: 56px; height: 56px; }
   .charPick { padding: 6px; }
 }
+
+/* ---------- Dr. Pebber boost ---------- */
+#boostChip {
+  position: absolute;
+  left: 50%;
+  bottom: 60px;
+  transform: translate(-50%, 20px) scale(0.9);
+  opacity: 0;
+  pointer-events: none;
+  padding: 5px 14px 7px;
+  border-radius: 14px;
+  border: 3px solid var(--ink);
+  background: #7a1424;
+  color: #fff;
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-align: center;
+  box-shadow: 0 0 18px rgba(255, 212, 59, 0.7);
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 3;
+}
+#boostChip.show { opacity: 1; transform: translate(-50%, 0) scale(1); animation: boostPulse 0.5s ease-in-out infinite alternate; }
+@keyframes boostPulse { to { box-shadow: 0 0 28px rgba(255, 212, 59, 1); } }
+.boostTrack { margin-top: 4px; height: 7px; border-radius: 4px; background: rgba(0, 0, 0, 0.45); overflow: hidden; }
+.boostTrack i { display: block; height: 100%; width: 100%; background: var(--yellow); }
+@media (max-width: 560px) {
+  /* Phones: under the clock on the right, clear of the D-pad. */
+  #boostChip { left: auto; right: 10px; bottom: auto; top: 182px; font-size: 12px; padding: 4px 10px 6px; transform: translateX(20px); }
+  #boostChip.show { transform: none; }
+}

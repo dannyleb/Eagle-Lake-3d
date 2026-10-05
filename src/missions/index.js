@@ -16,7 +16,8 @@ import {
 //          { timed: true }               ...against the clock (see failStory)
 //   defeat { label, gang }               knock out every ninja in a gang
 //   perform { label, seconds, track }    play a show on the spot (Bradshall)
-// To add a mission, append to MISSIONS.
+// To add a mission, append to MISSIONS (or BRADSHALL_MISSIONS). The
+// lunch special runs last for every character.
 // ---------------------------------------------------------------------------
 
 const FIRE_STATION = { x: -9, z: -96, r: 14 }; // reaches both lanes of McCarty
@@ -140,6 +141,33 @@ export const BRADSHALL_MISSIONS = [
     },
   },
 ];
+
+// Everybody's last stop: the lunch special at the Dairy Quake on 90A East.
+const LUNCH_SPECIAL = {
+  id: "lunch-special",
+  story: {
+    kicker: "LUNCH TIME",
+    title: "THE LUNCH SPECIAL!",
+    body:
+      "It's a minute to two, and the Dairy Quake out on 90A East ends the lunch special at two sharp: " +
+      "a cheese fries basket, a dip cone and a sweet tea for $5.99. Get there before they flip the sign. " +
+      "Floating Dr. Pebbers on the road give you a burst of speed.",
+    go: "I'M STARVING",
+  },
+  steps: [{ type: "goto", label: "Get to the Dairy Quake", at: (ctx) => ctx.world.dairy, r: 10, timed: true }],
+  failStory: {
+    kicker: "LUNCH TIME",
+    title: "SPECIAL'S OVER!",
+    body: "They flipped the sign right as you pulled in. The manager says they'll run it one more time if you hurry back out and come in again. Go!",
+    go: "ONE MORE TRY",
+  },
+  achievement: {
+    title: "CHEESE FRIES BASKET",
+    text: "Made it with seconds to spare. One red plastic basket, extra cheese, extra crispy. Worth it.",
+  },
+};
+MISSIONS.push(LUNCH_SPECIAL);
+BRADSHALL_MISSIONS.push(LUNCH_SPECIAL);
 
 export const MISSION_SETS = { sidney: MISSIONS, bradshall: BRADSHALL_MISSIONS };
 

@@ -282,6 +282,7 @@ export function buildWorld(scene) {
   const spawnView = (x, z) =>
     (x > -48 && x < 14 && z > -124 && z < -40) ||
     (x > -352 && x < -308 && z > -10 && z < 70) || // Eagle Stop lot and lane
+    (x > 374 && x < 420 && z > 4 && z < 38) || // Dairy Quake lot
     (x > 276 && x < 300 && z > -194 && z < -168); // where Sidney starts, by Bradshall
   const tree = (x, z, s = 1, kind = "round") => {
     if (!spawnView(x, z) && freeSpot(x, z, 1.4 * s)) {
@@ -767,6 +768,23 @@ export function buildWorld(scene) {
   rectQuad({ x0: 286, z0: 8, x1: 342, z1: 34 }, Y.lot, PAL.lot);
   poleSign({ x: 290, z: 9, rot: 0, title: "Sputnik", sub: "DRIVE-IN • OPEN LATE", bg: "#16a085", fg: "#ffffff" });
 
+  // Dairy Quake: the burger-and-dip-cone stand east of town (lunch special).
+  const dq = { x: 396, z: 22, w: 16, d: 11 };
+  rectQuad({ x0: 378, z0: 7, x1: 416, z1: 34 }, Y.lot, PAL.lot);
+  addStore({ ...dq, h: 6.2, rot: ROT.n, wall: "#fbfbf8", trim: "#d62839", name: "Dairy Quake", sub: "BASKETS • DIP CONES • SHAKES", signBg: "#d62839", signFg: "#ffffff", awningColor: "#d62839", parapet: "flat" });
+  // Red roof band and a blue stripe along the base.
+  props.prim(PRIM.box(), { x: dq.x, y: 0.7, z: dq.z - dq.d / 2 - 0.05, sx: dq.w, sy: 0.35, sz: 0.12 }, "#1f5fbf");
+  poleSign({ x: 381, z: 9, rot: 0, title: "Dairy Quake", sub: "LUNCH SPECIAL: CHEESE FRIES BASKET", bg: "#d62839", fg: "#ffffff", w: 7 });
+  // Picnic tables with red umbrellas out front.
+  for (const [tx, tz] of [[409, 12], [409, 18]]) {
+    props.prim(PRIM.box(), { x: tx, y: 0.75, z: tz, sx: 1.9, sy: 0.1, sz: 0.9 }, "#d62839");
+    for (const o of [-0.75, 0.75]) props.prim(PRIM.box(), { x: tx, y: 0.45, z: tz + o, sx: 1.9, sy: 0.08, sz: 0.3 }, "#d62839");
+    props.prim(PRIM.cyl(6), { x: tx, y: 1.4, z: tz, sx: 0.08, sy: 2.4, sz: 0.08 }, "#e9ecef");
+    props.prim(PRIM.cone(10), { x: tx, y: 2.75, z: tz, sx: 3, sy: 0.7, sz: 3 }, "#ffffff");
+    collision.add({ type: "box", x: tx, z: tz, hw: 1, hd: 0.9, h: 1 });
+  }
+  const dairy = { x: dq.x, z: dq.z - dq.d / 2 - 4 };
+
   const motel = addBuilding({ x: 384, z: -22.5, w: 44, d: 9, h: 3.8, rot: ROT.s, wall: "#f7b6c8", roof: "#2a9d8f", front: "house", frontSeg: 5.5, frontSegH: 3.8, roofType: "gable", rh: 1.6 });
   rectQuad({ x0: 360, z0: -16, x1: 408, z1: -7 }, Y.lot, PAL.lot);
   poleSign({ x: 410, z: -9, rot: 0, title: "Goose Inn Motel", sub: "VACANCY • COLOR TV", bg: "#ff6fa8", fg: "#ffffff" });
@@ -1096,6 +1114,7 @@ export function buildWorld(scene) {
     fireLights,
     sidneyHouse,
     ferris: { x: ferrisFrontX, z: ferrisFrontZ },
+    dairy,
     gearHouse: { x: gearDoorX, z: gearDoorZ },
     gearLot: { x: -6, z: 150 },
     crossings: railInfo.crossings,

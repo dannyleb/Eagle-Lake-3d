@@ -18,9 +18,11 @@ import { createStuckWatch } from "./assist.js";
 import { makeFaceTexture } from "./textures.js";
 import { createGators } from "./gators.js";
 import { createTownsfolk } from "./townsfolk.js";
+import { createPickups, BOOST_SECONDS, BOOST_MULT } from "./pickups.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
   playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateSidVoice, onSidVoice, toggleRadio, radioIsOn, radioOutput,
+  playFizz, playBoostEnd,
 } from "./audio.js";
 
 document.title = GAME_TITLE;
@@ -87,6 +89,7 @@ const chaseCam = createChaseCamera(camera);
 const hud = createHud(world.minimap);
 const gators = createGators(scene, collision);
 const townsfolk = createTownsfolk(scene, collision);
+const pickups = createPickups(scene);
 toonify(scene);
 
 const RIDES = {
@@ -217,7 +220,7 @@ function interact() {
   if (mode !== "walk") return dismount();
   const local = townsfolk.nearest(player.group.position.x, player.group.position.z);
   if (local) {
-    hud.toast(`${local.name}: "${townsfolk.talk(local)}"`, 4200);
+    hud.toast(`${local.name}: "${townsfolk.talk(local, { id: character, short: CHARACTERS[character].short })}"`, 4200);
     return;
   }
   if (nearBradshall()) {
@@ -379,6 +382,36 @@ const stuckWatch = createStuckWatch();
 const IDLE = { x: 0, y: 0, sprint: false, brake: false, interact: false, view: false, map: false, radio: false };
 const extras = [];
 
+const GREETINGS = ["Hey, {you}!", "Afternoon, {you}.", "Well, look who it is!", "Howdy, {you}!", "{you}! C'mere a sec.", "Hot enough for ya, {you}?"];
+let greetIdx = 0;
+
+// ---------- Dr. Pebber cans: grab one for a few seconds of extra speed ----------
+const boostChip = document.getElementById("boostChip");
+const boostBar = boostChip.querySelector("i");
+let boostT = 0;
+function updateBoost(dt, pos) {
+  const live = started && !missions.blocking;
+  const got = pickups.update(dt, time, pos, live ? (mode === "walk" ? 1.7 : 3.4) : 0);
+  if (got) {
+    if (boostT <= 0) hud.toast("DR. PEBBER RUSH! 24 flavors of speed", 1600);
+    boostT = BOOST_SECONDS;
+    playFizz();
+  } else if (boostT > 0) {
+    boostT -= dt;
+    if (boostT <= 0) playBoostEnd();
+  }
+  const m = boostT > 0 ? BOOST_MULT : 1;
+  player.state.boost = bike.state.boost = car.state.boost = m;
+  boostChip.classList.toggle("show", boostT > 0);
+  if (boostT > 0) boostBar.style.width = `${(100 * boostT) / BOOST_SECONDS}%`;
+  // Widen the view a touch while boosted, for the rush.
+  const fov = boostT > 0 ? 66 : 55;
+  if (Math.abs(camera.fov - fov) > 0.05) {
+    camera.fov += (fov - camera.fov) * Math.min(1, dt * 5);
+    camera.updateProjectionMatrix();
+  }
+}
+
 function frame() {
   requestAnimationFrame(frame);
   const nowMs = performance.now();
@@ -431,11 +464,16 @@ function frame() {
   camera.updateMatrixWorld();
   treeFocus.value.set(pos.x, pos.y + 1.2, pos.z).applyMatrix4(camera.matrixWorldInverse);
   missions.update(dt, time);
+  updateBoost(dt, pos);
   townsfolk.update(dt, {
     px: pos.x,
     pz: pos.z,
     vehicle: mode === "walk" ? null : { x: pos.x, z: pos.z, speed: ent.state.speed },
-    onDodge: (f) => hud.toast(`${f.name}: "Whoa! Watch it, Sidney!"`, 1600),
+    onDodge: (f) => hud.toast(`${f.name}: "Whoa! Watch it, ${CHARACTERS[character].short}!"`, 1600),
+    onGreet: started && !missions.blocking ? (f) => {
+      const hi = GREETINGS[(greetIdx++) % GREETINGS.length].replace("{you}", CHARACTERS[character].short);
+      hud.toast(`${f.name}: "${hi}"${mode === "walk" ? " (E to chat)" : ""}`, 2200);
+    } : null,
   });
   gators.update(dt, {
     px: pos.x,
@@ -467,6 +505,9 @@ function frame() {
   if (mode !== "bike") extras.push({ x: bike.group.position.x, z: bike.group.position.z, r: 2.4, color: "#2ecc71" });
   if (mode !== "car") extras.push({ x: car.group.position.x, z: car.group.position.z, r: 2.6, color: "#1f8a4c" });
   if (bradshall.group.visible) extras.push({ x: bradshall.group.position.x, z: bradshall.group.position.z, r: 2.6, color: "#8e44ad" });
+  for (const c of pickups.spots) {
+    if (c.gone <= 0 && Math.abs(c.x - pos.x) < 160 && Math.abs(c.z - pos.z) < 160) extras.push({ x: c.x, z: c.z, r: 1.6, color: "#a51c30" });
+  }
   for (const f of townsfolk.list) extras.push({ x: f.group.position.x, z: f.group.position.z, r: 2.2, color: "#4dabf7" });
   const maxSpeed = mode === "walk" ? player.state.sprintSpeed : ent.state.maxSpeed * 1.3;
   const t = currentTrack();
@@ -484,7 +525,7 @@ frame();
 if (location.search.includes("debug")) {
   window.__debug = {
     THREE, scene, camera, renderer, post, player, bike, car, bradshall, trains, crossings, chaseCam, hud, world,
-    mount, dismount, missions, gators, townsfolk, distToRoad, radioOutput, radioIsOn, getMode: () => mode, gameTime: () => time,
+    mount, dismount, missions, gators, townsfolk, pickups, boost: () => boostT, distToRoad, radioOutput, radioIsOn, getMode: () => mode, gameTime: () => time,
     teleport(x, z, heading = 0) {
       const e = active();
       e.group.position.x = x;

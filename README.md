@@ -66,6 +66,22 @@ seconds in, the missions start:
 Both locations are placed approximately and are easy to move in
 `src/world/index.js`.
 
+### Everybody: the lunch special
+
+After their own missions, both characters get the same last one: the
+**Dairy Quake** out on 90A East ends its lunch special at two o'clock
+sharp. Beat the clock (miss it and you get another try) for the **CHEESE
+FRIES BASKET**.
+
+## Dr. Pebber cans
+
+About 80 cans of Dr. Pebber float over the streets: mid-block on every
+other block in town, and every ~110 m out the highways (red dots on the
+minimap). Ride, drive or walk through one for a **Dr. Pebber Rush**: 1.6x
+speed for 5 seconds, with a fizz, a wider view and a countdown bar. Grab
+another to reset the clock. Each can comes back 25 seconds after it's
+taken. Tuning lives at the top of `src/pickups.js`.
+
 Watch the lake shore: alligators sun themselves all the way around it.
 They'll hiss with jaws wide open if you get close, and snap if you get
 closer.
@@ -116,12 +132,16 @@ swells back. Pause the radio any time to hear him clearly.
 
 ## Townsfolk
 
-Locals stroll the sidewalks around town, turning at random corners, each
-with a name tag: **Brian Weed**, **Greg Bradbury** and **Tattoo Face
-Man**. Walk up and press E to chat; they'll jump out of the way if you
-come through on the bike or in the car. Their looks are placeholders until
-there are photos to go from. Adding someone is one entry in `PEOPLE` in
-`src/townsfolk.js`.
+Eighteen locals stroll the sidewalks around town, turning at random
+corners, each with a name tag: **Brian Weed**, **Greg Bradbury** and
+**Tattoo Face Man**, plus a cast of made-up regulars (Miss Darlene, Coach
+Pete, Pastor Ray, Old Man Wendel, Rhonda, Duck Dale, Big Earl, Tripp,
+Nurse Patrice, Farmer Gus, Aunt Bev, Deputy Doug, Tammy Jo, Hector and Lou
+Ellen). They call out a hello as you pass; walk up and press E to chat.
+Lines know who you're playing. They'll jump out of the way if you come
+through on the bike or in the car. Anyone more than 150 m away isn't drawn,
+to keep phones fast. Their looks are placeholders until there are photos to
+go from. Adding someone is one entry in `PEOPLE` in `src/townsfolk.js`.
 
 ## The Thicker Bradshall
 

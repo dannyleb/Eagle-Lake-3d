@@ -181,8 +181,8 @@ export function buildSidney() {
 }
 
 export const CHARACTERS = {
-  sidney: { name: "SIDNEY", build: buildSidney },
-  bradshall: { name: "THE THICKER BRADSHALL", build: () => buildBradshall({ playable: true }) },
+  sidney: { name: "SIDNEY", short: "Sidney", build: buildSidney },
+  bradshall: { name: "THE THICKER BRADSHALL", short: "Bradshall", build: () => buildBradshall({ playable: true }) },
 };
 
 export function createPlayer(scene, spawn) {
@@ -193,7 +193,7 @@ export function createPlayer(scene, spawn) {
   group.rotation.y = spawn.heading;
   scene.add(group);
 
-  const state = { group, heading: spawn.heading, speed: 0, walkSpeed: 4.8, sprintSpeed: 8.2, walkCycle: 0, radius: 0.45, pose: "walk" };
+  const state = { group, heading: spawn.heading, speed: 0, walkSpeed: 4.8, sprintSpeed: 8.2, boost: 1, walkCycle: 0, radius: 0.45, pose: "walk" };
   let pedal = 0;
   let punchT = 0;
   let helmet = null;
@@ -340,6 +340,7 @@ export function createPlayer(scene, spawn) {
       // Backing up is slower than walking forward.
       target = input.y > 0 ? (input.sprint ? state.sprintSpeed : state.walkSpeed) : input.y < 0 ? -state.walkSpeed * 0.6 : 0;
     }
+    target *= state.boost;
     state.speed += (target - state.speed) * Math.min(1, dt * 8);
 
     const oldX = group.position.x, oldZ = group.position.z;

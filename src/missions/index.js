@@ -127,13 +127,13 @@ export const BRADSHALL_MISSIONS = [
       kicker: "BRADSHALL \u00b7 MISSION 2",
       title: "GO GET THE GEAR",
       body:
-        "Next weekend's a bigger room, and the amp and the good mic are out in the little house " +
-        "behind the place at 77 S McCarty. Head down there and haul it out.",
+        "Next weekend's a bigger room, and the amp and the good mic are out at The Little House, " +
+        "just south of town. Head down there and haul it out.",
       go: "ON IT",
     },
     steps: [
-      { type: "goto", label: "Get to 77 S McCarty", at: (ctx) => ctx.world.gearLot, r: 16 },
-      { type: "goto", label: "Grab the gear from the little house", at: (ctx) => ctx.world.gearHouse, r: 3 },
+      { type: "goto", label: "Get to The Little House", at: (ctx) => ctx.world.gearLot, r: 16 },
+      { type: "goto", label: "Grab the gear from The Little House", at: (ctx) => ctx.world.gearHouse, r: 3 },
     ],
     achievement: {
       title: "DR. PEBBER",

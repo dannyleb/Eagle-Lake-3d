@@ -60,9 +60,9 @@ seconds in, the missions start:
    and plays a 30-second set of "I Got Drunk with the Crowd" while the
    room whoops, whistles and claps along, then a big roar and applause
    as the song fades out. Unlocks **PAID: $50**.
-2. **Go Get the Gear.** The band gear is in the little house out back at
-   77 S McCarty, a property with a main house a little south of town.
-   Ride out, walk up to the shed, and grab it. Unlocks a can of
+2. **Go Get the Gear.** The band gear is at **The Little House**, out
+   back of a main house a little south of town. Ride out, walk up to it,
+   and grab it. Unlocks a can of
    **DR. PEBBER** (24 flavors, one more than the other guy).
 
 Both locations are placed approximately and are easy to move in

@@ -871,19 +871,18 @@ export function buildWorld(scene) {
     }
   }
 
-  // ---------- 77 S McCarty: a main house and the little house out back
+  // ---------- The Little House: a small house out back of a main house
   // (where the band keeps its gear), on the quiet south end of McCarty ----------
   const gearMain = addBuilding({ x: -21, z: 150, w: 12, d: 10, h: 3.8, rot: ROT.e, wall: "#f2e6c9", roof: "#7b4a2b", front: "house", frontSeg: 12, frontSegH: 3.8, roofType: "gable", rh: 2.6, overhang: 0.55 });
   const gearShed = addBuilding({ x: -38, z: 157, w: 7, d: 6, h: 3, rot: ROT.e, wall: "#9fc6a2", roof: "#5a6170", front: "house", frontSeg: 7, frontSegH: 3, roofType: "gable", rh: 1.6, overhang: 0.4 });
   ground.groundQuad([[-6.5, 165.5], [-6.5, 161.5], [-34.5, 161.5], [-34.5, 165.5]], Y.lot, PAL.gravel);
   {
-    // Mailbox with the house number, and a hand-painted sign on the shed.
+    // Mailbox at the drive, and a hand-painted sign on the little house.
     props.prim(PRIM.box(), { x: -8.2, y: 0.55, z: 145, sx: 0.12, sy: 1.1, sz: 0.12 }, "#6b4a2e");
     props.prim(PRIM.box(), { x: -8.2, y: 1.18, z: 145, sx: 0.62, sy: 0.32, sz: 0.32 }, "#2b2b2b");
-    addSign({ x: -8.2, y: 1.75, z: 145, rot: ROT.e, w: 1.4, h: 0.6, title: "77", sub: "S McCARTY", bg: "#ffffff", fg: "#2b2b2b", twoSided: true });
     const [sx, sz] = L(gearShed, 0, gearShed.d / 2 + 0.06);
-    addSign({ x: sx, y: 2.4, z: sz, rot: gearShed.rot, w: 3.2, h: 0.8, title: "Band Gear", sub: "KNOCK FIRST", bg: "#3b2614", fg: "#f2e9d8" });
-    minimap.landmarks.push({ x: gearShed.x, z: gearShed.z, label: "77 S McCarty" });
+    addSign({ x: sx, y: 2.4, z: sz, rot: gearShed.rot, w: 3.4, h: 0.8, title: "The Little House", sub: "BAND GEAR • KNOCK FIRST", bg: "#3b2614", fg: "#f2e9d8" });
+    minimap.landmarks.push({ x: gearShed.x, z: gearShed.z, label: "The Little House" });
   }
   const [gearDoorX, gearDoorZ] = L(gearShed, 0, gearShed.d / 2 + 1.4);
 

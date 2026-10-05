@@ -111,6 +111,21 @@ in later.
 Open `public/index.html` after building (see below), or visit the GitHub
 Pages deployment once it's live.
 
+## The theme song
+
+The title screen opens on **PRESS START** (any key or tap; browsers only
+allow sound after one), which brings up the game's theme song, "Back to
+School", looping under the character picker. Picking a character fades the
+theme out as the radio fades in.
+
+Every mission achievement, for every character, brings the theme back: a
+slice of it fades in over the confetti while the radio tunes away, holds
+for about five seconds, then fades out with a bit of dial static as the
+radio station tunes back in, right where its song left off. Each
+achievement picks up a different strong spot in the song. A second theme
+track can be added to `THEME_TRACKS` in `src/audio.js`; achievements then
+alternate between them.
+
 ## The radio
 
 A local station plays continuously from the moment you tap or press any key —

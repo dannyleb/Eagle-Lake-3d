@@ -131,14 +131,15 @@ let voiceDuck = 1; // 1 = full, ~0.2 while Sidney is talking
 // Sidney's line window on the audio clock: the music dips just before he
 // speaks and swells back after, timed by the audio hardware, not frames.
 let talkFrom = -1, talkTo = -1;
+let themeDuck = 1; // 1 = radio at full, 0 = tuned away while the theme plays
 function applyRadioVolume() {
   const c = radioGain ? radioGain.context : null;
   const talking = c && c.currentTime >= talkFrom && c.currentTime <= talkTo;
   if (radioGain) {
-    const v = Math.max(0, Math.min(1, radioLevel * (talking ? 0.18 : 1)));
+    const v = Math.max(0, Math.min(1, radioLevel * themeDuck * (talking ? 0.18 : 1)));
     radioGain.gain.setTargetAtTime(v, c.currentTime, talking ? 0.04 : 0.3);
   } else if (radioEl) {
-    radioEl.volume = Math.max(0, Math.min(1, radioLevel * voiceDuck));
+    radioEl.volume = Math.max(0, Math.min(1, radioLevel * themeDuck * voiceDuck));
   }
 }
 function fadeTo(target, ms) {
@@ -625,3 +626,132 @@ export function playFizz() {
 export function playBoostEnd() {
   tone(700, 0, 0.3, { type: "triangle", vol: 0.04, slide: 0.5 });
 }
+
+// ---------- Main theme ----------
+// The game's theme song plays on the title screen, and a slice of it fades
+// in over each mission achievement: the radio tunes away under it, then
+// tunes back in as the theme fades out. Its own <audio> element and gain
+// node (iOS ignores .volume), separate from the radio, so the radio's song
+// keeps its place.
+//
+// ACHIEVEMENT_CUES: where in the theme each achievement starts, taken in
+// turn (strong spots in the song). Add a second theme track by adding it to
+// THEME_TRACKS; achievements alternate through them.
+const THEME_TRACKS = ["audio/main-theme.mp3"];
+const ACHIEVEMENT_CUES = [19.5, 50, 114.5, 160];
+const THEME_LEVEL = 0.7;
+let themeEl = null, themeGain = null, themeVol = 0, themeTween = null, themeOff = null, duckTween = null;
+let themeMode = null; // "menu" | "achievement" | null
+let achievementCount = 0;
+
+function getThemeEl() {
+  if (!themeEl) {
+    themeEl = new Audio(THEME_TRACKS[0]);
+    themeEl.preload = "auto";
+    themeEl.volume = 0;
+    const c = getCtx();
+    if (c && c.createMediaElementSource) {
+      try {
+        themeGain = c.createGain();
+        themeGain.gain.value = 0;
+        c.createMediaElementSource(themeEl).connect(themeGain).connect(c.destination);
+        themeEl.volume = 1;
+      } catch (e) {
+        themeGain = null;
+      }
+    }
+  }
+  return themeEl;
+}
+function setThemeVol(v) {
+  themeVol = v;
+  if (themeGain) themeGain.gain.setTargetAtTime(v, themeGain.context.currentTime, 0.05);
+  else if (themeEl) themeEl.volume = Math.max(0, Math.min(1, v));
+}
+// Tween helper (wall clock, 40 ms steps).
+function tween(from, to, ms, set, done) {
+  const t0 = performance.now();
+  const id = setInterval(() => {
+    const k = Math.min(1, (performance.now() - t0) / ms);
+    set(from + (to - from) * k);
+    if (k >= 1) {
+      clearInterval(id);
+      if (done) done();
+    }
+  }, 40);
+  return id;
+}
+function fadeTheme(to, ms, done) {
+  clearInterval(themeTween);
+  themeTween = tween(themeVol, to, ms, setThemeVol, done);
+}
+function duckRadioFor(to, ms) {
+  clearInterval(duckTween);
+  duckTween = tween(themeDuck, to, ms, (v) => { themeDuck = v; applyRadioVolume(); });
+}
+function seekAndPlay(el, at) {
+  const go = () => {
+    try { el.currentTime = at; } catch (e) { /* not seekable yet */ }
+    el.play().catch(() => {});
+  };
+  if (el.readyState >= 1) go();
+  else {
+    el.addEventListener("loadedmetadata", go, { once: true });
+    el.play().catch(() => {});
+  }
+}
+
+// Radio static, for the moment the dial swings back to the station.
+export function playTuneStatic() {
+  noise(0, 0.5, { vol: 0.05, freq: 2400, q: 0.4 });
+  tone(900, 0, 0.35, { type: "sine", vol: 0.012, slide: 1.8 });
+}
+
+// Title screen: the theme from the top, looping.
+export function playMenuTheme() {
+  const el = getThemeEl();
+  clearTimeout(themeOff);
+  themeMode = "menu";
+  el.loop = true;
+  if (el.paused) {
+    if (el.src.indexOf(THEME_TRACKS[0]) < 0) el.src = THEME_TRACKS[0];
+    el.play().catch(() => {});
+  }
+  fadeTheme(THEME_LEVEL, 1200);
+  return !el.paused;
+}
+export function stopMenuTheme(ms = 1400) {
+  if (!themeEl || themeMode !== "menu") return;
+  themeMode = null;
+  fadeTheme(0, ms, () => { if (!themeMode) themeEl.pause(); });
+}
+
+// Achievement: fade the theme in over the radio, hold, fade it out and tune
+// the radio back in. hold = seconds at full level.
+export function playAchievementTheme(hold = 5.2) {
+  const el = getThemeEl();
+  clearTimeout(themeOff);
+  themeMode = "achievement";
+  const src = THEME_TRACKS[achievementCount % THEME_TRACKS.length];
+  const cue = ACHIEVEMENT_CUES[achievementCount % ACHIEVEMENT_CUES.length];
+  achievementCount++;
+  el.loop = false;
+  if (el.src.indexOf(src) < 0) el.src = src;
+  setThemeVol(0);
+  seekAndPlay(el, cue);
+  fadeTheme(THEME_LEVEL, 700);
+  duckRadioFor(0, 600);
+  themeOff = setTimeout(() => {
+    fadeTheme(0, 1800, () => { if (themeMode === "achievement") { themeMode = null; el.pause(); } });
+    setTimeout(() => {
+      if (radioOn) playTuneStatic();
+      duckRadioFor(1, 1600);
+    }, 700);
+  }, (0.7 + hold) * 1000);
+}
+
+// True while the theme is up (Sid holds his voicemails).
+export const themePlaying = () => themeMode != null;
+
+// Testing: where the theme and the radio duck are right now.
+export const themeDebug = () => ({ mode: themeMode, vol: +themeVol.toFixed(2), duck: +themeDuck.toFixed(2), at: themeEl ? +themeEl.currentTime.toFixed(1) : null, paused: themeEl ? themeEl.paused : null });

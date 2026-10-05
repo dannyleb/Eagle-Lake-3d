@@ -908,3 +908,9 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
   #boostChip { left: auto; right: 10px; bottom: auto; top: 182px; font-size: 12px; padding: 4px 10px 6px; transform: translateX(20px); }
   #boostChip.show { transform: none; }
 }
+
+/* ---------- Title screen: PRESS START, then the character picker ---------- */
+#pressStart { display: none; margin: 14px auto 4px; height: 58px; padding: 0 34px; font-size: 20px; letter-spacing: 0.08em; animation: pressPulse 1.1s ease-in-out infinite; }
+@keyframes pressPulse { 50% { transform: scale(1.06); box-shadow: 0 0 22px rgba(255, 212, 59, 0.8); } }
+#startOverlay.title #pressStart { display: inline-flex; align-items: center; justify-content: center; }
+#startOverlay.title .pickTitle, #startOverlay.title #charPicks { display: none; }

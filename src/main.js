@@ -22,7 +22,7 @@ import { createPickups, BOOST_SECONDS, BOOST_MULT } from "./pickups.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
   playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateSidVoice, onSidVoice, toggleRadio, radioIsOn, radioOutput,
-  playFizz, playBoostEnd,
+  playFizz, playBoostEnd, playMenuTheme, stopMenuTheme, themePlaying, themeDebug,
 } from "./audio.js";
 
 document.title = GAME_TITLE;
@@ -449,7 +449,7 @@ function frame() {
   const pushing = mode === "walk" && ((input.dir != null && input.mag > 0.3) || Math.abs(input.y) > 0.3);
   stuckWatch.update(dt, pushing, ent.group.position, collision, ent.state.radius, input.dir ?? ent.state.heading);
   // Sid's voicemail lines are Sidney's voice: only when playing Sidney.
-  updateSidVoice(dt, started && !missions.blocking && character === "sidney");
+  updateSidVoice(dt, started && !missions.blocking && !themePlaying() && character === "sidney");
   if (mode === "bike") player.animateRide(bike.state.speed, dt);
   if (hopOffWhenStopped) {
     if (mode === "walk") hopOffWhenStopped = false;
@@ -525,7 +525,7 @@ frame();
 if (location.search.includes("debug")) {
   window.__debug = {
     THREE, scene, camera, renderer, post, player, bike, car, bradshall, trains, crossings, chaseCam, hud, world,
-    mount, dismount, missions, gators, townsfolk, pickups, boost: () => boostT, distToRoad, radioOutput, radioIsOn, getMode: () => mode, gameTime: () => time,
+    mount, dismount, missions, gators, townsfolk, pickups, boost: () => boostT, themeDebug, distToRoad, radioOutput, radioIsOn, getMode: () => mode, gameTime: () => time,
     teleport(x, z, heading = 0) {
       const e = active();
       e.group.position.x = x;
@@ -581,6 +581,7 @@ function start(id = picks[highlighted]?.dataset.char || "sidney") {
   }
   missions.setCharacter(character);
   unlockAudio();
+  stopMenuTheme(); // the theme fades out as the radio fades in
   playRadio();
   overlay.classList.add("hidden");
   window.removeEventListener("keydown", onStartKey);
@@ -588,7 +589,18 @@ function start(id = picks[highlighted]?.dataset.char || "sidney") {
   const q = new URLSearchParams(location.search);
   missions.start(q.has("debug") ? Math.max(0, (parseInt(q.get("mission"), 10) || 1) - 1) : 0);
 }
+// Title screen: PRESS START (any key or tap) brings up the theme song and
+// the character picker. Browsers only allow sound after a tap or key.
+function pressStart() {
+  if (!overlay.classList.contains("title")) return;
+  overlay.classList.remove("title");
+  unlockAudio();
+  playMenuTheme();
+}
+document.getElementById("pressStart").addEventListener("click", (e) => { e.stopPropagation(); pressStart(); });
+overlay.addEventListener("pointerdown", () => pressStart());
 function onStartKey(e) {
+  if (overlay.classList.contains("title")) return pressStart();
   if (e.code === "ArrowLeft" || e.code === "KeyA") highlight(highlighted - 1);
   else if (e.code === "ArrowRight" || e.code === "KeyD") highlight(highlighted + 1);
   else if (e.code === "Digit1") start("sidney");

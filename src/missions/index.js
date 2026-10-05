@@ -4,7 +4,7 @@ import { createMissionUI } from "./ui.js";
 import { createNinjaGang } from "../ninja.js";
 import {
   startSiren, stopSiren, setSirenVolume, duckRadio,
-  playFanfare, playPop, playObjective, playHit, playPoof, playOof, playTick, playFail,
+  playAchievementTheme, playPop, playObjective, playHit, playPoof, playOof, playTick, playFail,
   playTrack, playCheer, startCrowd, endShowSong, SHOW_TRACK,
 } from "../audio.js";
 
@@ -240,7 +240,7 @@ export function createMissions(ctx) {
     if (ctx.arrive) ctx.arrive();
     if (m.onComplete) m.onComplete(ctx);
     playPop();
-    playFanfare();
+    playAchievementTheme(); // theme fades in over the radio, then tunes back
     await ui.achievement(m.achievement.title, m.achievement.text);
     mission = null;
   }

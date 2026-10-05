@@ -21,8 +21,8 @@ import { createTownsfolk } from "./townsfolk.js";
 import { createPickups, BOOST_SECONDS, BOOST_MULT } from "./pickups.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
-  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateSidVoice, onSidVoice, toggleRadio, radioIsOn, radioOutput,
-  playFizz, playBoostEnd, playMenuTheme, stopMenuTheme, nudgeMenuTheme, themePlaying, themeDebug,
+  playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateVoices, onVoice, toggleRadio, radioIsOn, radioOutput,
+  playFizz, playBoostEnd, playMenuTheme, nudgeMenuTheme, introThenRadio, debugCall, themePlaying, themeDebug,
 } from "./audio.js";
 
 document.title = GAME_TITLE;
@@ -285,26 +285,63 @@ function promptText() {
 
 onRadioTrackChange((t) => hud.toast(`ON THE RADIO: ${t.title} — ${t.artist}`));
 
-// Sidney on the radio: caption card with his face, lower right.
+// Voices: caption card lower right with the speaker's face. Sid's own lines
+// as Sidney; phone calls (Sid calling Bradshall, Brian calling anybody)
+// get an INCOMING CALL / ON THE PHONE tag.
 const voiceCard = document.getElementById("voiceCard");
 const voiceText = document.getElementById("voiceText");
-{
-  const c = document.getElementById("voiceFace").getContext("2d");
-  const face = makeFaceTexture({ skin: "#9a6a46", glasses: true, mustache: true, browColor: "#141210" }).image;
-  c.fillStyle = "#21c4b5";
-  c.fillRect(0, 0, 112, 112);
-  c.drawImage(face, 6, 14, 100, 100);
-  c.fillStyle = "#1b1611"; // close-cropped hair
-  c.beginPath();
-  c.ellipse(56, 16, 52, 20, 0, 0, Math.PI * 2);
-  c.fill();
-  c.fillStyle = "#4d4741"; // shirt collar
-  c.fillRect(0, 104, 112, 8);
-}
-onSidVoice((line) => {
-  if (line) voiceText.textContent = line.text;
-  voiceCard.classList.toggle("show", !!line);
-  viewport.classList.toggle("talking", !!line);
+const voiceWho = document.getElementById("vWho");
+const voiceTag = document.getElementById("vTag");
+const voiceFace = document.getElementById("voiceFace").getContext("2d");
+const CALLERS = {
+  sid: {
+    name: "SIDNEY",
+    draw(c) {
+      const face = makeFaceTexture({ skin: "#9a6a46", glasses: true, mustache: true, browColor: "#141210" }).image;
+      c.fillStyle = "#21c4b5";
+      c.fillRect(0, 0, 112, 112);
+      c.drawImage(face, 6, 14, 100, 100);
+      c.fillStyle = "#1b1611"; // close-cropped hair
+      c.beginPath();
+      c.ellipse(56, 16, 52, 20, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#4d4741"; // shirt collar
+      c.fillRect(0, 104, 112, 8);
+    },
+  },
+  brian: {
+    name: "BRIAN WEED",
+    draw(c) {
+      const face = makeFaceTexture({ skin: "#f2c6a8", bigMustache: "#5e4a3a", stubble: true, blush: true, browColor: "#4a3420", eyeColor: "#3a2616" }).image;
+      c.fillStyle = "#e8742a";
+      c.fillRect(0, 0, 112, 112);
+      c.drawImage(face, 2, 16, 108, 100);
+      c.fillStyle = "#16181c"; // black ball cap and brim
+      c.beginPath();
+      c.ellipse(56, 18, 56, 22, 0, Math.PI, 0);
+      c.fill();
+      c.fillRect(0, 16, 112, 8);
+      c.fillRect(20, 22, 80, 6);
+      c.fillStyle = "#6b6f75"; // gray tee
+      c.fillRect(0, 104, 112, 8);
+    },
+  },
+};
+let voiceShown = null;
+onVoice((v) => {
+  if (v) {
+    if (voiceShown !== v.who) {
+      voiceShown = v.who;
+      CALLERS[v.who].draw(voiceFace);
+      voiceWho.textContent = CALLERS[v.who].name;
+    }
+    voiceText.textContent = v.text;
+    voiceTag.textContent = v.call === "ringing" ? "INCOMING CALL" : v.call ? "ON THE PHONE" : "";
+  }
+  voiceCard.classList.toggle("show", !!v);
+  voiceCard.classList.toggle("ringing", !!v && v.call === "ringing");
+  voiceCard.classList.toggle("phone", !!v && !!v.call);
+  viewport.classList.toggle("talking", !!v);
 });
 
 // ---------- Trains and gates ----------
@@ -385,6 +422,24 @@ const extras = [];
 const GREETINGS = ["Hey, {you}!", "Afternoon, {you}.", "Well, look who it is!", "Howdy, {you}!", "{you}! C'mere a sec.", "Hot enough for ya, {you}?"];
 let greetIdx = 0;
 
+// ---------- Back to the main menu (switch characters) ----------
+// A fresh page load is the cleanest reset: the title screen, PRESS START,
+// the theme and the character picker, with every mission back at the start.
+const menuConfirm = document.getElementById("menuConfirm");
+let menuOpen = false;
+function openMenu(on) {
+  menuOpen = on;
+  menuConfirm.classList.toggle("show", on);
+}
+document.getElementById("btnMenu").addEventListener("click", (e) => { e.stopPropagation(); if (started) openMenu(!menuOpen); });
+document.getElementById("mcYes").addEventListener("click", (e) => { e.stopPropagation(); location.reload(); });
+document.getElementById("mcNo").addEventListener("click", (e) => { e.stopPropagation(); openMenu(false); });
+window.addEventListener("keydown", (e) => {
+  if (!started) return;
+  if (e.code === "Escape") openMenu(!menuOpen);
+  else if (menuOpen && e.code === "Enter") location.reload();
+});
+
 // ---------- Dr. Pebber cans: grab one for a few seconds of extra speed ----------
 const boostChip = document.getElementById("boostChip");
 const boostBar = boostChip.querySelector("i");
@@ -420,7 +475,7 @@ function frame() {
   time += dt;
   const polled = controls.poll();
   // Story cards hold everything except the button that closes them.
-  let input = !started ? IDLE : missions.blocking ? { ...IDLE, interact: polled.interact } : polled;
+  let input = !started || menuOpen ? IDLE : missions.blocking ? { ...IDLE, interact: polled.interact } : polled;
   // D-pad while walking works from Sidney's point of view: up walks the way
   // he's facing, left / right turn him, down backs up.
   if (input === polled && polled.stick.on && mode === "walk") {
@@ -449,7 +504,7 @@ function frame() {
   const pushing = mode === "walk" && ((input.dir != null && input.mag > 0.3) || Math.abs(input.y) > 0.3);
   stuckWatch.update(dt, pushing, ent.group.position, collision, ent.state.radius, input.dir ?? ent.state.heading);
   // Sid's voicemail lines are Sidney's voice: only when playing Sidney.
-  updateSidVoice(dt, started && !missions.blocking && !themePlaying() && character === "sidney");
+  updateVoices(dt, started && !missions.blocking && !themePlaying(), character);
   if (mode === "bike") player.animateRide(bike.state.speed, dt);
   if (hopOffWhenStopped) {
     if (mode === "walk") hopOffWhenStopped = false;
@@ -525,7 +580,7 @@ frame();
 if (location.search.includes("debug")) {
   window.__debug = {
     THREE, scene, camera, renderer, post, player, bike, car, bradshall, trains, crossings, chaseCam, hud, world,
-    mount, dismount, missions, gators, townsfolk, pickups, boost: () => boostT, themeDebug, distToRoad, radioOutput, radioIsOn, getMode: () => mode, gameTime: () => time,
+    mount, dismount, missions, gators, townsfolk, pickups, boost: () => boostT, themeDebug, debugCall, distToRoad, radioOutput, radioIsOn, getMode: () => mode, gameTime: () => time,
     teleport(x, z, heading = 0) {
       const e = active();
       e.group.position.x = x;
@@ -577,12 +632,10 @@ function start(id = picks[highlighted]?.dataset.char || "sidney") {
   if (character !== "sidney") {
     player.setCharacter(character);
     if (character === "bradshall") bradshall.group.visible = false; // he's you now
-    document.querySelector("#voiceCard .vName").firstChild.textContent = CHARACTERS[character].name + " ";
   }
   missions.setCharacter(character);
   unlockAudio();
-  stopMenuTheme(); // the theme fades out as the radio fades in
-  playRadio();
+  introThenRadio(5); // theme plays on ~5 s into the game, then the radio takes over
   overlay.classList.add("hidden");
   window.removeEventListener("keydown", onStartKey);
   // ?debug&mission=3 starts at the third mission (testing only).

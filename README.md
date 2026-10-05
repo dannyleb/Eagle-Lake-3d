@@ -115,8 +115,12 @@ Pages deployment once it's live.
 
 The title screen opens on **PRESS START** (any key or tap; browsers only
 allow sound after one), which brings up the game's theme song, "Back to
-School", looping under the character picker. Picking a character fades the
-theme out as the radio fades in.
+School", looping under the character picker. Picking a character starts the game
+with the theme still playing for about five seconds; then it fades out as
+the radio station comes up with the in-game songs.
+
+The **MENU** button (top left, or `Esc`) asks to confirm, then takes you
+back to the title screen to pick a character again; missions start over.
 
 Every mission achievement, for every character, brings the theme back: a
 slice of it fades in over the confetti while the radio tunes away, holds
@@ -140,13 +144,30 @@ It loops through the station automatically; press `R` any time to skip to
 the next track. All the songs are lazy-loaded (only fetched once playback
 actually starts), so they never add weight to the initial page load.
 
-## Sidney's voice
+## Voices and phone calls
 
-When you play as Sidney, every 8 to 13 seconds he pipes up with a short line (none longer than
-two seconds) cut from his real voicemails, picked at random without
-repeats. A radio-call card pops up in the lower right with his face and a
-caption of what he's saying, and the music ducks way down under him, then
-swells back. Pause the radio any time to hear him clearly.
+**Playing Sidney:** every 8 to 13 seconds Sid pipes up with a short line
+(none longer than two seconds) cut from his real voicemails, picked at
+random without repeats. A card pops up in the lower right with his face
+and a caption, and the music ducks way down under him, then swells back.
+
+**Phone calls:** the phone rings (two rings, an INCOMING CALL card with
+the caller's face shaking), then the caller talks through a phone-line
+filter with captions, then hangs up.
+- Playing **The Thicker Bradshall**, Sid calls him every half minute or
+  so with the same voicemail clips ("Hey, Blakey Boy..." then "Give me a
+  call back. Bye."), mixed in with calls from Brian Weed.
+- Playing either character, **Brian Weed** calls (about once a minute as
+  Sidney) about Dr. Pebber, hamburgers, and how bad he'd beat his arch
+  nemesis **Billy Powell** in a wrestling match.
+
+There are no recordings of Brian, so his twelve lines are synthesized:
+[Piper](https://github.com/rhasspy/piper) text-to-speech with the "ryan"
+voice (CC BY-NC-SA 4.0, non-commercial), pitched down and slowed a touch
+for a big-guy drawl. Lines and captions live in `BRIAN_LINES` in
+`src/audio.js`; the clips are in `public/audio/brian/`.
+
+Pause the radio any time to hear the voices clearly.
 
 ## Townsfolk
 

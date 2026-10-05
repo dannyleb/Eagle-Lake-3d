@@ -7,11 +7,12 @@
   <meta name="description" content="A browser-based 3D free-roam tour of a satirical small Texas railroad town inspired by Eagle Lake, TX." />
   <meta name="theme-color" content="#4b1d7a" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%224%22 fill=%22%234b1d7a%22/%3E%3Ccircle cx=%228%22 cy=%228%22 r=%224%22 fill=%22%23ffd43b%22/%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="style.css?v=65ee9819" />
+  <link rel="stylesheet" href="style.css?v=49975778" />
 </head>
 <body>
   <div id="app">
     <header id="topbar">
+      <button id="btnMenu" class="chunk small" aria-label="Back to the main menu">MENU</button>
       <div id="meter" class="plate">
         <span class="lbl">ZOOM-O-METER</span>
         <div class="meterTrack"><div id="meterFill"></div></div>
@@ -48,6 +49,16 @@
         </div>
       </div>
       <canvas id="confetti"></canvas>
+      <div id="menuConfirm" role="dialog" aria-label="Back to the main menu">
+        <div class="mcInner">
+          <div class="mcTitle">BACK TO THE MAIN MENU?</div>
+          <p>Pick a different character and start fresh. Mission progress starts over.</p>
+          <div class="mcBtns">
+            <button id="mcYes" class="chunk yellow">MAIN MENU</button>
+            <button id="mcNo" class="chunk">KEEP PLAYING</button>
+          </div>
+        </div>
+      </div>
       <div id="achievement">
         <div class="achKicker">ACHIEVEMENT UNLOCKED</div>
         <div class="medalWrap"><div class="rays"></div><div class="medal"><span>&#9733;</span></div></div>
@@ -60,7 +71,7 @@
       <div id="voiceCard" aria-live="polite">
         <div class="vAvatar"><canvas id="voiceFace" width="112" height="112"></canvas></div>
         <div class="vBody">
-          <div class="vName">SIDNEY <span class="vBars"><i></i><i></i><i></i><i></i></span></div>
+          <div class="vName"><span id="vWho">SIDNEY</span> <span class="vBars"><i></i><i></i><i></i><i></i></span><span id="vTag"></span></div>
           <div id="voiceText"></div>
         </div>
       </div>
@@ -86,8 +97,8 @@
       <h2>Green Dog Run</h2>
       <p>Free-roam a sun-baked Texas railroad town on foot, on a fire-department beach cruiser, or behind the wheel of a green '70 big-block. Two freight lines cut through town &mdash; mind the gates.</p>
       <div class="controlsGrid">
-        <div><strong>Keyboard</strong><br/>WASD / Arrows &mdash; walk<br/>Riding: W go &middot; A / D next turn &middot; S stop<br/>Shift &mdash; run / floor it<br/>Space &mdash; brake<br/>E &mdash; ride / park / talk<br/>V &mdash; camera &middot; M &mdash; map<br/>P &mdash; pause radio &middot; R &mdash; next song<br/>F &mdash; get in the car from anywhere</div>
-        <div><strong>Touch</strong><br/>D-pad &mdash; walk any direction<br/>Riding: &#9650; go &middot; &#9664; &#9654; next turn &middot; &#9660; stop / turn around<br/>RUN &mdash; run / floor it<br/>E &mdash; ride (calls Green Dog to you) / park / talk<br/>CAR &mdash; calls the '70 to you</div>
+        <div><strong>Keyboard</strong><br/>WASD / Arrows &mdash; walk<br/>Riding: W go &middot; A / D next turn &middot; S stop<br/>Shift &mdash; run / floor it<br/>Space &mdash; brake<br/>E &mdash; ride / park / talk<br/>V &mdash; camera &middot; M &mdash; map &middot; Esc &mdash; main menu<br/>P &mdash; pause radio &middot; R &mdash; next song<br/>F &mdash; get in the car from anywhere</div>
+        <div><strong>Touch</strong><br/>D-pad &mdash; walk any direction<br/>Riding: &#9650; go &middot; &#9664; &#9654; next turn &middot; &#9660; stop / turn around<br/>RUN &mdash; run / floor it<br/>E &mdash; ride (calls Green Dog to you) / park / talk<br/>CAR &mdash; calls the '70 to you<br/>MENU &mdash; back to the main menu</div>
       </div>
       <button id="pressStart" class="chunk yellow" aria-label="Press start">&#9654; PRESS START</button>
       <div class="pickTitle">PICK YOUR CHARACTER</div>
@@ -103,10 +114,10 @@
           <span class="pickRole">Country musician</span>
         </button>
       </div>
-      <p class="fine"><span id="buildTag">build eb7de047</span> &middot; Every business and place name is an original satirical creation inspired by small-town Texas &mdash; not a depiction of any real business. Street layout loosely follows the real town.</p>
+      <p class="fine"><span id="buildTag">build 8a405e00</span> &middot; Every business and place name is an original satirical creation inspired by small-town Texas &mdash; not a depiction of any real business. Street layout loosely follows the real town.</p>
     </div>
   </div>
 
-  <script src="bundle.js?v=eb7de047"></script>
+  <script src="bundle.js?v=8a405e00"></script>
 </body>
 </html>

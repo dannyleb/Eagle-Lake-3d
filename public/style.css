@@ -914,3 +914,46 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
 @keyframes pressPulse { 50% { transform: scale(1.06); box-shadow: 0 0 22px rgba(255, 212, 59, 0.8); } }
 #startOverlay.title #pressStart { display: inline-flex; align-items: center; justify-content: center; }
 #startOverlay.title .pickTitle, #startOverlay.title #charPicks { display: none; }
+
+/* ---------- Phone calls on the voice card ---------- */
+#vTag { font-size: 9px; letter-spacing: 0.12em; color: #fff; background: #2f9e44; border-radius: 6px; padding: 1px 6px; }
+#vTag:empty { display: none; }
+#voiceCard.phone { border-color: #2f9e44; }
+#voiceCard.ringing .vAvatar { animation: ringShake 0.12s linear infinite alternate; }
+#voiceCard.ringing #vTag { animation: ringBlink 0.5s steps(1) infinite; }
+@keyframes ringShake { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+@keyframes ringBlink { 50% { background: #ffd43b; color: var(--ink); } }
+
+/* ---------- Main menu button and confirm ---------- */
+#btnMenu { font-size: 13px; }
+#menuConfirm {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 8, 36, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 8;
+}
+#menuConfirm.show { opacity: 1; pointer-events: auto; }
+.mcInner {
+  max-width: min(88%, 380px);
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 4px solid var(--teal);
+  background: linear-gradient(180deg, #7a3fc0, #4b1d7a);
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 6px 0 var(--ink);
+}
+.mcTitle { font-size: 20px; font-weight: 900; color: var(--yellow); text-shadow: 0 2px 0 var(--ink); }
+.mcInner p { font-size: 14px; margin: 8px 0 14px; }
+.mcBtns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+@media (max-width: 560px) { #btnMenu { min-width: 0; padding: 0 8px; font-size: 11px; } }
+.vName { flex-wrap: wrap; row-gap: 3px; }
+#vTag { white-space: nowrap; }
+#voiceCard.phone .vBars { display: none; }
+@media (max-width: 560px) { body.touch #viewport.talking #prompt { bottom: 124px; } }

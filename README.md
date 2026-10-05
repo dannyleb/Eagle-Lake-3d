@@ -220,7 +220,8 @@ not a likeness of the real person, in the same style as Sidney himself.
 - `E` button — ride / park / talk / order (the label changes to match);
   anywhere else it calls Green Dog to you
 - `CAR` — calls the '70 to you and you get in
-- `RADIO` — pause / play (▶▶ next to it skips the song)
+- `❚❚` / `▶` (top right) — pause / play the radio; `▶▶` next to it skips
+  to the next song (works while paused too: it turns the radio back on)
 - `VIEW`, `MAP`, `RADIO` — same as the keys above
 
 ## Running locally

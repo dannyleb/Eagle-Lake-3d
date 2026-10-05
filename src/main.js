@@ -256,7 +256,7 @@ const radioBtn = document.getElementById("btnRadio");
 function syncRadioButton() {
   const on = radioIsOn();
   radioBtn.classList.toggle("off", !on);
-  radioBtn.innerHTML = on ? "&#10074;&#10074; RADIO" : "&#9654; RADIO";
+  radioBtn.innerHTML = on ? '&#10074;&#10074;<span class="rLbl"> RADIO</span>' : '&#9654;<span class="rLbl"> RADIO</span>';
 }
 
 function promptText() {

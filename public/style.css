@@ -365,7 +365,7 @@ body.touch #prompt.show { transform: translateY(0); }
   #app { gap: 4px; padding: max(4px, env(safe-area-inset-top)) 4px max(4px, env(safe-area-inset-bottom)) 4px; }
   #topbar, #bottombar { border-radius: 16px; padding: 4px 6px; gap: 6px; }
   #viewport { margin: 4px; border-radius: 18px; }
-  #locPlate { font-size: 12px; padding: 5px 6px; }
+  #locPlate { font-size: 12px; padding: 5px 6px; min-width: 0; }
   #compass { width: 42px; height: 42px; }
   #compassRose .n { transform: translateY(-13px); }
   #compassRose .s { transform: translateY(13px); }
@@ -842,8 +842,12 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
 @media (max-width: 560px) {
   #voiceText { font-size: 13px; }
   .vAvatar { width: 46px; height: 46px; }
-  #btnNext { display: none; }
+  /* Radio controls stay on phones: pause / play and skip to the next song. */
+  #topbar #btnRadio { min-width: 0; padding: 0 9px; font-size: 12px; }
+  #topbar #btnNext { min-width: 40px; padding: 0 8px; font-size: 12px; }
 }
+/* Narrow phones: the radio button is just the pause / play symbol. */
+@media (max-width: 400px) { #btnRadio .rLbl { display: none; } }
 @media (max-width: 420px) {
   #bottombar .chunk { min-width: 54px; padding: 0 8px; font-size: 12px; }
 }

@@ -14,10 +14,25 @@ function getCtx() {
   return ctx;
 }
 
+// Call from inside a tap / click / key handler: phones only let audio start
+// from a real user gesture.
 export function unlockAudio() {
+  // iOS: play through the silent switch like a music app would (Safari 16.4+).
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { /* older Safari */ }
   const c = getCtx();
-  if (c && c.state === "suspended") c.resume();
+  if (!c) return;
+  if (c.state !== "running") c.resume();
+  // iOS also wants something actually played in the gesture: a silent blip.
+  if (!unlocked) {
+    unlocked = true;
+    const b = c.createBuffer(1, 1, 22050);
+    const src = c.createBufferSource();
+    src.buffer = b;
+    src.connect(c.destination);
+    src.start(0);
+  }
 }
+let unlocked = false;
 
 function ding() {
   const c = getCtx();
@@ -720,6 +735,14 @@ export function playMenuTheme() {
   fadeTheme(THEME_LEVEL, 1200);
   return !el.paused;
 }
+// Another tap on the title screen: if the theme didn't get going (the
+// phone said no, or the audio engine is still asleep), try again.
+export function nudgeMenuTheme() {
+  if (themeMode !== "menu" || !themeEl) return;
+  unlockAudio();
+  if (themeEl.paused) themeEl.play().catch(() => {});
+  if (themeVol < THEME_LEVEL) fadeTheme(THEME_LEVEL, 600);
+}
 export function stopMenuTheme(ms = 1400) {
   if (!themeEl || themeMode !== "menu") return;
   themeMode = null;
@@ -754,4 +777,4 @@ export function playAchievementTheme(hold = 5.2) {
 export const themePlaying = () => themeMode != null;
 
 // Testing: where the theme and the radio duck are right now.
-export const themeDebug = () => ({ mode: themeMode, vol: +themeVol.toFixed(2), duck: +themeDuck.toFixed(2), at: themeEl ? +themeEl.currentTime.toFixed(1) : null, paused: themeEl ? themeEl.paused : null });
+export const themeDebug = () => ({ ctx: ctx ? ctx.state : null, mode: themeMode, vol: +themeVol.toFixed(2), duck: +themeDuck.toFixed(2), at: themeEl ? +themeEl.currentTime.toFixed(1) : null, paused: themeEl ? themeEl.paused : null });

@@ -22,7 +22,7 @@ import { createPickups, BOOST_SECONDS, BOOST_MULT } from "./pickups.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
   playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateSidVoice, onSidVoice, toggleRadio, radioIsOn, radioOutput,
-  playFizz, playBoostEnd, playMenuTheme, stopMenuTheme, themePlaying, themeDebug,
+  playFizz, playBoostEnd, playMenuTheme, stopMenuTheme, nudgeMenuTheme, themePlaying, themeDebug,
 } from "./audio.js";
 
 document.title = GAME_TITLE;
@@ -571,7 +571,7 @@ drawPortrait(document.getElementById("pickBradshall"), { skin: "#e0ad86", mutton
 });
 
 function start(id = picks[highlighted]?.dataset.char || "sidney") {
-  if (started) return;
+  if (started || performance.now() - pressedAt < 450) return;
   started = true;
   character = CHARACTERS[id] ? id : "sidney";
   if (character !== "sidney") {
@@ -590,15 +590,24 @@ function start(id = picks[highlighted]?.dataset.char || "sidney") {
   missions.start(q.has("debug") ? Math.max(0, (parseInt(q.get("mission"), 10) || 1) - 1) : 0);
 }
 // Title screen: PRESS START (any key or tap) brings up the theme song and
-// the character picker. Browsers only allow sound after a tap or key.
+// the character picker. Phones only allow sound from a real tap (click /
+// touchend / keydown, not touchstart or pointerdown), so that's what
+// starts it; any later tap on the title screen retries if it didn't take.
+let pressedAt = -1e9;
 function pressStart() {
-  if (!overlay.classList.contains("title")) return;
+  if (!overlay.classList.contains("title")) return nudgeMenuTheme();
   overlay.classList.remove("title");
+  pressedAt = performance.now();
   unlockAudio();
   playMenuTheme();
 }
-document.getElementById("pressStart").addEventListener("click", (e) => { e.stopPropagation(); pressStart(); });
-overlay.addEventListener("pointerdown", () => pressStart());
+overlay.addEventListener("click", () => pressStart());
+overlay.addEventListener("touchend", (e) => {
+  // Leaving the title: swallow the tap's follow-up click so it can't land
+  // on a character card that just appeared under the finger.
+  if (overlay.classList.contains("title")) e.preventDefault();
+  pressStart();
+}, { passive: false });
 function onStartKey(e) {
   if (overlay.classList.contains("title")) return pressStart();
   if (e.code === "ArrowLeft" || e.code === "KeyA") highlight(highlighted - 1);

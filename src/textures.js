@@ -384,6 +384,7 @@ export function makeFaceTexture(opts) {
     tattoos = false,
     muttonChops = false,
     hairColor = "#2a2015",
+    bigMustache = null, // color of a full, wide mustache down to the mouth corners
   } = opts;
   const w = 256, h = 256;
   const c = canvas(w, h);
@@ -471,6 +472,27 @@ export function makeFaceTexture(opts) {
       ctx.quadraticCurveTo(w / 2, h * 0.92, w / 2 + 16, h * 0.68);
       ctx.quadraticCurveTo(w / 2, h * 0.8, w / 2 - 16, h * 0.68);
       ctx.fill();
+    }
+  }
+
+  if (bigMustache) {
+    ctx.fillStyle = bigMustache;
+    ctx.beginPath();
+    ctx.moveTo(w / 2, h * 0.625);
+    ctx.quadraticCurveTo(w / 2 + 30, h * 0.6, w / 2 + 40, h * 0.69);
+    ctx.quadraticCurveTo(w / 2 + 34, h * 0.71, w / 2 + 24, h * 0.685);
+    ctx.quadraticCurveTo(w / 2, h * 0.675, w / 2 - 24, h * 0.685);
+    ctx.quadraticCurveTo(w / 2 - 34, h * 0.71, w / 2 - 40, h * 0.69);
+    ctx.quadraticCurveTo(w / 2 - 30, h * 0.6, w / 2, h * 0.625);
+    ctx.fill();
+    // A few lighter strands for the gray coming in.
+    ctx.strokeStyle = "rgba(220,215,205,0.45)";
+    ctx.lineWidth = 2;
+    for (let i = -30; i <= 30; i += 9) {
+      ctx.beginPath();
+      ctx.moveTo(w / 2 + i, h * 0.635);
+      ctx.lineTo(w / 2 + i * 1.12, h * 0.675);
+      ctx.stroke();
     }
   }
 

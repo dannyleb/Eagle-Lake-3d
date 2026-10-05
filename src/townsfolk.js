@@ -17,9 +17,11 @@ export const PEOPLE = [
   {
     name: "Brian Weed",
     start: [-30, 2],
+    // From his photos: big guy, round face, mustache with a little stubble,
+    // plain black ball cap, graying at the sides, gray ballpark champions tee.
     look: {
-      skin: "#e0b08a", shirt: 0xb83a2e, plaid: true, pants: 0x3b5a86, shoes: 0x5b3a22,
-      hat: "cap", hatColor: 0x2f4f2f, hair: 0x5a3b22, face: { beard: true, browColor: "#4a3018" },
+      skin: "#f2c6a8", shirt: 0x6b6f75, tee: "champs", heavy: true, pants: 0x2f3f5c, shoes: 0x1b1b1b,
+      hat: "cap", hatColor: 0x16181c, hair: 0x7a6a5c, face: { bigMustache: "#5e4a3a", stubble: true, blush: true, browColor: "#4a3420", eyeColor: "#3a2616" },
     },
     lines: [
       "{you}! You seen my truck keys anywhere?",
@@ -263,6 +265,31 @@ function plaidTexture(base) {
   return t;
 }
 
+// A ballpark "champions" tee graphic (made up, no team marks): navy
+// shield, gold trophy flags, an orange banner.
+function champsTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d");
+  g.fillStyle = "#1f2f5c";
+  g.beginPath();
+  g.moveTo(14, 10); g.lineTo(114, 10); g.lineTo(114, 78); g.lineTo(64, 120); g.lineTo(14, 78);
+  g.closePath();
+  g.fill();
+  g.fillStyle = "#c9a54a";
+  for (let i = 0; i < 9; i++) g.fillRect(30 + i * 8, 22 + Math.abs(4 - i) * 3, 4, 34 - Math.abs(4 - i) * 3);
+  g.fillStyle = "#e8742a";
+  g.fillRect(4, 62, 120, 26);
+  g.fillStyle = "#ffffff";
+  g.font = "bold 20px Trebuchet MS, sans-serif";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.fillText("CHAMPS", 64, 76);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 export function buildPerson(look) {
   const group = new THREE.Group();
   const skinHex = new THREE.Color(look.skin).getHex();
@@ -276,10 +303,16 @@ export function buildPerson(look) {
   const hips = new THREE.Group();
   hips.position.y = 0.95;
   group.add(hips);
+  const heavy = !!look.heavy;
   const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 0.32, 6, 12), shirt);
-  torso.scale.set(1.08, 1, 0.82);
+  torso.scale.set(heavy ? 1.42 : 1.08, heavy ? 1.04 : 1, heavy ? 1.18 : 0.82);
   torso.position.y = 0.43;
   hips.add(torso);
+  if (look.tee === "champs") {
+    const art = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.34), new THREE.MeshLambertMaterial({ map: champsTexture(), transparent: true, alphaTest: 0.5 }));
+    art.position.set(0.06, 0.44, 0.3 * torso.scale.z + 0.012);
+    hips.add(art);
+  }
   if (look.tank) {
     // Bare shoulders and a tank top cut.
     for (const sx of [-1, 1]) {
@@ -288,15 +321,28 @@ export function buildPerson(look) {
       hips.add(sh);
     }
   }
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.12, 0.12, 10), skin);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(heavy ? 0.16 : 0.11, heavy ? 0.18 : 0.12, 0.12, 10), skin);
   neck.position.y = 0.9;
   hips.add(neck);
 
   const f = look.face || {};
   const faceTex = makeFaceTexture({ skin: look.skin, ...f, stubble: f.beard || f.stubble });
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.5, 0.42), makeHeadMaterials(faceTex, skinHex));
+  const head = new THREE.Mesh(new THREE.BoxGeometry(heavy ? 0.52 : 0.46, 0.5, heavy ? 0.46 : 0.42), makeHeadMaterials(faceTex, skinHex));
   head.position.y = 1.18;
   hips.add(head);
+  if (heavy) {
+    // Full cheeks and jaw.
+    const jowl = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), skin);
+    jowl.scale.set(0.97, 0.4, 0.62);
+    jowl.position.set(0, 0.98, -0.03); // widens the jaw without covering the face
+    hips.add(jowl);
+    if (look.hat && look.hair != null) {
+      // Graying hair showing under the cap at the sides and back.
+      const sides = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.16, 0.4), new THREE.MeshLambertMaterial({ color: look.hair }));
+      sides.position.set(0, 1.3, -0.05);
+      hips.add(sides);
+    }
+  }
   if (f.beard) {
     const beard = new THREE.Mesh(new THREE.BoxGeometry(0.47, 0.2, 0.2), new THREE.MeshLambertMaterial({ color: look.hair ?? 0x3a2a1c }));
     beard.position.set(0, 1.0, 0.13);
@@ -327,11 +373,11 @@ export function buildPerson(look) {
   if (look.hat === "cap") {
     const capMat = new THREE.MeshLambertMaterial({ color: look.hatColor });
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), capMat);
-    cap.scale.set(0.52, 0.34, 0.5);
+    cap.scale.set(heavy ? 0.6 : 0.52, heavy ? 0.4 : 0.34, heavy ? 0.54 : 0.5);
     cap.position.set(0, 1.4, 0);
     hips.add(cap);
-    const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.03, 0.24), capMat);
-    brim.position.set(0, 1.43, 0.31);
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(heavy ? 0.46 : 0.4, 0.03, 0.26), capMat);
+    brim.position.set(0, 1.43, heavy ? 0.36 : 0.31);
     brim.rotation.x = 0.12;
     hips.add(brim);
   }
@@ -354,11 +400,11 @@ export function buildPerson(look) {
 
   function arm(sign) {
     const g = new THREE.Group();
-    g.position.set(sign * 0.4, 0.74, 0);
-    const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.12, 4, 8), look.tank ? skin : shirt);
+    g.position.set(sign * (heavy ? 0.5 : 0.4), 0.74, 0);
+    const upper = new THREE.Mesh(new THREE.CapsuleGeometry(heavy ? 0.14 : 0.1, 0.12, 4, 8), look.tank ? skin : shirt);
     upper.position.y = -0.12;
     g.add(upper);
-    const fore = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.28, 4, 8), skin);
+    const fore = new THREE.Mesh(new THREE.CapsuleGeometry(heavy ? 0.105 : 0.08, 0.28, 4, 8), skin);
     fore.position.y = -0.4;
     g.add(fore);
     if (look.armInk) {
@@ -377,8 +423,8 @@ export function buildPerson(look) {
   hips.add(armL, armR);
   function leg(sign) {
     const g = new THREE.Group();
-    g.position.set(sign * 0.15, 0.02, 0);
-    const p = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.84, 0.26), pants);
+    g.position.set(sign * (heavy ? 0.19 : 0.15), 0.02, 0);
+    const p = new THREE.Mesh(new THREE.BoxGeometry(heavy ? 0.3 : 0.24, 0.84, heavy ? 0.32 : 0.26), pants);
     p.position.y = -0.42;
     g.add(p);
     const s = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.34), shoes);

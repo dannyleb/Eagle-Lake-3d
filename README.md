@@ -143,8 +143,9 @@ Nurse Patrice, Farmer Gus, Aunt Bev, Deputy Doug, Tammy Jo, Hector and Lou
 Ellen). They call out a hello as you pass; walk up and press E to chat.
 Lines know who you're playing. They'll jump out of the way if you come
 through on the bike or in the car. Anyone more than 150 m away isn't drawn,
-to keep phones fast. Their looks are placeholders until there are photos to
-go from. Adding someone is one entry in `PEOPLE` in `src/townsfolk.js`.
+to keep phones fast. Brian Weed is modeled on his photos (a stylized tribute: big build, black
+cap, full mustache, gray ballpark "CHAMPS" tee); the others' looks are
+placeholders until there are photos to go from. Adding someone is one entry in `PEOPLE` in `src/townsfolk.js`.
 
 ## The Thicker Bradshall
 

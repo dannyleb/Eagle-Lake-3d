@@ -934,3 +934,18 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
 .reelTrack { margin-top: 5px; height: 12px; border-radius: 6px; background: rgba(0, 0, 0, 0.45); overflow: hidden; }
 .reelTrack i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffd43b, #2ecc71); transition: width 0.12s; }
 @media (max-width: 560px) { #reelMeter { top: 196px; width: 72%; } }
+
+/* ---------- Saved games: CONTINUE / NEW GAME ---------- */
+#saveMenu { display: none; flex-direction: column; gap: 10px; align-items: stretch; max-width: 340px; margin: 14px auto 4px; }
+#startOverlay.menu #saveMenu { display: flex; }
+#startOverlay.menu .pickTitle, #startOverlay.menu #charPicks { display: none; }
+.menuOpt { height: auto; min-height: 58px; padding: 8px 16px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.menuOpt.on { outline: 3px solid #fff; outline-offset: 2px; }
+.smMain { font-size: 18px; letter-spacing: 0.08em; }
+.smSub { font-size: 12px; font-weight: 700; letter-spacing: 0; text-shadow: none; opacity: 0.9; }
+.pickTitle { position: relative; }
+#pickBack { display: none; position: absolute; left: 0; top: 50%; transform: translateY(-50%); background: none; border: 0; color: #d9c7ff; font: inherit; font-size: 11px; cursor: pointer; }
+#startOverlay.hasSaves #pickBack { display: block; }
+.charPick .pickSave { font-size: 11px; font-weight: 900; color: #8ff3e8; min-height: 1em; }
+.charPick.on .pickSave { color: #16705a; }
+#startOverlay.resume .charPick.noSave { opacity: 0.35; pointer-events: none; }

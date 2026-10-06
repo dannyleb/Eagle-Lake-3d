@@ -13,7 +13,8 @@ import { createHud } from "./ui/hud.js";
 import { toonify } from "./render/toon.js";
 import { treeFocus } from "./world/trees.js";
 import { createPost } from "./render/post.js";
-import { createMissions } from "./missions/index.js";
+import { createMissions, questLine } from "./missions/index.js";
+import { loadSaves, saveSlot, saveMissionDone, clearSlot } from "./save.js";
 import { createStuckWatch } from "./assist.js";
 import { createGators } from "./gators.js";
 import { createTownsfolk } from "./townsfolk.js";
@@ -141,6 +142,9 @@ const missions = createMissions({
     if (mode === "walk") return;
     RIDES[mode].veh.stop();
     hopOffWhenStopped = true;
+  },
+  onMissionDone: (id) => {
+    if (saveMissionDone(character, id)) hud.toast("Progress saved", 1400);
   },
 });
 let hopOffWhenStopped = false;
@@ -528,8 +532,31 @@ if (location.search.includes("debug")) {
   };
 }
 
+// ---------- Saved games ----------
+// Progress is saved per character in the browser: every finished mission,
+// and where you are every few seconds (and when the page is hidden), so
+// CONTINUE puts you back on the spot with your missions done.
+function saveLabel(id, slot) {
+  const line = questLine(id);
+  const left = line.filter((m) => !slot.done.includes(m.id));
+  if (!left.length) return "All missions done";
+  return `Mission ${line.length - left.length + 1} of ${line.length}: ${left[0].name}`;
+}
+const saves = loadSaves();
+const saveLabels = {};
+for (const [id, slot] of Object.entries(saves.slots)) if (CHARACTERS[id]) saveLabels[id] = saveLabel(id, slot);
+
+function savePosition() {
+  if (!started) return;
+  const e = active();
+  saveSlot(character, { x: e.group.position.x, z: e.group.position.z, heading: e.state.heading });
+}
+setInterval(savePosition, 5000);
+document.addEventListener("visibilitychange", () => { if (document.hidden) savePosition(); });
+window.addEventListener("pagehide", savePosition);
+
 // ---------- Start: title screen, then pick a character ----------
-createStartScreen((id) => {
+createStartScreen((id, resume) => {
   started = true;
   character = CHARACTERS[id] ? id : "sidney";
   if (character !== "sidney") {
@@ -539,9 +566,24 @@ createStartScreen((id) => {
   missions.setCharacter(character);
   unlockAudio();
   introThenRadio(5); // theme plays on ~5 s into the game, then the radio takes over
-  // ?debug&mission=3 starts at the third mission (testing only).
-  const q = new URLSearchParams(location.search);
-  missions.start(q.has("debug") ? Math.max(0, (parseInt(q.get("mission"), 10) || 1) - 1) : 0);
-});
+  const slot = resume ? saves.slots[character] : null;
+  if (slot) {
+    // Back where you left off, on foot.
+    if (Number.isFinite(slot.x) && Number.isFinite(slot.z)) {
+      player.group.position.set(slot.x, player.group.position.y, slot.z);
+      player.state.heading = slot.heading || 0;
+      player.group.rotation.y = player.state.heading;
+      chaseCam.snap();
+    }
+    hud.toast(`Welcome back! ${saveLabels[character]}`, 2600);
+    missions.start({ done: slot.done });
+  } else {
+    clearSlot(character);
+    saveSlot(character, { done: [] });
+    // ?debug&mission=3 starts at the third mission (testing only).
+    const q = new URLSearchParams(location.search);
+    missions.start({ from: q.has("debug") ? Math.max(0, (parseInt(q.get("mission"), 10) || 1) - 1) : 0 });
+  }
+}, { slots: saveLabels, last: saves.last });
 // Belt and braces: if audio was blocked, the next touch anywhere retries it.
 window.addEventListener("pointerdown", () => { if (started) { unlockAudio(); if (radioIsOn()) playRadio(); } }, { once: true });

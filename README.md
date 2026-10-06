@@ -136,6 +136,25 @@ the radio station comes up with the in-game songs.
 The **MENU** button (top left, or `Esc`) asks to confirm, then takes you
 back to the title screen to pick a character again; missions start over.
 
+## Saved games
+
+Progress is saved in the browser (localStorage), one slot per character:
+every finished mission ("Progress saved" pops up after the achievement)
+and where you are, every few seconds and whenever you leave the page.
+After PRESS START, if there's a save:
+
+- **CONTINUE** picks up the last character played, on the spot you left,
+  at the next unfinished mission (with the chief's helmet and the
+  championship belt back on if you'd earned them). With saves for more
+  than one character it asks which one.
+- **NEW GAME** goes to the character picker; picking a character starts
+  them over (a card says so if they have a save). Other characters' saves
+  are kept.
+
+Saves record missions by id, so missions added later simply show up as
+the next ones to play. A browser that blocks storage (private browsing)
+just plays without saving. The code is in `src/save.js`.
+
 Every mission achievement, for every character, brings the theme back: a
 slice of it fades in over the confetti while the radio tunes away, holds
 for about five seconds, then fades out with a bit of dial static as the
@@ -296,6 +315,7 @@ src/main.js          game loop and wiring: rides, interactions, trains and gates
 src/config.js        spawn points and world constants
 src/util.js          shared helpers (seeded random, angles, canvas textures)
 src/faces.js         face presets for the named characters
+src/save.js          saved games (localStorage, one slot per character)
 src/map/             town layout: roads, rails, lake, areas, location names
 src/world/           world builder (merged geometry, facade atlas, surfaces, sky, trees, rails)
 src/render/          cel shading: toon materials and the ink-outline post pass

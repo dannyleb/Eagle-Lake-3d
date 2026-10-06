@@ -19,6 +19,8 @@ import {
 //   perform { label, seconds, track }    play a show on the spot (Bradshall)
 //   fish   { label, fishing }            fish the gator out (state[fishing] is
 //                                        the createFishing() controller)
+// Each mission: { id, name, story, steps, achievement } (+ optional alarm,
+// setup, cleanup, onComplete, failStory). id is what saved games record.
 // To add a mission, append to MISSIONS (Sidney), BRADSHALL_MISSIONS, or
 // SHARED_MISSIONS (every character, after their own). Optional hooks:
 // setup(ctx) -> state objects, cleanup(state, ctx) after the last step.
@@ -39,6 +41,7 @@ const EAGLE_STOP_NINJAS = [
 export const MISSIONS = [
   {
     id: "fire-alarm",
+    name: "Fire Alarm",
     alarm: "FIRE ALARM — STATION 1",
     story: {
       kicker: "MISSION 1 · FIRE ALARM",
@@ -58,6 +61,7 @@ export const MISSIONS = [
   },
   {
     id: "eagle-stop-ninjas",
+    name: "The Eagle Stop",
     story: {
       kicker: "MISSION 2 · THE EAGLE STOP",
       title: "NINJAS TOOK THE EAGLE STOP!",
@@ -80,6 +84,7 @@ export const MISSIONS = [
   },
   {
     id: "wrestling-night",
+    name: "Wrestling Night",
     story: {
       kicker: "MISSION 3 \u00b7 WRESTLING NIGHT",
       title: "IT'S WRESTLING NIGHT!",
@@ -108,6 +113,7 @@ export const MISSIONS = [
 export const BRADSHALL_MISSIONS = [
   {
     id: "ferris-gig",
+    name: "Gig at the Ferris Hotel",
     story: {
       kicker: "BRADSHALL \u00b7 MISSION 1",
       title: "GIG AT THE FERRIS HOTEL",
@@ -127,6 +133,7 @@ export const BRADSHALL_MISSIONS = [
   },
   {
     id: "gear-run",
+    name: "Go Get the Gear",
     story: {
       kicker: "BRADSHALL \u00b7 MISSION 2",
       title: "GO GET THE GEAR",
@@ -154,6 +161,7 @@ export const BRADSHALL_MISSIONS = [
 // The lunch special at the Dairy Quake on 90A East.
 const LUNCH_SPECIAL = {
   id: "lunch-special",
+  name: "The Lunch Special",
   story: {
     kicker: "LUNCH TIME",
     title: "THE LUNCH SPECIAL!",
@@ -178,6 +186,7 @@ const LUNCH_SPECIAL = {
 // A 10-foot gator in Granny's Lake: fish him out with a T-bone steak.
 const GRANNYS_GATOR = {
   id: "grannys-gator",
+  name: "Granny's Gator",
   story: {
     kicker: "GRANNY'S LAKE",
     title: "THERE'S A 10-FOOT ALLIGATOR IN GRANNY'S LAKE!",
@@ -214,7 +223,7 @@ const MISSION_SETS = { sidney: MISSIONS, bradshall: BRADSHALL_MISSIONS };
 export const questLine = (character) => [...(MISSION_SETS[character] || MISSIONS), ...SHARED_MISSIONS];
 
 // ctx: { scene, camera, viewport, collision, hud, player, getMode, getPos,
-//        getVehicle, punch, kickPlayer, world }
+//        getVehicle, punch, kickPlayer, world, arrive, onMissionDone(id) }
 export function createMissions(ctx) {
   const ui = createMissionUI(ctx.viewport);
   const route = createRouteView(ctx.scene);
@@ -286,11 +295,16 @@ export function createMissions(ctx) {
     await ui.achievement(m.achievement.title, m.achievement.text);
   }
 
-  // from: mission index to start at (debug builds can skip ahead).
-  async function run(from = 0) {
+  // done: ids of missions already finished (a saved game) - skipped, but
+  // their lasting rewards (helmet, belt) come back. from: index into what's
+  // left to start at (debug builds can skip ahead).
+  async function run({ done = [], from = 0 } = {}) {
+    const line = questLine(ctx.character);
+    for (const m of line) if (done.includes(m.id) && m.onComplete) m.onComplete(ctx);
     await wait(3.5);
-    for (const m of questLine(ctx.character).slice(from)) {
+    for (const m of line.filter((m) => !done.includes(m.id)).slice(from)) {
       await runMission(m);
+      if (ctx.onMissionDone) ctx.onMissionDone(m.id);
       await wait(2.5);
     }
     ui.setObjective("Free roam", "More missions coming soon");

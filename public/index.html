@@ -102,17 +102,23 @@
         <div><strong>Touch</strong><br/>D-pad &mdash; walk any direction<br/>Riding: &#9650; go &middot; &#9664; &#9654; next turn &middot; &#9660; stop / turn around<br/>RUN &mdash; run / floor it<br/>E &mdash; ride (calls Green Dog to you) / park / talk<br/>CAR &mdash; calls the '70 to you<br/>&#10074;&#10074; / &#9654;&#9654; (top) &mdash; pause radio / next song<br/>MENU &mdash; back to the main menu</div>
       </div>
       <button id="pressStart" class="chunk yellow" aria-label="Press start">&#9654; PRESS START</button>
-      <div class="pickTitle">PICK YOUR CHARACTER</div>
+      <div id="saveMenu">
+        <button id="btnContinue" class="chunk yellow menuOpt"><span class="smMain">&#9654; CONTINUE</span><span id="continueSub" class="smSub"></span></button>
+        <button id="btnNewGame" class="chunk menuOpt"><span class="smMain">NEW GAME</span><span class="smSub">Start a character from the beginning</span></button>
+      </div>
+      <div class="pickTitle"><button id="pickBack" aria-label="Back">&#9664; BACK</button><span id="pickTitleText">PICK YOUR CHARACTER</span></div>
       <div id="charPicks">
         <button class="charPick on" data-char="sidney">
           <canvas id="pickSidney" width="112" height="112"></canvas>
           <span class="pickName">SIDNEY</span>
           <span class="pickRole">Volunteer firefighter</span>
+          <span class="pickSave"></span>
         </button>
         <button class="charPick" data-char="bradshall">
           <canvas id="pickBradshall" width="112" height="112"></canvas>
           <span class="pickName">THE THICKER BRADSHALL</span>
           <span class="pickRole">Country musician</span>
+          <span class="pickSave"></span>
         </button>
       </div>
       <p class="fine"><span id="buildTag">dev build</span> &middot; Every business and place name is an original satirical creation inspired by small-town Texas &mdash; not a depiction of any real business. Street layout loosely follows the real town.</p>

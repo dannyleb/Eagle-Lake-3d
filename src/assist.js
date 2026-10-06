@@ -1,38 +1,8 @@
-// Driving and walking assists, so steering on a phone is "point the stick
-// where you want to go" instead of tank controls:
-//   - stickToHeading: joystick direction -> world heading, relative to a
-//     camera reference that is captured when you push the stick and held
-//     while you keep pushing (so holding "right" never turns into circles)
+// Walking assists, so moving on foot on a phone doesn't snag on things:
 //   - clearHeading: feelers that bend the path around walls, trees and
 //     parked cars instead of stopping dead against them
 //   - createStuckWatch: if you're pushing but not getting anywhere, pop
 //     the player to the nearest open spot
-
-export const wrapAngle = (a) => {
-  while (a > Math.PI) a -= Math.PI * 2;
-  while (a < -Math.PI) a += Math.PI * 2;
-  return a;
-};
-
-const DEAD = 0.18;
-
-export function createStickSteer() {
-  let ref = null;
-  return {
-    // stick: { x, y } in [-1, 1] (y up = forward). Returns null when idle.
-    heading(stick, cameraYaw) {
-      const mag = Math.min(1, Math.hypot(stick.x, stick.y));
-      if (mag < DEAD) {
-        ref = null;
-        return null;
-      }
-      if (ref === null) ref = cameraYaw;
-      // Very long holds slowly re-sync with the camera.
-      ref += wrapAngle(cameraYaw - ref) * 0.004;
-      return { dir: wrapAngle(ref - Math.atan2(stick.x, stick.y)), mag: (mag - DEAD) / (1 - DEAD) };
-    },
-  };
-}
 
 const STEPS = [0.3, 0.6, 0.95, 1.3, 1.65];
 

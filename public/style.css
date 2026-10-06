@@ -285,31 +285,8 @@ button { font: inherit; }
 #minimap.full { left: 6%; top: 6%; width: 88%; height: 88%; border-radius: 18px; }
 #minimap.off { display: none; }
 
-#joyBase {
-  display: none;
-  position: absolute;
-  left: 18px;
-  bottom: 18px;
-  width: 124px;
-  height: 124px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.25), rgba(27, 15, 46, 0.45));
-  border: 3px solid rgba(255, 255, 255, 0.6);
-  touch-action: none;
-}
-#joyStick {
-  position: absolute;
-  left: 34px;
-  top: 34px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff1a6, var(--yellow) 60%, #d69e0c);
-  border: 3px solid var(--ink);
-}
-body.touch #joyBase { display: block; }
 body.touch #btnRun { display: inline-block; }
-/* On touch, keep the prompt right of the joystick, along the bottom edge. */
+/* On touch, keep the prompt right of the D-pad, along the bottom edge. */
 body.touch #prompt { left: 156px; right: 10px; bottom: 12px; transform: translateY(8px); max-width: none; justify-content: flex-start; }
 body.touch #prompt.show { transform: translateY(0); }
 
@@ -352,7 +329,6 @@ body.touch #prompt.show { transform: translateY(0); }
 #startCard p { font-size: 14px; line-height: 1.45; }
 .controlsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; font-size: 13px; text-align: left; }
 .controlsGrid > div { background: rgba(0, 0, 0, 0.25); border-radius: 12px; padding: 10px; line-height: 1.5; }
-#startBtn { margin-top: 6px; height: 54px; font-size: 17px; }
 .fine { font-size: 11px !important; opacity: 0.75; }
 
 /* ---------- Small screens ---------- */
@@ -391,7 +367,6 @@ body.touch .controlsGrid > div:first-child { display: none; }
   #startCard h2 { font-size: 16px; margin-bottom: 4px; }
   #startCard p { font-size: 12px; margin: 4px 0; }
   .controlsGrid { display: none; }
-  #startBtn { height: 44px; }
 }
 
 /* ---------- Missions ---------- */
@@ -542,33 +517,6 @@ body.touch .controlsGrid > div:first-child { display: none; }
 #storyGo { display: inline-flex; align-items: center; gap: 8px; height: 50px; font-size: 17px; }
 #storyGo .keycap { width: 28px; height: 28px; font-size: 15px; }
 
-#achievement {
-  position: absolute;
-  left: 50%;
-  top: 18%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  width: min(92%, 460px);
-  padding: 12px 16px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, #fff6c8, #ffd43b);
-  color: var(--ink);
-  border: 4px solid var(--ink);
-  box-shadow: 0 6px 0 var(--ink), 0 0 40px rgba(255, 212, 59, 0.8);
-  opacity: 0;
-  transform: translate(-50%, -30px) scale(0.8);
-  pointer-events: none;
-  z-index: 6;
-}
-#achievement.show { animation: achIn 5.2s ease forwards; }
-@keyframes achIn {
-  0% { opacity: 0; transform: translate(-50%, -30px) scale(0.8); }
-  8% { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
-  12% { transform: translate(-50%, 0) scale(1); }
-  90% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -20px) scale(0.95); }
-}
 .medal {
   flex: 0 0 auto;
   width: 62px;
@@ -583,11 +531,7 @@ body.touch .controlsGrid > div:first-child { display: none; }
   color: #fff;
   text-shadow: 0 2px 0 var(--ink);
 }
-#achievement.show .medal { animation: spinIn 0.9s ease-out; }
 @keyframes spinIn { from { transform: rotateY(540deg) scale(0.4); } to { transform: none; } }
-.achKicker { font-size: 10px; font-weight: 900; letter-spacing: 0.16em; color: #8a5a00; }
-#achTitle { font-size: 24px; font-weight: 900; line-height: 1.05; margin: 2px 0 4px; }
-#achText { font-size: 13px; line-height: 1.35; font-weight: 600; }
 
 #viewport.hurt::after {
   content: "";
@@ -605,14 +549,11 @@ body.touch .controlsGrid > div:first-child { display: none; }
   #objText { font-size: 13px; }
   #storyTitle { font-size: 23px; }
   #storyBody { font-size: 13px; }
-  #achTitle { font-size: 19px; }
-  .medal { width: 48px; height: 48px; font-size: 26px; }
 }
 @media (max-height: 500px) {
   #storyTitle { font-size: 20px; margin: 2px 0 4px; }
   #storyBody { font-size: 12px; margin-bottom: 8px; }
   #storyGo { height: 40px; }
-  #achievement { top: 8%; }
 }
 #viewport.alarm #toast { top: 66px; }
 #viewport.alarm #trainBanner { top: 112px; }
@@ -657,7 +598,7 @@ body.touch .controlsGrid > div:first-child { display: none; }
   #timer.show { transform: none; }
 }
 
-/* ---------- D-pad (replaces the joystick) ---------- */
+/* ---------- D-pad ---------- */
 #dpad {
   display: none;
   position: absolute;
@@ -700,7 +641,6 @@ body.touch #dpad { display: block; }
 #dpad .arrow.right::after { transform: translate(-40%, -50%) rotate(90deg); }
 #dpad .arrow.on { background: #fff; transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 #dpad .hub { position: absolute; left: 55px; top: 55px; width: 28px; height: 28px; border-radius: 50%; background: rgba(27, 15, 46, 0.6); }
-#joyBase { display: none !important; }
 body.touch #prompt { left: 166px; }
 
 #turnChip {
@@ -727,9 +667,10 @@ body.touch #prompt { left: 166px; }
 @keyframes blink { 50% { background: #fff; } }
 body.touch #turnChip { left: auto; right: 12px; transform: none; bottom: 76px; }
 
-/* ---------- Achievement celebration (overrides the earlier banner) ---------- */
-#confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 7; }
+/* ---------- Achievement celebration ---------- */
+#confetti { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
 #achievement {
+  position: absolute;
   left: 50%;
   top: 50%;
   display: flex;
@@ -740,8 +681,14 @@ body.touch #turnChip { left: auto; right: 12px; transform: none; bottom: 76px; }
   padding: 16px 20px 18px;
   text-align: center;
   border-radius: 24px;
-  transform: translate(-50%, -50%) scale(0.6);
+  background: linear-gradient(180deg, #fff6c8, #ffd43b);
+  color: var(--ink);
+  border: 4px solid var(--ink);
   box-shadow: 0 6px 0 var(--ink), 0 0 0 6px var(--yellow), 0 0 0 10px var(--ink), 0 0 60px rgba(255, 212, 59, 0.9);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  pointer-events: none;
+  z-index: 6;
 }
 #achievement.show { animation: achPop 6.5s ease forwards; }
 @keyframes achPop {
@@ -752,7 +699,8 @@ body.touch #turnChip { left: auto; right: 12px; transform: none; bottom: 76px; }
   92% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -60%) scale(0.92); }
 }
-#achievement .achKicker { font-size: 12px; letter-spacing: 0.2em; color: #7a3fc0; }
+#achievement.show .medal { animation: spinIn 0.9s ease-out; }
+.achKicker { font-size: 12px; font-weight: 900; letter-spacing: 0.2em; color: #7a3fc0; }
 .medalWrap { position: relative; width: 96px; height: 96px; margin: 4px 0 2px; }
 .medalWrap .medal { position: absolute; left: 8px; top: 8px; width: 80px; height: 80px; font-size: 46px; }
 .rays {
@@ -787,10 +735,8 @@ body.touch #turnChip { left: auto; right: 12px; transform: none; bottom: 76px; }
   #achievement { top: 50%; padding: 10px 16px 12px; }
   .medalWrap { transform: scale(0.7); margin: -12px 0 -14px; }
 }
-#confetti { z-index: 5; }
-#achievement { z-index: 6; }
 
-/* ---------- Sidney talking: radio-call caption card ---------- */
+/* ---------- Voice card: Sid's lines and phone calls ---------- */
 #voiceCard {
   position: absolute;
   right: 12px;
@@ -824,7 +770,7 @@ body.touch #turnChip { left: auto; right: 12px; transform: none; bottom: 76px; }
 #voiceCard.show .vAvatar { animation: talk 0.22s ease-in-out infinite alternate; }
 @keyframes talk { to { transform: scale(1.06) rotate(-2deg); } }
 #voiceFace { width: 100%; height: 100%; display: block; }
-.vName { font-size: 11px; font-weight: 900; letter-spacing: 0.14em; color: var(--yellow); display: flex; align-items: center; gap: 8px; }
+.vName { font-size: 11px; font-weight: 900; letter-spacing: 0.14em; color: var(--yellow); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; row-gap: 3px; }
 .vBars { display: inline-flex; gap: 2px; align-items: flex-end; height: 10px; }
 .vBars i { width: 3px; height: 4px; background: var(--teal); border-radius: 1px; }
 #voiceCard.show .vBars i { animation: bar 0.35s ease-in-out infinite alternate; }
@@ -921,7 +867,10 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
 
 /* ---------- Phone calls on the voice card ---------- */
 #vTag { font-size: 9px; letter-spacing: 0.12em; color: #fff; background: #2f9e44; border-radius: 6px; padding: 1px 6px; }
+#vTag { white-space: nowrap; }
 #vTag:empty { display: none; }
+#voiceCard.phone .vBars { display: none; }
+@media (max-width: 560px) { body.touch #viewport.talking #prompt { bottom: 124px; } }
 #voiceCard.phone { border-color: #2f9e44; }
 #voiceCard.ringing .vAvatar { animation: ringShake 0.12s linear infinite alternate; }
 #voiceCard.ringing #vTag { animation: ringBlink 0.5s steps(1) infinite; }
@@ -957,7 +906,3 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
 .mcInner p { font-size: 14px; margin: 8px 0 14px; }
 .mcBtns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 @media (max-width: 560px) { #btnMenu { min-width: 0; padding: 0 8px; font-size: 11px; } }
-.vName { flex-wrap: wrap; row-gap: 3px; }
-#vTag { white-space: nowrap; }
-#voiceCard.phone .vBars { display: none; }
-@media (max-width: 560px) { body.touch #viewport.talking #prompt { bottom: 124px; } }

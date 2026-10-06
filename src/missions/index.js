@@ -6,7 +6,7 @@ import {
   startSiren, stopSiren, setSirenVolume, duckRadio,
   playAchievementTheme, playPop, playObjective, playHit, playPoof, playOof, playTick, playFail,
   playTrack, playCheer, startCrowd, endShowSong, SHOW_TRACK,
-} from "../audio.js";
+} from "../audio/index.js";
 
 // ---------------------------------------------------------------------------
 // Missions. Each one is a story card, a list of steps, and an achievement.
@@ -177,7 +177,6 @@ export function createMissions(ctx) {
   const ui = createMissionUI(ctx.viewport);
   const route = createRouteView(ctx.scene);
   let step = null; // { type, ..., resolve }
-  let mission = null;
   let state = {}; // per-mission objects from setup()
   let routePts = null, routeFrom = null, routeTimer = 0, routeLen = 0;
   let alarmOn = false;
@@ -205,7 +204,6 @@ export function createMissions(ctx) {
   }
 
   async function runMission(m) {
-    mission = m;
     if (m.alarm) {
       alarmOn = true;
       ui.setAlarm(m.alarm);
@@ -242,7 +240,6 @@ export function createMissions(ctx) {
     playPop();
     playAchievementTheme(); // theme fades in over the radio, then tunes back
     await ui.achievement(m.achievement.title, m.achievement.text);
-    mission = null;
   }
 
   // from: mission index to start at (debug builds can skip ahead).

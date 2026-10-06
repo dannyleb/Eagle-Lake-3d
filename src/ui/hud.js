@@ -1,4 +1,5 @@
 import { locate } from "../map/layout.js";
+import { makeCanvas } from "../util.js";
 
 const EXT = 830;
 const PX = 0.5; // minimap pixels per world unit
@@ -7,9 +8,7 @@ const toMap = (x, z) => [(x + EXT) * PX, (z + EXT) * PX];
 
 function drawBase(data) {
   const size = EXT * 2 * PX;
-  const c = document.createElement("canvas");
-  c.width = size;
-  c.height = size;
+  const c = makeCanvas(size, size);
   const ctx = c.getContext("2d");
   ctx.fillStyle = "#86c262";
   ctx.fillRect(0, 0, size, size);
@@ -181,7 +180,10 @@ export function createHud(minimapData) {
     }
   }
 
-  function drawMap(px, pz, bearing, extras, mission) {
+  // extras: map markers [{ x, z, r, color }], or a function returning them
+  // (so they're only gathered when the map actually redraws).
+  function drawMap(px, pz, bearing, markers, mission) {
+    const extras = typeof markers === "function" ? markers() : markers;
     const W = el.map.width, H = el.map.height;
     if (mapMode === 0 || W < 2) return;
     mctx.clearRect(0, 0, W, H);
@@ -249,12 +251,22 @@ export function createHud(minimapData) {
     }
   }
 
+  let lastDeg = null, lastPct = null;
   return {
     update({ x, z, heading, speedFrac, now, time, extras, mission }) {
       // Bearing measured clockwise from north (north is -z).
       const bearing = Math.atan2(Math.sin(heading), -Math.cos(heading));
-      el.rose.style.transform = `rotate(${(-bearing * 180) / Math.PI}deg)`;
-      el.meter.style.width = `${Math.round(Math.min(1, speedFrac) * 100)}%`;
+      // Only touch the DOM when the shown value changes.
+      const deg = Math.round((-bearing * 180) / Math.PI);
+      if (deg !== lastDeg) {
+        lastDeg = deg;
+        el.rose.style.transform = `rotate(${deg}deg)`;
+      }
+      const pct = Math.round(Math.min(1, speedFrac) * 100);
+      if (pct !== lastPct) {
+        lastPct = pct;
+        el.meter.style.width = `${pct}%`;
+      }
       if (time - lastLoc > 0.25) {
         lastLoc = time;
         el.loc.textContent = locate(x, z);

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { toonify } from "./render/toon.js";
+import { turnToward } from "./util.js";
 
 // Cartoon ninjas for the Eagle Stop takeover: black gi, red headband with
 // trailing tails, a sword on the back, big white eyes in the mask slit.
@@ -173,11 +174,7 @@ export function createNinjaGang(scene, collision, spots) {
   let defeated = 0;
 
   function face(n, x, z, dt, rate = 8) {
-    const want = Math.atan2(x - n.group.position.x, z - n.group.position.z);
-    let d = want - n.group.rotation.y;
-    while (d > Math.PI) d -= Math.PI * 2;
-    while (d < -Math.PI) d += Math.PI * 2;
-    n.group.rotation.y += d * Math.min(1, dt * rate);
+    turnToward(n.group, Math.atan2(x - n.group.position.x, z - n.group.position.z), dt * rate);
   }
 
   function moveToward(n, x, z, speed, dt) {

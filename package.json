@@ -6,12 +6,19 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "python3 -m http.server 8080 --directory public"
+    "dev": "node build.mjs --serve",
+    "lint": "eslint ."
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "@eslint/js": "^9.39.5",
+    "esbuild": "^0.24.0",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0"
   },
   "dependencies": {
     "three": "^0.186.1"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

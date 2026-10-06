@@ -133,7 +133,7 @@ export function railAttach(x, z, heading) {
   if (!graph) graph = buildGraph();
   const p = snap(x, z);
   let [n0, n1] = attach(p);
-  if (n0 === n1) [n0, n1] = [n0, n0.edges[0].to];
+  if (n0 === n1) n1 = n0.edges[0].to; // a dead end: use its one road
   const fx = Math.sin(heading), fz = Math.cos(heading);
   const forward = (n1.x - n0.x) * fx + (n1.z - n0.z) * fz >= 0;
   const a = forward ? n0 : n1, b = forward ? n1 : n0;

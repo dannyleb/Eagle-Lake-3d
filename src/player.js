@@ -1,8 +1,10 @@
 import * as THREE from "three";
 import { toonify } from "./render/toon.js";
 import { buildBradshall, GUITAR_FRONT, GUITAR_BACK } from "./npc.js";
-import { clearHeading, wrapAngle } from "./assist.js";
+import { clearHeading } from "./assist.js";
+import { wrapAngle, makeCanvas, canvasTexture } from "./util.js";
 import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
+import { FACES } from "./faces.js";
 
 // Sidney — a stylized tribute built from the photos: heavyset, glasses and a
 // thin mustache, dark wavy hair, a charcoal-brown uniform shirt with a gold
@@ -13,12 +15,9 @@ const SKIN = 0x9a6a46;
 const BASE_SCALE = 0.8;
 
 function canvasTex(w, h, draw) {
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
+  const c = makeCanvas(w, h);
   draw(c.getContext("2d"), w, h);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   return t;
 }
 
@@ -110,7 +109,7 @@ export function buildSidney() {
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.12, 10), skin);
   neck.position.y = 0.92;
   hips.add(neck);
-  const faceTex = makeFaceTexture({ skin: "#9a6a46", glasses: true, mustache: true, browColor: "#141210" });
+  const faceTex = makeFaceTexture(FACES.sidney);
   const head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.52, 0.44), makeHeadMaterials(faceTex, SKIN));
   head.position.y = 1.22;
   hips.add(head);

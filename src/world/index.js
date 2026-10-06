@@ -12,6 +12,7 @@ import { buildRails } from "./rail.js";
 import { makeSignTexture, makeBannerTexture } from "../signage.js";
 import { CollisionWorld } from "../collision.js";
 import { BRADSHALL } from "../config.js";
+import { seededRandom, makeCanvas, canvasTexture } from "../util.js";
 
 // Ground layer heights (kept apart so distant surfaces don't z-fight).
 export const Y = { field: 0, lawn: 0.04, shore: 0.05, water: 0.08, lot: 0.1, walk: 0.12, road: 0.16, bed: 0.18, mark: 0.2, curbwalk: 0.26 };
@@ -42,17 +43,6 @@ const CAR_COLORS = ["#e74c3c", "#3498db", "#f1c40f", "#2ecc71", "#9b59b6", "#ecf
 
 const ROT = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 };
 
-function mulberry32(seed) {
-  let a = seed;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 // Darken (f < 1) or lighten (f > 1) a CSS color.
 function shade(hex, f) {
   const c = new THREE.Color(hex);
@@ -71,7 +61,7 @@ function offsetLine(pts, off) {
 }
 
 export function buildWorld(scene) {
-  const rand = mulberry32(1999);
+  const rand = seededRandom(1999);
   const pick = (arr) => arr[Math.floor(rand() * arr.length)];
   const collision = new CollisionWorld(32);
   const atlas = makeFacadeAtlas();
@@ -830,7 +820,6 @@ export function buildWorld(scene) {
   }
 
   // ---------- airport ----------
-  const AP = AREAS.airport;
   ground.groundQuad([[551, -790], [569, -790], [569, -500], [551, -500]].reverse(), Y.road, "#4a4d54");
   for (let z = -780; z < -510; z += 14) ground.groundQuad([[559.5, z + 7], [560.5, z + 7], [560.5, z], [559.5, z]].reverse(), Y.mark, PAL.white);
   ground.groundQuad([[478, -705], [548, -705], [548, -555], [478, -555]].reverse(), Y.lot, "#83878f");
@@ -873,7 +862,7 @@ export function buildWorld(scene) {
 
   // ---------- The Little House: a small house out back of a main house
   // (where the band keeps its gear), on the quiet south end of McCarty ----------
-  const gearMain = addBuilding({ x: -21, z: 150, w: 12, d: 10, h: 3.8, rot: ROT.e, wall: "#f2e6c9", roof: "#7b4a2b", front: "house", frontSeg: 12, frontSegH: 3.8, roofType: "gable", rh: 2.6, overhang: 0.55 });
+  addBuilding({ x: -21, z: 150, w: 12, d: 10, h: 3.8, rot: ROT.e, wall: "#f2e6c9", roof: "#7b4a2b", front: "house", frontSeg: 12, frontSegH: 3.8, roofType: "gable", rh: 2.6, overhang: 0.55 });
   const gearShed = addBuilding({ x: -38, z: 157, w: 7, d: 6, h: 3, rot: ROT.e, wall: "#9fc6a2", roof: "#5a6170", front: "house", frontSeg: 7, frontSegH: 3, roofType: "gable", rh: 1.6, overhang: 0.4 });
   ground.groundQuad([[-6.5, 165.5], [-6.5, 161.5], [-34.5, 161.5], [-34.5, 165.5]], Y.lot, PAL.gravel);
   {
@@ -1163,9 +1152,7 @@ export function buildWorld(scene) {
 }
 
 function driveThruWallTexture(kind) {
-  const c = document.createElement("canvas");
-  c.width = 1024;
-  c.height = 192;
+  const c = makeCanvas(1024, 192);
   const ctx = c.getContext("2d");
   ctx.fillStyle = "#cf8a3a";
   ctx.fillRect(0, 0, 1024, 192);
@@ -1203,7 +1190,6 @@ function driveThruWallTexture(kind) {
     ctx.textAlign = "center";
     ctx.fillText("COLD BEER • SODA • ICE", 512, 20);
   }
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   return t;
 }

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { ROADS } from "./map/layout.js";
+import { makeCanvas, canvasTexture } from "./util.js";
 
 // Dr. Pebber cans floating over the streets. Ride, drive or walk through one
 // and it pops: a few seconds of extra speed. Each can comes back a little
@@ -16,9 +17,7 @@ const RESPAWN = 25; // seconds
 const SPACING = { main: 120, street: 120, highway: 110 };
 
 function labelTexture() {
-  const c = document.createElement("canvas");
-  c.width = 256;
-  c.height = 128;
+  const c = makeCanvas(256, 128);
   const g = c.getContext("2d");
   g.fillStyle = "#7a1424";
   g.fillRect(0, 0, 256, 128);
@@ -36,8 +35,7 @@ function labelTexture() {
   g.font = "bold 13px Trebuchet MS, sans-serif";
   g.fillText("24 FLAVORS", 64, 96);
   g.fillText("24 FLAVORS", 192, 96);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   return t;
 }
 

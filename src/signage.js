@@ -1,13 +1,7 @@
-import * as THREE from "three";
+import { makeCanvas, canvasTexture } from "./util.js";
 
 // All signage is drawn procedurally onto a <canvas> at runtime — no external
 // image assets, logos, or scanned photographs are used anywhere in the game.
-function makeCanvas(w, h) {
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  return canvas;
-}
 
 export function makeSignTexture({ title, sub, bg = "#2b2b2b", fg = "#ffd34d" }) {
   const canvas = makeCanvas(512, 160);
@@ -29,8 +23,7 @@ export function makeSignTexture({ title, sub, bg = "#2b2b2b", fg = "#ffd34d" }) 
     ctx.fillText(sub, canvas.width / 2, 120, 460);
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
+  const tex = canvasTexture(canvas);
   tex.anisotropy = 4;
   return tex;
 }
@@ -50,9 +43,7 @@ export function makeBannerTexture(text, bg = "#1f3d2e", fg = "#ffffff") {
     ctx.font = "30px sans-serif";
     ctx.fillText(lines[1], canvas.width / 2, 130);
   }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+  return canvasTexture(canvas);
 }
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {

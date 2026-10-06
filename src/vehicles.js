@@ -1,15 +1,12 @@
 import * as THREE from "three";
-import { wrapAngle } from "./assist.js";
+import { wrapAngle, makeCanvas, canvasTexture } from "./util.js";
 import { railAttach } from "./missions/nav.js";
 import { makeWheelTexture, makeGrilleTexture } from "./textures.js";
 
 function canvasTex(w, h, draw) {
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
+  const c = makeCanvas(w, h);
   draw(c.getContext("2d"), w, h);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   return t;
 }
 

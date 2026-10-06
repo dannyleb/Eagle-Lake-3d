@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { seededRandom as rng } from "../util.js";
 
 // Surface detail for the merged ground and water meshes, all from one
 // procedurally generated, seamlessly tiling 512px texture:
@@ -11,17 +12,6 @@ import * as THREE from "three";
 // = concrete), so no extra UVs or draw calls are needed.
 
 const N = 512;
-
-function rng(seed) {
-  let a = seed;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 // Periodic value noise on a cells x cells lattice (tiles across N).
 function periodicNoise(cells, seed) {

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
+import { FACES } from "./faces.js";
 
 // The Thicker Bradshall, country musician: a stylized tribute from his
 // photos: cowboy hat, big mutton chops and a mustache, a pearl-snap western
@@ -11,7 +12,6 @@ import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
 // the front when he plays a show).
 
 const SKIN = 0xe0ad86;
-const HAIR = "#5a3a22";
 
 function guitarMesh() {
   const wood = new THREE.MeshLambertMaterial({ color: 0xd59a45 });
@@ -57,7 +57,7 @@ export function buildBradshall({ playable = false } = {}) {
   const gold = new THREE.MeshLambertMaterial({ color: 0xd4a72c });
   const hatMat = new THREE.MeshLambertMaterial({ color: 0xcaa46a });
   const band = new THREE.MeshLambertMaterial({ color: 0x3b2614 });
-  const hairMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(HAIR).getHex() });
+  const hairMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(FACES.bradshall.hairColor).getHex() });
 
   const hips = new THREE.Group();
   hips.position.y = 0.95;
@@ -87,7 +87,7 @@ export function buildBradshall({ playable = false } = {}) {
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.12, 0.12, 10), skin);
   neck.position.y = 0.92;
   hips.add(neck);
-  const faceTex = makeFaceTexture({ skin: "#e0ad86", muttonChops: true, hairColor: HAIR, browColor: "#4a2f1a", stubble: false });
+  const faceTex = makeFaceTexture(FACES.bradshall);
   const head = new THREE.Mesh(new THREE.BoxGeometry(0.47, 0.52, 0.44), makeHeadMaterials(faceTex, SKIN));
   head.position.y = 1.2;
   hips.add(head);

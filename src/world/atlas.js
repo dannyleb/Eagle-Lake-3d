@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { makeCanvas, canvasTexture } from "../util.js";
 
 // One 1024x1024 facade atlas for every wall in town, drawn procedurally.
 // RGB = light/shadow detail (multiplied by each building's vertex color), and
@@ -227,9 +228,7 @@ function drawStore2(ctx, ox, oy) {
 }
 
 export function makeFacadeAtlas() {
-  const c = document.createElement("canvas");
-  c.width = 1536;
-  c.height = 1024;
+  const c = makeCanvas(1536, 1024);
   const ctx = c.getContext("2d");
   drawStore(ctx, 0, 0);
   drawHouse(ctx, S, 0);
@@ -237,8 +236,7 @@ export function makeFacadeAtlas() {
   drawPlain(ctx, 0, S);
   drawOffice(ctx, S, S);
   drawStore2(ctx, 2 * S, S);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
+  const tex = canvasTexture(c);
   tex.anisotropy = 4;
   return tex;
 }

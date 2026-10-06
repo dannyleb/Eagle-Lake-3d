@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { makeCanvas, canvasTexture } from "../util.js";
 
 // The 3D side of navigation: a strip of scrolling chevrons laid along the
 // route on the street, and a beacon (light pillar, bobbing marker, pulsing
@@ -9,9 +10,7 @@ const ROUTE_W = 1.9;
 const ARROW_EVERY = 3.2; // world units per chevron
 
 function chevronTexture() {
-  const c = document.createElement("canvas");
-  c.width = 64;
-  c.height = 64;
+  const c = makeCanvas(64, 64);
   const ctx = c.getContext("2d");
   ctx.clearRect(0, 0, 64, 64);
   // Chevron pointing toward +u (right in texture space).
@@ -31,17 +30,14 @@ function chevronTexture() {
   ctx.fillStyle = "#ffd43b";
   shape();
   ctx.fill();
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   t.wrapS = THREE.RepeatWrapping;
   t.anisotropy = 4;
   return t;
 }
 
 function pillarTexture() {
-  const c = document.createElement("canvas");
-  c.width = 4;
-  c.height = 128;
+  const c = makeCanvas(4, 128);
   const ctx = c.getContext("2d");
   const g = ctx.createLinearGradient(0, 128, 0, 0);
   g.addColorStop(0, "rgba(255,226,90,0.75)");
@@ -49,8 +45,7 @@ function pillarTexture() {
   g.addColorStop(1, "rgba(255,226,90,0)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 4, 128);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   return t;
 }
 

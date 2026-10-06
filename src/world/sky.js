@@ -1,22 +1,6 @@
 import * as THREE from "three";
+import { makeCanvas as canvas, seededRandom as rng, canvasTexture } from "../util.js";
 
-function canvas(w, h) {
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  return c;
-}
-
-function rng(seed) {
-  let a = seed;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
 // Bright, saturated 90s-CG sky: deep blue overhead fading to pale cyan.
 function skyTexture() {
@@ -30,8 +14,7 @@ function skyTexture() {
   g.addColorStop(1, "#c9ecf7");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 16, 512);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   return t;
 }
 
@@ -83,8 +66,7 @@ function cloudTexture(seed) {
   ctx.fillStyle = "#b9b0e6";
   ctx.fillRect(0, base - 12, 512, 12);
   ctx.restore();
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   return t;
 }
 
@@ -106,8 +88,7 @@ function sunTexture() {
   ctx.beginPath();
   ctx.arc(128, 128, 40, 0, Math.PI * 2);
   ctx.fill();
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   return t;
 }
 
@@ -173,8 +154,7 @@ function horizonTexture() {
   layer(238, "#6fae86", 14, 22);
   ctx.fillStyle = "#6aaa7e";
   ctx.fillRect(0, 238, 2048, 18);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   t.wrapS = THREE.RepeatWrapping;
   t.repeat.set(3, 1);
   return t;

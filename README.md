@@ -108,8 +108,7 @@ in later.
 
 ## Play it
 
-Open `public/index.html` after building (see below), or visit the GitHub
-Pages deployment once it's live.
+Visit the GitHub Pages deployment, or run it locally (see below).
 
 ## The theme song
 
@@ -228,13 +227,16 @@ not a likeness of the real person, in the same style as Sidney himself.
 
 ```bash
 npm install
-npm run build     # bundles src/ -> public/bundle.js with esbuild
-npm run dev        # serves public/ at http://localhost:8080
+npm run dev       # dev server at http://localhost:8080, rebuilds on reload
+npm run build     # production build into dist/ (what GitHub Pages serves)
+npm run lint      # ESLint over src/ and the build script
 ```
 
-There's no framework and no server-side code — `public/` is a fully static
-site, so it deploys as-is to GitHub Pages (see
-`.github/workflows/pages.yml`).
+There's no framework and no server-side code: the build bundles `src/`
+with esbuild and copies the static files in `public/` next to it in
+`dist/`, a fully static site. Pushing to the deploy branch runs
+`.github/workflows/pages.yml` (lint, build, deploy). `dist/` is not
+committed.
 
 ## About the setting — and why none of it is real
 
@@ -275,14 +277,20 @@ still-operating business, open an issue and it'll get changed.
 ## Project structure
 
 ```
-src/main.js     game loop: wiring, trains/gates, mounting, interactions
-src/map/        town layout: roads, rails, lake, areas, location names
-src/world/      world builder (merged geometry, facade atlas, surfaces, sky, trees, rails)
-src/render/     cel shading: toon materials and the ink-outline post pass
-src/ui/         HUD: location plate, compass, meter, minimap, town map
-src/missions/   mission engine, street routing, route arrows, mission UI
-src/*.js        player, NPC, vehicles, train, camera, audio, controls
-public/         the static site that actually ships (index.html, style.css, bundle.js)
-build.mjs        esbuild bundler config
-.github/workflows/pages.yml   GitHub Pages deploy
+src/main.js          game loop and wiring: rides, interactions, trains and gates
+src/config.js        spawn points and world constants
+src/util.js          shared helpers (seeded random, angles, canvas textures)
+src/faces.js         face presets for the named characters
+src/map/             town layout: roads, rails, lake, areas, location names
+src/world/           world builder (merged geometry, facade atlas, surfaces, sky, trees, rails)
+src/render/          cel shading: toon materials and the ink-outline post pass
+src/missions/        mission engine and mission list, street routing, route arrows, mission UI
+src/audio/           engine, sound effects, radio, theme song, voices and calls, crowd
+src/ui/              HUD and minimap, start screen, menu, voice card, portraits, confetti
+src/*.js             player, NPCs and townsfolk, vehicles, train, gators, ninjas,
+                     Dr. Pebber cans, camera, controls, textures, signage
+public/              static files: index.html, style.css, audio/
+build.mjs            esbuild build and dev server; stamps cache-busting hashes
+eslint.config.js     lint rules
+.github/workflows/pages.yml   lint, build and deploy to GitHub Pages
 ```

@@ -3,6 +3,8 @@ import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
 import { toonify } from "./render/toon.js";
 import { railAttach } from "./missions/nav.js";
 import { TOWN } from "./map/layout.js";
+import { makeCanvas, canvasTexture, turnToward } from "./util.js";
+import { FACES } from "./faces.js";
 
 // Townsfolk: named locals who stroll the sidewalks, turning at random
 // corners, with a name tag over their heads. Walk up and press E to chat.
@@ -21,7 +23,7 @@ export const PEOPLE = [
     // plain black ball cap, graying at the sides, gray ballpark champions tee.
     look: {
       skin: "#f2c6a8", shirt: 0x6b6f75, tee: "champs", heavy: true, pants: 0x2f3f5c, shoes: 0x1b1b1b,
-      hat: "cap", hatColor: 0x16181c, hair: 0x7a6a5c, face: { bigMustache: "#5e4a3a", stubble: true, blush: true, browColor: "#4a3420", eyeColor: "#3a2616" },
+      hat: "cap", hatColor: 0x16181c, hair: 0x7a6a5c, face: FACES.brian,
     },
     lines: [
       "{you}! You seen my truck keys anywhere?",
@@ -233,8 +235,7 @@ function nameTag(text) {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, w / 2, 38);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
+  const tex = canvasTexture(c);
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthWrite: false, transparent: true }));
   const h = 1.05;
   s.scale.set((h * w) / 72, h, 1);
@@ -243,8 +244,7 @@ function nameTag(text) {
 }
 
 function plaidTexture(base) {
-  const c = document.createElement("canvas");
-  c.width = c.height = 64;
+  const c = makeCanvas(64);
   const ctx = c.getContext("2d");
   ctx.fillStyle = "#" + base.toString(16).padStart(6, "0");
   ctx.fillRect(0, 0, 64, 64);
@@ -258,8 +258,7 @@ function plaidTexture(base) {
     ctx.fillRect(i, 0, 2, 64);
     ctx.fillRect(0, i, 64, 2);
   }
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.repeat.set(2, 2);
   return t;
@@ -268,8 +267,7 @@ function plaidTexture(base) {
 // A ballpark "champions" tee graphic (made up, no team marks): navy
 // shield, gold trophy flags, an orange banner.
 function champsTexture() {
-  const c = document.createElement("canvas");
-  c.width = c.height = 128;
+  const c = makeCanvas(128);
   const g = c.getContext("2d");
   g.fillStyle = "#1f2f5c";
   g.beginPath();
@@ -285,8 +283,7 @@ function champsTexture() {
   g.textAlign = "center";
   g.textBaseline = "middle";
   g.fillText("CHAMPS", 64, 76);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
+  const t = canvasTexture(c);
   return t;
 }
 
@@ -516,12 +513,8 @@ export function createTownsfolk(scene, collision, people = PEOPLE) {
       } else if (f.pause > 0) {
         f.pause -= dt;
         p.y = 0.16;
-        // Turn to face Sidney while chatting.
-        const want = Math.atan2(ctx.px - p.x, ctx.pz - p.z);
-        let d = want - f.group.rotation.y;
-        while (d > Math.PI) d -= Math.PI * 2;
-        while (d < -Math.PI) d += Math.PI * 2;
-        f.group.rotation.y += d * Math.min(1, dt * 6);
+        // Turn to face the player while chatting.
+        turnToward(f.group, Math.atan2(ctx.px - p.x, ctx.pz - p.z), dt * 6);
       } else {
         p.y = 0.16;
         f.e.s += WALK * dt;
@@ -538,11 +531,7 @@ export function createTownsfolk(scene, collision, people = PEOPLE) {
         if (d > 0.001) {
           p.x += (dx / d) * step;
           p.z += (dz / d) * step;
-          let want = Math.atan2(dx, dz);
-          let dd = want - f.group.rotation.y;
-          while (dd > Math.PI) dd -= Math.PI * 2;
-          while (dd < -Math.PI) dd += Math.PI * 2;
-          f.group.rotation.y += dd * Math.min(1, dt * 5);
+          turnToward(f.group, Math.atan2(dx, dz), dt * 5);
         }
         moving = true;
       }

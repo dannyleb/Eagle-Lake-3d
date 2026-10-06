@@ -15,15 +15,17 @@ import { treeFocus } from "./world/trees.js";
 import { createPost } from "./render/post.js";
 import { createMissions } from "./missions/index.js";
 import { createStuckWatch } from "./assist.js";
-import { makeFaceTexture } from "./textures.js";
 import { createGators } from "./gators.js";
 import { createTownsfolk } from "./townsfolk.js";
+import { createVoiceCard } from "./ui/voicecard.js";
+import { createMenu } from "./ui/menu.js";
+import { createStartScreen } from "./ui/startscreen.js";
 import { createPickups, BOOST_SECONDS, BOOST_MULT } from "./pickups.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
   playRadio, nextStation, playTrack, currentTrack, onRadioTrackChange, STATION, playHiss, playSnap, updateVoices, onVoice, toggleRadio, radioIsOn, radioOutput,
-  playFizz, playBoostEnd, playMenuTheme, nudgeMenuTheme, introThenRadio, debugCall, themePlaying, themeDebug,
-} from "./audio.js";
+  playFizz, playBoostEnd, introThenRadio, debugCall, themePlaying, themeDebug,
+} from "./audio/index.js";
 
 document.title = GAME_TITLE;
 const touch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
@@ -240,7 +242,7 @@ function interact() {
 function callRide(key) {
   if (missions.blocking || mode === key) return;
   if (mode !== "walk") dismount();
-  const { veh, name } = RIDES[key];
+  const { veh } = RIDES[key];
   const p = player.group.position;
   if (p.distanceTo(veh.group.position) > 3.4) {
     const h = player.state.heading;
@@ -285,64 +287,7 @@ function promptText() {
 
 onRadioTrackChange((t) => hud.toast(`ON THE RADIO: ${t.title} — ${t.artist}`));
 
-// Voices: caption card lower right with the speaker's face. Sid's own lines
-// as Sidney; phone calls (Sid calling Bradshall, Brian calling anybody)
-// get an INCOMING CALL / ON THE PHONE tag.
-const voiceCard = document.getElementById("voiceCard");
-const voiceText = document.getElementById("voiceText");
-const voiceWho = document.getElementById("vWho");
-const voiceTag = document.getElementById("vTag");
-const voiceFace = document.getElementById("voiceFace").getContext("2d");
-const CALLERS = {
-  sid: {
-    name: "SIDNEY",
-    draw(c) {
-      const face = makeFaceTexture({ skin: "#9a6a46", glasses: true, mustache: true, browColor: "#141210" }).image;
-      c.fillStyle = "#21c4b5";
-      c.fillRect(0, 0, 112, 112);
-      c.drawImage(face, 6, 14, 100, 100);
-      c.fillStyle = "#1b1611"; // close-cropped hair
-      c.beginPath();
-      c.ellipse(56, 16, 52, 20, 0, 0, Math.PI * 2);
-      c.fill();
-      c.fillStyle = "#4d4741"; // shirt collar
-      c.fillRect(0, 104, 112, 8);
-    },
-  },
-  brian: {
-    name: "BRIAN WEED",
-    draw(c) {
-      const face = makeFaceTexture({ skin: "#f2c6a8", bigMustache: "#5e4a3a", stubble: true, blush: true, browColor: "#4a3420", eyeColor: "#3a2616" }).image;
-      c.fillStyle = "#e8742a";
-      c.fillRect(0, 0, 112, 112);
-      c.drawImage(face, 2, 16, 108, 100);
-      c.fillStyle = "#16181c"; // black ball cap and brim
-      c.beginPath();
-      c.ellipse(56, 18, 56, 22, 0, Math.PI, 0);
-      c.fill();
-      c.fillRect(0, 16, 112, 8);
-      c.fillRect(20, 22, 80, 6);
-      c.fillStyle = "#6b6f75"; // gray tee
-      c.fillRect(0, 104, 112, 8);
-    },
-  },
-};
-let voiceShown = null;
-onVoice((v) => {
-  if (v) {
-    if (voiceShown !== v.who) {
-      voiceShown = v.who;
-      CALLERS[v.who].draw(voiceFace);
-      voiceWho.textContent = CALLERS[v.who].name;
-    }
-    voiceText.textContent = v.text;
-    voiceTag.textContent = v.call === "ringing" ? "INCOMING CALL" : v.call ? "ON THE PHONE" : "";
-  }
-  voiceCard.classList.toggle("show", !!v);
-  voiceCard.classList.toggle("ringing", !!v && v.call === "ringing");
-  voiceCard.classList.toggle("phone", !!v && !!v.call);
-  viewport.classList.toggle("talking", !!v);
-});
+onVoice(createVoiceCard(viewport));
 
 // ---------- Trains and gates ----------
 let bellOn = false;
@@ -412,33 +357,35 @@ function adaptQuality(dt) {
   }
 }
 
+// Markers for the minimap: trains, parked rides, Bradshall, nearby cans and
+// townsfolk. Built only when the map redraws (~12 times a second).
+const extras = [];
+function mapMarkers() {
+  const pos = active().group.position;
+  extras.length = 0;
+  for (const t of Object.values(trains)) {
+    if (t.moving) { const h = t.headPos(); extras.push({ x: h.x, z: h.z, r: 4, color: "#e8262a" }); }
+  }
+  if (mode !== "bike") extras.push({ x: bike.group.position.x, z: bike.group.position.z, r: 2.4, color: "#2ecc71" });
+  if (mode !== "car") extras.push({ x: car.group.position.x, z: car.group.position.z, r: 2.6, color: "#1f8a4c" });
+  if (bradshall.group.visible) extras.push({ x: bradshall.group.position.x, z: bradshall.group.position.z, r: 2.6, color: "#8e44ad" });
+  for (const c of pickups.spots) {
+    if (c.gone <= 0 && Math.abs(c.x - pos.x) < 160 && Math.abs(c.z - pos.z) < 160) extras.push({ x: c.x, z: c.z, r: 1.6, color: "#a51c30" });
+  }
+  for (const f of townsfolk.list) extras.push({ x: f.group.position.x, z: f.group.position.z, r: 2.2, color: "#4dabf7" });
+  return extras;
+}
+
 // ---------- Main loop ----------
 let last = performance.now();
 let time = 0;
 const stuckWatch = createStuckWatch();
 const IDLE = { x: 0, y: 0, sprint: false, brake: false, interact: false, view: false, map: false, radio: false };
-const extras = [];
 
 const GREETINGS = ["Hey, {you}!", "Afternoon, {you}.", "Well, look who it is!", "Howdy, {you}!", "{you}! C'mere a sec.", "Hot enough for ya, {you}?"];
 let greetIdx = 0;
 
-// ---------- Back to the main menu (switch characters) ----------
-// A fresh page load is the cleanest reset: the title screen, PRESS START,
-// the theme and the character picker, with every mission back at the start.
-const menuConfirm = document.getElementById("menuConfirm");
-let menuOpen = false;
-function openMenu(on) {
-  menuOpen = on;
-  menuConfirm.classList.toggle("show", on);
-}
-document.getElementById("btnMenu").addEventListener("click", (e) => { e.stopPropagation(); if (started) openMenu(!menuOpen); });
-document.getElementById("mcYes").addEventListener("click", (e) => { e.stopPropagation(); location.reload(); });
-document.getElementById("mcNo").addEventListener("click", (e) => { e.stopPropagation(); openMenu(false); });
-window.addEventListener("keydown", (e) => {
-  if (!started) return;
-  if (e.code === "Escape") openMenu(!menuOpen);
-  else if (menuOpen && e.code === "Enter") location.reload();
-});
+const menu = createMenu(() => started);
 
 // ---------- Dr. Pebber cans: grab one for a few seconds of extra speed ----------
 const boostChip = document.getElementById("boostChip");
@@ -475,7 +422,7 @@ function frame() {
   time += dt;
   const polled = controls.poll();
   // Story cards hold everything except the button that closes them.
-  let input = !started || menuOpen ? IDLE : missions.blocking ? { ...IDLE, interact: polled.interact } : polled;
+  let input = !started || menu.open ? IDLE : missions.blocking ? { ...IDLE, interact: polled.interact } : polled;
   // D-pad while walking works from Sidney's point of view: up walks the way
   // he's facing, left / right turn him, down backs up.
   if (input === polled && polled.stick.on && mode === "walk") {
@@ -553,23 +500,12 @@ function frame() {
     const v = RIDES[mode].veh.state;
     hud.setTurn(v.turnIntent === -1 ? "left" : v.turnIntent === 1 ? "right" : v.followingRoute && v.cruise ? "route" : null);
   }
-  extras.length = 0;
-  for (const t of Object.values(trains)) {
-    if (t.moving) { const h = t.headPos(); extras.push({ x: h.x, z: h.z, r: 4, color: "#e8262a" }); }
-  }
-  if (mode !== "bike") extras.push({ x: bike.group.position.x, z: bike.group.position.z, r: 2.4, color: "#2ecc71" });
-  if (mode !== "car") extras.push({ x: car.group.position.x, z: car.group.position.z, r: 2.6, color: "#1f8a4c" });
-  if (bradshall.group.visible) extras.push({ x: bradshall.group.position.x, z: bradshall.group.position.z, r: 2.6, color: "#8e44ad" });
-  for (const c of pickups.spots) {
-    if (c.gone <= 0 && Math.abs(c.x - pos.x) < 160 && Math.abs(c.z - pos.z) < 160) extras.push({ x: c.x, z: c.z, r: 1.6, color: "#a51c30" });
-  }
-  for (const f of townsfolk.list) extras.push({ x: f.group.position.x, z: f.group.position.z, r: 2.2, color: "#4dabf7" });
   const maxSpeed = mode === "walk" ? player.state.sprintSpeed : ent.state.maxSpeed * 1.3;
   const t = currentTrack();
   hud.update({
     x: pos.x, z: pos.z, heading: ent.state.heading,
     speedFrac: Math.abs(ent.state.speed) / maxSpeed,
-    now: `${t.title} — ${t.artist}`, time, extras,
+    now: `${t.title} — ${t.artist}`, time, extras: mapMarkers,
     mission: { route: missions.route, target: missions.target, enemies: missions.enemies },
   });
 
@@ -592,41 +528,8 @@ if (location.search.includes("debug")) {
   };
 }
 
-// ---------- Start: pick a character (tap a card, or arrows + Enter) ----------
-const overlay = document.getElementById("startOverlay");
-const picks = [...document.querySelectorAll(".charPick")];
-let highlighted = 0;
-function highlight(i) {
-  highlighted = (i + picks.length) % picks.length;
-  picks.forEach((p, k) => p.classList.toggle("on", k === highlighted));
-}
-// Portraits on the cards, drawn from the same face art as the 3D models.
-function drawPortrait(canvas, opts, hair) {
-  const c = canvas.getContext("2d");
-  const face = makeFaceTexture(opts).image;
-  c.fillStyle = "#21c4b5";
-  c.fillRect(0, 0, 112, 112);
-  c.drawImage(face, 6, 18, 100, 100);
-  hair(c);
-}
-drawPortrait(document.getElementById("pickSidney"), { skin: "#9a6a46", glasses: true, mustache: true, browColor: "#141210" }, (c) => {
-  c.fillStyle = "#1b1611";
-  c.beginPath();
-  c.ellipse(56, 20, 52, 20, 0, 0, Math.PI * 2);
-  c.fill();
-});
-drawPortrait(document.getElementById("pickBradshall"), { skin: "#e0ad86", muttonChops: true, hairColor: "#5a3a22", browColor: "#4a2f1a" }, (c) => {
-  c.fillStyle = "#caa46a"; // cowboy hat
-  c.beginPath();
-  c.ellipse(56, 26, 58, 11, 0, 0, Math.PI * 2);
-  c.fill();
-  c.fillRect(28, 0, 56, 26);
-  c.fillStyle = "#3b2614";
-  c.fillRect(28, 18, 56, 6);
-});
-
-function start(id = picks[highlighted]?.dataset.char || "sidney") {
-  if (started || performance.now() - pressedAt < 450) return;
+// ---------- Start: title screen, then pick a character ----------
+createStartScreen((id) => {
   started = true;
   character = CHARACTERS[id] ? id : "sidney";
   if (character !== "sidney") {
@@ -636,44 +539,9 @@ function start(id = picks[highlighted]?.dataset.char || "sidney") {
   missions.setCharacter(character);
   unlockAudio();
   introThenRadio(5); // theme plays on ~5 s into the game, then the radio takes over
-  overlay.classList.add("hidden");
-  window.removeEventListener("keydown", onStartKey);
   // ?debug&mission=3 starts at the third mission (testing only).
   const q = new URLSearchParams(location.search);
   missions.start(q.has("debug") ? Math.max(0, (parseInt(q.get("mission"), 10) || 1) - 1) : 0);
-}
-// Title screen: PRESS START (any key or tap) brings up the theme song and
-// the character picker. Phones only allow sound from a real tap (click /
-// touchend / keydown, not touchstart or pointerdown), so that's what
-// starts it; any later tap on the title screen retries if it didn't take.
-let pressedAt = -1e9;
-function pressStart() {
-  if (!overlay.classList.contains("title")) return nudgeMenuTheme();
-  overlay.classList.remove("title");
-  pressedAt = performance.now();
-  unlockAudio();
-  playMenuTheme();
-}
-overlay.addEventListener("click", () => pressStart());
-overlay.addEventListener("touchend", (e) => {
-  // Leaving the title: swallow the tap's follow-up click so it can't land
-  // on a character card that just appeared under the finger.
-  if (overlay.classList.contains("title")) e.preventDefault();
-  pressStart();
-}, { passive: false });
-function onStartKey(e) {
-  if (overlay.classList.contains("title")) return pressStart();
-  if (e.code === "ArrowLeft" || e.code === "KeyA") highlight(highlighted - 1);
-  else if (e.code === "ArrowRight" || e.code === "KeyD") highlight(highlighted + 1);
-  else if (e.code === "Digit1") start("sidney");
-  else if (e.code === "Digit2") start("bradshall");
-  else if (e.code === "Enter" || e.code === "Space" || e.code === "KeyE") start();
-}
-picks.forEach((p, i) => {
-  p.addEventListener("click", (e) => { e.stopPropagation(); start(p.dataset.char); });
-  p.addEventListener("touchend", (e) => { e.preventDefault(); e.stopPropagation(); start(p.dataset.char); }, { passive: false });
-  p.addEventListener("mouseenter", () => highlight(i));
 });
-window.addEventListener("keydown", onStartKey);
 // Belt and braces: if audio was blocked, the next touch anywhere retries it.
 window.addEventListener("pointerdown", () => { if (started) { unlockAudio(); if (radioIsOn()) playRadio(); } }, { once: true });

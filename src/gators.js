@@ -69,6 +69,24 @@ function tailGeometry() {
   return b.build();
 }
 
+// One gator as a regular mesh group (for the big one in Granny's Lake):
+// { group, jaw, tail } where jaw.rotation.x opens the mouth (positive drops
+// the jaw) and tail.rotation.y swings the tail.
+export function buildGatorModel() {
+  const mat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+  const group = new THREE.Group();
+  group.add(new THREE.Mesh(bodyGeometry(), mat));
+  const jaw = new THREE.Group();
+  jaw.position.copy(HINGE);
+  jaw.add(new THREE.Mesh(jawGeometry(), mat));
+  const tail = new THREE.Group();
+  tail.position.copy(TAIL);
+  tail.add(new THREE.Mesh(tailGeometry(), mat));
+  group.add(jaw, tail);
+  group.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return { group, jaw, tail };
+}
+
 export function createGators(scene, collision, { count = 24, seed = 7 } = {}) {
   let r = seed;
   const rand = () => ((r = (r * 9301 + 49297) % 233280) / 233280);

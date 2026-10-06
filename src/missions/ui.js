@@ -25,6 +25,9 @@ export function createMissionUI(viewport) {
     way: $("waypoint"),
     timer: $("timer"),
     wayDist: $("wayDist"),
+    reel: $("reelMeter"),
+    reelLabel: $("reelLabel"),
+    reelBar: $("reelBar"),
   };
   const confetti = createConfetti(document.getElementById("confetti"));
   let storyResolve = null;
@@ -73,6 +76,15 @@ export function createMissionUI(viewport) {
         }
         el.objSub.textContent = sub;
       }
+    },
+    // Fishing: the reel-in meter (0..1), or null to hide it. `hot` flashes
+    // it (a bite to hook, or the gator pulling hard).
+    setReel(frac, label = "", hot = false) {
+      el.reel.classList.toggle("show", frac != null);
+      if (frac == null) return;
+      el.reelLabel.textContent = label;
+      el.reelBar.style.width = `${Math.round(Math.max(0, Math.min(1, frac)) * 100)}%`;
+      el.reel.classList.toggle("hot", hot);
     },
     // Resolves when the player dismisses the card (button, E, Enter, Space).
     story({ kicker, title, body, go = "LET'S GO" }) {

@@ -68,12 +68,27 @@ seconds in, the missions start:
 Both locations are placed approximately and are easy to move in
 `src/world/index.js`.
 
-### Everybody: the lunch special
+### Everybody: the shared quest line
 
-After their own missions, both characters get the same last one: the
-**Dairy Quake** out on 90A East ends its lunch special at two o'clock
-sharp. Beat the clock (miss it and you get another try) for the **CHEESE
-FRIES BASKET**.
+After their own missions, every character (including any added later)
+plays the shared missions in `SHARED_MISSIONS`:
+
+1. **The Lunch Special.** The **Dairy Quake** out on 90A East ends its
+   lunch special at two o'clock sharp. Beat the clock (miss it and you get
+   another try) for the **CHEESE FRIES BASKET**.
+2. **There's a 10-Foot Alligator in Granny's Lake!** Ride out to Granny's
+   Lake (Granny's Lake Rd, off 90A East between the Sputnik and the Dairy
+   Quake) and walk down to the landing, where a rod with a T-bone steak on
+   the line is waiting.
+   - **Tap E to cast.** The steak flies out and the bobber sits on the
+     water. Little nibbles twitch it, but the gator bites when he feels
+     like it.
+   - **BITE! Tap E** within a second or two to set the hook. Too slow and
+     he steals the steak (a new T-bone goes on; cast again).
+   - **Tap E fast to reel him in.** The meter fills with every tap and he
+     pulls back, harder now and then; let it run dry and the line snaps.
+   - Fill it and he comes up out of the lake onto the bank. Unlocks a big
+     plate of **DEEP-FRIED GATOR BALLS**.
 
 ## Dr. Pebber cans
 
@@ -288,7 +303,7 @@ src/missions/        mission engine and mission list, street routing, route arro
 src/audio/           engine, sound effects, radio, theme song, voices and calls, crowd
 src/ui/              HUD and minimap, start screen, menu, voice card, portraits, confetti
 src/*.js             player, NPCs and townsfolk, vehicles, train, gators, ninjas,
-                     Dr. Pebber cans, camera, controls, textures, signage
+                     Dr. Pebber cans, fishing, camera, controls, textures, signage
 public/              static files: index.html, style.css, audio/
 build.mjs            esbuild build and dev server; stamps cache-busting hashes
 eslint.config.js     lint rules

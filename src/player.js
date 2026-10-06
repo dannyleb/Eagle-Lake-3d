@@ -232,6 +232,24 @@ export function createPlayer(scene, spawn) {
     }
   }
 
+  // Fishing: a rod in the right hand (or null to put it away), and the arm
+  // angle the fishing controller drives (cast, reel, haul back). He stands
+  // still while fishing.
+  let rod = null;
+  let rodAngle = -1.15;
+  function holdRod(r) {
+    if (rod) rod.parent?.remove(rod);
+    rod = r;
+    if (rod) parts.armR.add(rod);
+    else {
+      parts.armL.rotation.set(0, 0, 0);
+      parts.armR.rotation.set(0, 0, 0);
+    }
+  }
+  function rodArm(angle) {
+    rodAngle = angle;
+  }
+
   // Gold championship belt: black strap, big center plate with a red jewel,
   // and two side plates.
   let belt = null;
@@ -384,6 +402,17 @@ export function createPlayer(scene, spawn) {
       parts.hips.position.y = 0.95 + Math.abs(Math.sin(state.walkCycle * 4.5)) * 0.03;
       return;
     }
+    if (rod) {
+      state.speed = 0;
+      group.position.x = oldX;
+      group.position.z = oldZ;
+      parts.armR.rotation.set(rodAngle, 0, 0.08);
+      parts.armL.rotation.set(rodAngle + 0.35, 0, -0.5); // left hand up on the rod too
+      parts.legL.rotation.x = 0;
+      parts.legR.rotation.x = 0;
+      parts.hips.position.y = 0.95;
+      return;
+    }
     if (punchT > 0) {
       punchT = Math.max(0, punchT - dt);
       const k = Math.sin((1 - punchT / 0.32) * Math.PI);
@@ -395,5 +424,5 @@ export function createPlayer(scene, spawn) {
     }
   }
 
-  return { group, state, update, setPose, animateRide, punch, setChief, setBelt, setCharacter, perform, get performing() { return performing; } };
+  return { group, state, update, setPose, animateRide, punch, setChief, setBelt, setCharacter, perform, holdRod, rodArm, get performing() { return performing; } };
 }

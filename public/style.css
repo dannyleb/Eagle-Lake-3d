@@ -906,3 +906,31 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
 .mcInner p { font-size: 14px; margin: 8px 0 14px; }
 .mcBtns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 @media (max-width: 560px) { #btnMenu { min-width: 0; padding: 0 8px; font-size: 11px; } }
+
+/* ---------- Fishing: reel meter ---------- */
+#reelMeter {
+  position: absolute;
+  left: 50%;
+  top: 64px;
+  width: min(70%, 320px);
+  transform: translate(-50%, -20px);
+  opacity: 0;
+  pointer-events: none;
+  padding: 6px 12px 9px;
+  border-radius: 14px;
+  border: 3px solid var(--ink);
+  background: #1f5f8a;
+  color: #fff;
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-align: center;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 3;
+}
+#reelMeter.show { opacity: 1; transform: translate(-50%, 0); }
+#reelMeter.hot { background: #c0392b; animation: reelHot 0.3s steps(1) infinite; }
+@keyframes reelHot { 50% { background: #e8742a; } }
+.reelTrack { margin-top: 5px; height: 12px; border-radius: 6px; background: rgba(0, 0, 0, 0.45); overflow: hidden; }
+.reelTrack i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ffd43b, #2ecc71); transition: width 0.12s; }
+@media (max-width: 560px) { #reelMeter { top: 196px; width: 72%; } }

@@ -43,6 +43,7 @@ function drawBase(data) {
   poly(data.lake, "#3a96ea");
   poly(data.pond, "#3a96ea");
   for (const p of data.pits) poly(p, "#3cc9c4");
+  for (const p of data.ponds || []) poly(p, "#3a96ea");
   for (const b of data.buildings) {
     const [mx, mz] = toMap(b.x, b.z);
     ctx.save();

@@ -46,6 +46,7 @@ export const ROADS = [
   { name: "Memorial Park Rd", kind: "spur", w: 7, pts: [[240, -214], [262, -214]] },
   { name: "Veterans Park Dr", kind: "spur", w: 7, pts: [[240, -174], [290, -174]] },
   { name: "Eagle Stop Drive-Thru", kind: "spur", w: 6, pts: [[-330, 60], [-330, 6]] },
+  { name: "Granny's Lake Rd", kind: "spur", w: 7, pts: [[360, 0], [360, 110]] },
   { name: "CR 140", kind: "rural", w: 8, pts: [[-500, -830], [-500, 60]] },
   { name: "CR 106", kind: "rural", w: 8, pts: [[-830, -560], [0, -560]] },
 ];
@@ -85,6 +86,14 @@ export const POND = [
   [276, -234], [312, -240], [334, -224], [336, -200], [316, -186], [286, -188], [272, -206],
 ];
 
+// Granny's Lake: a stock-tank-sized lake in the rice fields off US 90A East,
+// at the end of Granny's Lake Rd. A 10-foot gator lives in it.
+export const GRANNYS_LAKE = Array.from({ length: 28 }, (_, i) => {
+  const a = (i / 28) * Math.PI * 2;
+  const wobble = 1 + 0.07 * Math.sin(a * 3 + 0.6) + 0.04 * Math.sin(a * 5 + 1.9);
+  return [363 + Math.sin(a) * 33 * wobble, 151 - Math.cos(a) * 28 * wobble];
+});
+
 // Gravel pits west of the lake.
 export const PITS = [
   [[-800, 300], [-722, 290], [-706, 352], [-760, 384], [-806, 352]],
@@ -112,6 +121,7 @@ export const REGIONS = [
   { name: "REGIONAL AIRPORT", ...AREAS.airport },
   { name: "GRAVEL PITS", ...AREAS.gravel },
   { name: "PRAIRIE MEDICAL", x0: -330, z0: 120, x1: -252, z1: 180 },
+  { name: "GRANNY'S LAKE", x0: 315, z0: 95, x1: 415, z1: 195 },
   { name: "HWY 90A EAST", x0: 245, z0: -45, x1: 830, z1: 45 },
   { name: "HWY 90A WEST", x0: -830, z0: 15, x1: -245, z1: 105 },
   { name: "FM 102 NORTH", x0: -45, z0: -830, x1: 45, z1: -245 },

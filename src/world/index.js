@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import {
-  ROADS, LAKE, POND, PITS, AREAS, TOWN, REGIONS,
+  ROADS, LAKE, POND, PITS, GRANNYS_LAKE, AREAS, TOWN, REGIONS,
   distToRail, distToRoad, distToPolyline, pointInPolygon, inRect, RAILS,
 } from "../map/layout.js";
 import { MeshBuilder, PRIM, offsetPolygon } from "./builder.js";
@@ -264,7 +264,7 @@ export function buildWorld(scene) {
 
   const freeSpot = (x, z, r) =>
     !collision.hits(x, z, r) && distToRoad(x, z) > r && distToRail(x, z) > r + 4 &&
-    !pointInPolygon(x, z, LAKE) && !pointInPolygon(x, z, POND) &&
+    !pointInPolygon(x, z, LAKE) && !pointInPolygon(x, z, POND) && !pointInPolygon(x, z, GRANNYS_LAKE) &&
     Math.abs(x) < 815 && Math.abs(z) < 815;
 
   // Keep the view from the spawn point (fire station apron, looking down
@@ -330,6 +330,10 @@ export function buildWorld(scene) {
   }
   collision.add({ type: "poly", pts: LAKE, h: 0 });
   collision.add({ type: "poly", pts: POND, h: 0 });
+  water.polygon(offsetPolygon(GRANNYS_LAKE, 3), Y.shore, "#a9c97a");
+  water.polygon(GRANNYS_LAKE, Y.water, PAL.water);
+  water.polygon(offsetPolygon(GRANNYS_LAKE, -9), Y.water + 0.01, PAL.deep);
+  collision.add({ type: "poly", pts: GRANNYS_LAKE, h: 0 });
   for (const pit of PITS) collision.add({ type: "poly", pts: pit, h: 0 });
 
   // ---------- roads, markings, sidewalks ----------
@@ -875,6 +879,35 @@ export function buildWorld(scene) {
   }
   const [gearDoorX, gearDoorZ] = L(gearShed, 0, gearShed.d / 2 + 1.4);
 
+  // ---------- Granny's Lake: a fishing landing on the north bank, Granny's
+  // house, cypress all around (and a 10-foot gator in the water) ----------
+  const fishSpot = { x: 362, z: 117.5 };
+  props.prim(PRIM.box(), { x: fishSpot.x, y: 0.12, z: fishSpot.z + 0.8, sx: 5, sy: 0.24, sz: 4 }, "#8a6a44"); // plank landing
+  for (let k = -2; k <= 2; k++) props.prim(PRIM.box(), { x: fishSpot.x + k, y: 0.25, z: fishSpot.z + 0.8, sx: 0.06, sy: 0.02, sz: 4 }, "#6b4f31");
+  props.prim(PRIM.cyl(10), { x: fishSpot.x + 1.9, y: 0.45, z: fishSpot.z + 1.6, sx: 0.5, sy: 0.6, sz: 0.5 }, "#c8ccd0"); // bait bucket
+  props.prim(PRIM.box(), { x: fishSpot.x - 1.8, y: 0.55, z: fishSpot.z + 0.2, sx: 0.8, sy: 0.08, sz: 0.8 }, "#2f9e44"); // lawn chair
+  props.prim(PRIM.box(), { x: fishSpot.x - 1.8, y: 0.95, z: fishSpot.z - 0.2, sx: 0.8, sy: 0.8, sz: 0.08, rx: -0.25 }, "#2f9e44");
+  collision.add({ type: "circle", x: fishSpot.x - 1.8, z: fishSpot.z, r: 0.5, h: 1 });
+  props.prim(PRIM.cyl(6), { x: 370, y: 1.1, z: 116, sx: 0.12, sy: 2.2, sz: 0.12 }, "#6b4f31");
+  addSign({ x: 370, y: 2.1, z: 116, rot: Math.PI, w: 2.8, h: 0.9, title: "Granny's Lake", sub: "NO SWIMMIN' • GATOR", bg: "#f2e9d8", fg: "#3b2614", twoSided: true });
+  const granny = addBuilding({ x: 392, z: 104, w: 10, d: 8, h: 3.4, rot: ROT.w, wall: "#f6d7e3", roof: "#6b7d8c", front: "house", frontSeg: 10, frontSegH: 3.4, roofType: "gable", rh: 2.2, overhang: 0.5 });
+  {
+    const [gx, gz] = L(granny, 0, granny.d / 2 + 0.05);
+    addSign({ x: gx, y: 2.9, z: gz, rot: granny.rot, w: 2.2, h: 0.6, title: "Granny's", sub: "GO FISH", bg: "#ffffff", fg: "#a3445d" });
+  }
+  minimap.landmarks.push({ x: 363, z: 150, label: "Granny's Lake" });
+  const lakeRand = seededRandom(31); // own sequence: leaves the rest of the town as it was
+  const grannyShore = offsetPolygon(GRANNYS_LAKE, 6);
+  for (let i = 0; i < grannyShore.length; i++) {
+    const [ax, az] = grannyShore[i], [bx, bz] = grannyShore[(i + 1) % grannyShore.length];
+    const len = Math.hypot(bx - ax, bz - az);
+    for (let d = 0; d < len; d += 8) {
+      const x = ax + ((bx - ax) * d) / len, z = az + ((bz - az) * d) / len;
+      if (z < 126 && x > 346 && x < 382) continue; // keep the landing and the view open
+      tree(x + (lakeRand() - 0.5) * 3, z + (lakeRand() - 0.5) * 3, 0.9 + lakeRand() * 0.5, lakeRand() < 0.6 ? "cone" : "round");
+    }
+  }
+
   // ---------- residential blocks ----------
   const halfW = (name, fallback) => (ROADS.find((r) => r.name === name)?.w ?? fallback) / 2;
   const ewNames = { "-240": "5th St", "-180": "4th St", "-120": "3rd St", "-60": "2nd St", "0": "Main St", "60": "Post Office St", "120": "A St", "180": "Lakeside Dr" };
@@ -1095,6 +1128,7 @@ export function buildWorld(scene) {
   minimap.lake = LAKE;
   minimap.pond = POND;
   minimap.pits = PITS;
+  minimap.ponds = [GRANNYS_LAKE];
   minimap.areas = AREAS;
 
   return {
@@ -1105,6 +1139,7 @@ export function buildWorld(scene) {
     dairy,
     gearHouse: { x: gearDoorX, z: gearDoorZ },
     gearLot: { x: -6, z: 150 },
+    grannysLake: { spot: fishSpot, cast: { x: 362, z: 133 }, lake: GRANNYS_LAKE },
     crossings: railInfo.crossings,
     lampMats: railInfo.lampMats,
     triggers,

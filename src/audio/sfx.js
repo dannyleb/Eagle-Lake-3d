@@ -181,3 +181,30 @@ export function playPop() {
   tone(1800, 0, 0.12, { type: "triangle", vol: 0.05, slide: 0.4 });
   noise(0.42, 0.07, { vol: 0.35, freq: 2600, q: 0.6, type: "highpass" });
 }
+
+// ---------- Fishing (Granny's Lake) ----------
+// Rod whipping forward and the line singing out.
+export function playCast() {
+  noise(0, 0.28, { vol: 0.12, freq: 1800, q: 0.6, type: "highpass" });
+  tone(1400, 0.05, 0.5, { type: "sine", vol: 0.015, slide: 0.6 });
+}
+// The steak and bobber landing.
+export function playPlop() {
+  tone(420, 0, 0.12, { type: "sine", vol: 0.08, slide: 0.45 });
+  noise(0.02, 0.18, { vol: 0.1, freq: 900, q: 0.8 });
+}
+// Water churning: big = the gator thrashing or coming out of the lake.
+export function playSplash(big = false) {
+  noise(0, big ? 0.9 : 0.35, { vol: big ? 0.3 : 0.16, freq: big ? 700 : 1100, q: 0.5 });
+  noise(0.03, big ? 0.6 : 0.25, { vol: big ? 0.18 : 0.08, freq: 2600, q: 0.4, type: "highpass" });
+  if (big) tone(110, 0, 0.35, { type: "sine", vol: 0.12, slide: 0.5 });
+}
+// One crank of the reel.
+export function playReelClick() {
+  for (let k = 0; k < 3; k++) noise(k * 0.035, 0.02, { vol: 0.12, freq: 3200, q: 2 });
+}
+// Line snapping (he got away).
+export function playLineSnap() {
+  noise(0, 0.05, { vol: 0.3, freq: 2500, q: 1.5 });
+  tone(900, 0, 0.25, { type: "triangle", vol: 0.04, slide: 0.3 });
+}

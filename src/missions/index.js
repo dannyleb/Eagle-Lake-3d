@@ -2,6 +2,7 @@ import { findRoute, routeLength } from "./nav.js";
 import { createRouteView } from "./route.js";
 import { createMissionUI } from "./ui.js";
 import { createNinjaGang } from "../ninja.js";
+import { createFishing } from "../fishing.js";
 import {
   startSiren, stopSiren, setSirenVolume, duckRadio,
   playAchievementTheme, playPop, playObjective, playHit, playPoof, playOof, playTick, playFail,
@@ -16,8 +17,11 @@ import {
 //          { timed: true }               ...against the clock (see failStory)
 //   defeat { label, gang }               knock out every ninja in a gang
 //   perform { label, seconds, track }    play a show on the spot (Bradshall)
-// To add a mission, append to MISSIONS (or BRADSHALL_MISSIONS). The
-// lunch special runs last for every character.
+//   fish   { label, fishing }            fish the gator out (state[fishing] is
+//                                        the createFishing() controller)
+// To add a mission, append to MISSIONS (Sidney), BRADSHALL_MISSIONS, or
+// SHARED_MISSIONS (every character, after their own). Optional hooks:
+// setup(ctx) -> state objects, cleanup(state, ctx) after the last step.
 // ---------------------------------------------------------------------------
 
 const FIRE_STATION = { x: -9, z: -96, r: 14 }; // reaches both lanes of McCarty
@@ -142,7 +146,12 @@ export const BRADSHALL_MISSIONS = [
   },
 ];
 
-// Everybody's last stop: the lunch special at the Dairy Quake on 90A East.
+// ---------------------------------------------------------------------------
+// Shared quest line: every character plays these after their own missions
+// (any character added later gets them too).
+// ---------------------------------------------------------------------------
+
+// The lunch special at the Dairy Quake on 90A East.
 const LUNCH_SPECIAL = {
   id: "lunch-special",
   story: {
@@ -166,10 +175,43 @@ const LUNCH_SPECIAL = {
     text: "Made it with seconds to spare. One red plastic basket, extra cheese, extra crispy. Worth it.",
   },
 };
-MISSIONS.push(LUNCH_SPECIAL);
-BRADSHALL_MISSIONS.push(LUNCH_SPECIAL);
+// A 10-foot gator in Granny's Lake: fish him out with a T-bone steak.
+const GRANNYS_GATOR = {
+  id: "grannys-gator",
+  story: {
+    kicker: "GRANNY'S LAKE",
+    title: "THERE'S A 10-FOOT ALLIGATOR IN GRANNY'S LAKE!",
+    body:
+      "Granny called. Something big ate her ducks, her lawn flamingo and half her dock. " +
+      "She left a fishing rod and a T-bone steak down at the landing. Get out to Granny's Lake " +
+      "off 90A East and fish that gator out. Tap E to cast, wait for the bite, then tap E like crazy to reel him in.",
+    go: "GET THE ROD",
+  },
+  setup: (ctx) => ({
+    fishing: createFishing({
+      scene: ctx.scene,
+      player: ctx.player,
+      spot: ctx.world.grannysLake.spot,
+      cast: ctx.world.grannysLake.cast,
+      say: (text, ms) => ctx.hud.toast(text, ms),
+    }),
+  }),
+  steps: [
+    { type: "goto", label: "Get to Granny's Lake", at: (ctx) => ctx.world.grannysLake.spot, r: 10 },
+    { type: "fish", label: "Fish out the 10-foot gator", fishing: "fishing" },
+  ],
+  cleanup: (state) => state.fishing.end(),
+  achievement: {
+    title: "DEEP-FRIED GATOR BALLS",
+    text: "Granny hauled out the fryer. One big plate of deep-fried gator balls, extra ranch, still sizzling. You earned every one.",
+  },
+};
 
-export const MISSION_SETS = { sidney: MISSIONS, bradshall: BRADSHALL_MISSIONS };
+export const SHARED_MISSIONS = [LUNCH_SPECIAL, GRANNYS_GATOR];
+
+const MISSION_SETS = { sidney: MISSIONS, bradshall: BRADSHALL_MISSIONS };
+// A character's whole quest line: their own missions, then the shared ones.
+export const questLine = (character) => [...(MISSION_SETS[character] || MISSIONS), ...SHARED_MISSIONS];
 
 // ctx: { scene, camera, viewport, collision, hud, player, getMode, getPos,
 //        getVehicle, punch, kickPlayer, world }
@@ -226,9 +268,11 @@ export function createMissions(ctx) {
     }
     step = null;
     ui.setTimer(null);
+    ui.setReel(null);
     route.setTarget(null);
     route.setRoute(null);
     ui.setObjective(null);
+    if (m.cleanup) m.cleanup(state, ctx);
     if (alarmOn) {
       alarmOn = false;
       ui.setAlarm(null);
@@ -245,7 +289,7 @@ export function createMissions(ctx) {
   // from: mission index to start at (debug builds can skip ahead).
   async function run(from = 0) {
     await wait(3.5);
-    for (const m of (MISSION_SETS[ctx.character] || MISSIONS).slice(from)) {
+    for (const m of questLine(ctx.character).slice(from)) {
       await runMission(m);
       await wait(2.5);
     }
@@ -356,6 +400,27 @@ export function createMissions(ctx) {
         endShowSong();
         step.resolve("done");
       }
+    } else if (step.type === "fish") {
+      const fishing = state[step.fishing];
+      if (!fishing.active) {
+        // Off the bike / out of the car, then walk down to the landing.
+        const d = Math.hypot(pos.x - step.x, pos.z - step.z);
+        if (ctx.getMode() !== "walk" || d > 3) {
+          ui.setObjective(step.label, ctx.getMode() !== "walk" ? "Hop off and grab the rod" : "Walk down to the landing", true);
+          ui.waypoint(ctx.getMode() === "walk" ? { x: step.x, y: 2, z: step.z } : null, ctx.camera, d);
+          return;
+        }
+        ui.waypoint(null);
+        fishing.begin();
+      }
+      fishing.update(dt, time);
+      const st = fishing.status();
+      ui.setObjective(step.label, st.sub, true);
+      ui.setReel(st.meter ? st.meter.frac : null, st.meter ? st.meter.label : "", st.meter ? st.meter.hot : false);
+      if (fishing.landed) {
+        step.landedFor = (step.landedFor || 0) + dt;
+        if (step.landedFor > 1.6) step.resolve("done");
+      }
     } else if (step.type === "defeat") {
       const g = state[step.gang];
       ui.setObjective(step.label, `${g.defeated} / ${g.total} down`, true);
@@ -368,6 +433,10 @@ export function createMissions(ctx) {
   function interact() {
     if (ui.storyOpen) {
       ui.dismissStory();
+      return true;
+    }
+    if (fishingNow()) {
+      state.fishing.press();
       return true;
     }
     const gang = state.gang;
@@ -390,8 +459,14 @@ export function createMissions(ctx) {
     return false;
   }
 
+  // The rod's in hand (the fish step has begun).
+  function fishingNow() {
+    return step && step.type === "fish" && state.fishing && state.fishing.active;
+  }
+
   function prompt() {
     if (ui.storyOpen) return null;
+    if (fishingNow()) return state.fishing.prompt();
     const gang = state.gang;
     if (gang && ctx.getMode() === "walk") {
       const p = ctx.getPos();
@@ -434,8 +509,9 @@ export function createMissions(ctx) {
     update,
     interact,
     prompt,
+    // Story cards and fishing hold the player still (E still works).
     get blocking() {
-      return ui.storyOpen;
+      return ui.storyOpen || !!fishingNow();
     },
     // For the minimap
     get route() {

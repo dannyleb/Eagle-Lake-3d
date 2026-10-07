@@ -420,6 +420,7 @@ export function createVehicle(scene, type, spawn) {
   let rail = null; // { a, b, s, road, len, ux, uz }
   let turnIntent = 0; // queued turn: -1 left, +1 right, 0 none
   let cruise = false; // rolling on its own after a tap of up
+  let hardStop = false; // braking for an objective: stop short, don't coast past
   const railPos = new THREE.Vector3();
 
   function setRail(a, b, s, road) {
@@ -509,10 +510,11 @@ export function createVehicle(scene, type, spawn) {
         target = Math.min(target, Math.max(8, top * (1 - 0.55 * (turn / Math.PI))));
       }
     }
-    const rate = throttle < 0 ? accel * 3 : accel * state.boost * state.boost;
+    const rate = throttle < 0 ? accel * (hardStop ? 6 : 3) : accel * state.boost * state.boost;
     const diff = target - state.speed;
     state.speed += Math.sign(diff) * Math.min(Math.abs(diff), rate * dt);
     state.speed = Math.max(0, state.speed);
+    if (state.speed === 0 || cruise) hardStop = false;
 
     // --- advance along the network ---
     const save = { ...rail };
@@ -590,7 +592,9 @@ export function createVehicle(scene, type, spawn) {
       group.userData.wheels = wheels;
       group.userData.seat = m.userData.seat;
     },
+    // How far a stop() from this speed takes.
+    stopDistance: () => state.speed ** 2 / (2 * accel * 6),
     // Brake to a stop (used when you reach an objective).
-    stop() { cruise = false; turnIntent = 0; },
+    stop() { cruise = false; hardStop = true; turnIntent = 0; },
   };
 }

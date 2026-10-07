@@ -181,6 +181,14 @@ export function distToRoad(x, z) {
   return best;
 }
 
+// How close a car or bike in the far lane can get to (x, z): the distance
+// to the nearest road's centerline plus a lane (vehicles ride the lanes).
+export function laneReach(x, z) {
+  let best = Infinity;
+  for (const r of ROADS) best = Math.min(best, distToPolyline(x, z, r.pts) + Math.min(2.6, r.w / 4));
+  return best;
+}
+
 export function nearestRoad(x, z, maxDist = 8) {
   let best = null;
   let bestD = maxDist;

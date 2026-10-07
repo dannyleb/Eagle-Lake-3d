@@ -1,5 +1,6 @@
 import { findRoute, routeLength } from "./nav.js";
 import { createRouteView } from "./route.js";
+import { laneReach } from "../map/layout.js";
 import { createMissionUI } from "./ui.js";
 import { createNinjaGang } from "../ninja.js";
 import { createFishing } from "../fishing.js";
@@ -17,6 +18,7 @@ import {
 //   goto   { label, x, z, r }            reach a spot (route + waypoint shown)
 //          { at: (ctx) => ({ x, z }) }   ...or a spot looked up at run time
 //          { timed: true }               ...against the clock (see failStory)
+//          { onFoot: true }              ...r holds in a car too (no drive-by)
 //   defeat { label, gang }               knock out every ninja in a gang
 //   perform { label, seconds, track }    play a show on the spot (Bradshall)
 //   job    { label, job, approach }      a hands-on job at a spot: fishing,
@@ -150,7 +152,7 @@ export const BRADSHALL_MISSIONS = [
     },
     steps: [
       { type: "goto", label: "Get to The Little House", at: (ctx) => ctx.world.gearLot, r: 16 },
-      { type: "goto", label: "Grab the gear from The Little House", at: (ctx) => ctx.world.gearHouse, r: 3 },
+      { type: "goto", label: "Grab the gear from The Little House", at: (ctx) => ctx.world.gearHouse, r: 3, onFoot: true },
     ],
     achievement: {
       title: "DR. PEBBER",
@@ -319,6 +321,9 @@ export function createMissions(ctx) {
     return new Promise((resolve) => {
       const spot = s.at ? s.at(ctx) : s;
       step = { ...s, x: spot.x, z: spot.z, resolve };
+      // Spots set back from the street (a store, a lake) are out of reach of
+      // a car or bike on its rails, so riding past counts as arriving.
+      if (s.type === "goto") step.rideR = s.onFoot ? s.r : Math.max(s.r, laneReach(step.x, step.z) + 4);
       playObjective();
       routePts = null;
       routeFrom = null;
@@ -439,6 +444,9 @@ export function createMissions(ctx) {
 
     if (step.type === "goto") {
       const d = Math.hypot(pos.x - step.x, pos.z - step.z);
+      // Riding, start braking early enough to stop by the door, not past it.
+      const veh = mode === "walk" ? null : ctx.getVehicle();
+      const reach = veh ? Math.hypot(step.rideR, veh.stopDist) : step.r;
       routeTimer -= dt;
       const moved = !routeFrom || Math.hypot(pos.x - routeFrom[0], pos.z - routeFrom[1]) > 4;
       if (routeTimer <= 0 && moved) {
@@ -446,7 +454,7 @@ export function createMissions(ctx) {
         routeFrom = [pos.x, pos.z];
         routePts = findRoute(pos.x, pos.z, step.x, step.z);
         routeLen = routeLength(routePts);
-        route.setRoute(d > step.r ? routePts : null);
+        route.setRoute(d > reach ? routePts : null);
       }
       // Distance along the streets (straight-line once you're off the network).
       const sinceRoute = routeFrom ? Math.hypot(pos.x - routeFrom[0], pos.z - routeFrom[1]) : 0;
@@ -454,7 +462,7 @@ export function createMissions(ctx) {
       const remaining = routePts && d > 25 ? Math.max(d, routeLen - sinceRoute) : d;
       ui.setObjective(step.label, `${Math.round(remaining)} m`, !!alarmOn || !!step.timed);
       ui.waypoint({ x: step.x, y: 10, z: step.z }, ctx.camera, remaining);
-      if (d < step.r) {
+      if (d < reach) {
         if (ctx.arrive) ctx.arrive(); // brake and hop off the bike / out of the car
         step.resolve("done");
         return;

@@ -126,7 +126,7 @@ const missions = createMissions({
   getVehicle: () => {
     if (mode === "walk") return null;
     const v = RIDES[mode].veh;
-    return { x: v.group.position.x, z: v.group.position.z, speed: v.state.speed, radius: v.state.radius };
+    return { x: v.group.position.x, z: v.group.position.z, speed: v.state.speed, radius: v.state.radius, stopDist: v.stopDistance() };
   },
   // Turn to face the ninja and throw a punch.
   punch: (target) => {

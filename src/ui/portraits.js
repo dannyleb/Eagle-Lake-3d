@@ -29,6 +29,21 @@ const LOOKS = {
       c.fillRect(28, 18, 56, 6);
     },
   },
+  gary: {
+    bg: "#21c4b5",
+    face: [6, 18, 100, 100],
+    top(c) {
+      c.fillStyle = "#6f8fb3"; // his old denim cowboy hat
+      c.beginPath();
+      c.ellipse(56, 27, 58, 10, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillRect(30, 2, 52, 25);
+      c.fillStyle = "#4f6f96";
+      c.fillRect(30, 19, 52, 5);
+      c.fillStyle = "#7d9cc4"; // denim collar
+      c.fillRect(0, 104, 112, 8);
+    },
+  },
   brian: {
     bg: "#e8742a",
     face: [2, 16, 108, 100],

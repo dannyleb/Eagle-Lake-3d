@@ -28,9 +28,10 @@ slower devices the render resolution steps down automatically.
 ## Missions
 
 The start screen asks you to pick a character: **Sidney** (volunteer
-firefighter) or **The Thicker Bradshall** (country musician). Arrow keys or
-1 / 2 pick on a keyboard; tap a card on a phone. Each character has his own
-mission chain.
+firefighter), **The Thicker Bradshall** (country musician) or **Gary
+Jones** (cowboy arborist). Arrow keys or 1 / 2 / 3 pick on a keyboard; tap
+a card on a phone. Each character has his own mission chain, then the
+shared one.
 
 ### Sidney
 
@@ -67,6 +68,32 @@ seconds in, the missions start:
 
 Both locations are placed approximately and are easy to move in
 `src/world/index.js`.
+
+### Gary Jones
+
+A cowboy in denim from head to toe, with a great big handlebar mustache, a
+chainsaw, and a red-and-white square-body pickup with a ladder rack (he
+drives it instead of the '70, and starts out right beside it at the fire
+station). Brian Weed calls him now and then.
+
+1. **$1,500 of New Duds.** Ride out to **Rawhide & Rhinestones Western
+   Wear** on 90A West and walk up to the counter. The shopping list comes
+   up: cowboy boots ($475), jeans ($135), a tooled belt with a big silver
+   buckle ($165), a denim pearl snap ($125) and a 10X cowboy hat ($600):
+   $1,500 exactly. Tap a line (or E for the next one) to buy it, and Gary
+   changes into it on the spot, faded old denim to sharp new denim. Then
+   check out. Unlocks **$1,500 OF NEW DUDS**.
+2. **Save the Treehouse.** A poplar grew right up through **The
+   Treehouse**, the open-air deck bar on S McCarty, and out the roof. Walk
+   in to the trunk, tap E to fire up the chainsaw, then tap fast to cut.
+   TIMBER! Unlocks **PAID: $50**.
+3. **The Big Oak.** The big old oak on the northwest corner of Main and
+   McCarty has a dead limb hanging over the street, and all Gary's got is
+   a rickety old ladder. Tap E to climb, one rung at a time. Each rung, the
+   ladder might buck him off (more likely higher up); climb back up and
+   try again. It gets kinder after every fall, and from the fourth try on
+   he always makes it. At the top, saw the limb off and climb down.
+   Unlocks a **NEW CHAINSAW BLADE & NEW LADDER**.
 
 ### Everybody: the shared quest line
 
@@ -190,7 +217,7 @@ filter with captions, then hangs up.
 - Playing **The Thicker Bradshall**, Sid calls him every half minute or
   so with the same voicemail clips ("Hey, Blakey Boy..." then "Give me a
   call back. Bye."), mixed in with calls from Brian Weed.
-- Playing either character, **Brian Weed** calls (about once a minute as
+- Playing any character, **Brian Weed** calls (about once a minute as
   Sidney) about Dr. Pebber, hamburgers, and how bad he'd beat his arch
   nemesis **Billy Powell** in a wrestling match.
 
@@ -324,6 +351,9 @@ src/audio/           engine, sound effects, radio, theme song, voices and calls,
 src/ui/              HUD and minimap, start screen, menu, voice card, portraits, confetti
 src/*.js             player, NPCs and townsfolk, vehicles, train, gators, ninjas,
                      Dr. Pebber cans, fishing, camera, controls, textures, signage
+src/gary.js          Gary Jones's model, outfits and chainsaw
+src/arborist.js      the Treehouse poplar, the big oak and ladder, sawing / climbing jobs
+src/shop.js          the western wear store's shopping list
 public/              static files: index.html, style.css, audio/
 build.mjs            esbuild build and dev server; stamps cache-busting hashes
 eslint.config.js     lint rules

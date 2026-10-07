@@ -13,7 +13,8 @@ import { unlockAudio, playMenuTheme, nudgeMenuTheme } from "../audio/index.js";
 //
 // saves: { slots: { sidney: "Mission 3 of 5 · ...", ... }, last: "sidney" }
 // (labels for characters with a saved game). onPick(id, resume) is called
-// once: resume is true to continue that character's saved game.
+// once: resume is true to continue that character's saved game. Keys: arrows
+// / A D + Enter, or 1 / 2 / 3.
 export function createStartScreen(onPick, saves = { slots: {}, last: null }) {
   const overlay = document.getElementById("startOverlay");
   const picks = [...document.querySelectorAll(".charPick")];
@@ -29,6 +30,7 @@ export function createStartScreen(onPick, saves = { slots: {}, last: null }) {
 
   drawPortrait(document.getElementById("pickSidney"), "sidney");
   drawPortrait(document.getElementById("pickBradshall"), "bradshall");
+  drawPortrait(document.getElementById("pickGary"), "gary");
   if (saved.length) {
     overlay.classList.add("hasSaves");
     const last = saves.last || saved[0];
@@ -112,6 +114,7 @@ export function createStartScreen(onPick, saves = { slots: {}, last: null }) {
     else if (e.code === "ArrowRight" || e.code === "KeyD") highlight(highlighted + 1);
     else if (e.code === "Digit1") pick("sidney");
     else if (e.code === "Digit2") pick("bradshall");
+    else if (e.code === "Digit3") pick("gary");
     else if (e.code === "Enter" || e.code === "Space" || e.code === "KeyE") pick();
   }
 

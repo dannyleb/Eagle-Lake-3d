@@ -82,6 +82,7 @@ export function makeFaceTexture(opts) {
     muttonChops = false,
     hairColor = "#2a2015",
     bigMustache = null, // color of a full, wide mustache down to the mouth corners
+    handlebar = null, // color of a great big handlebar mustache, curled up at the ends
   } = opts;
   const w = 256, h = 256;
   const c = canvas(w, h);
@@ -169,6 +170,28 @@ export function makeFaceTexture(opts) {
       ctx.quadraticCurveTo(w / 2, h * 0.92, w / 2 + 16, h * 0.68);
       ctx.quadraticCurveTo(w / 2, h * 0.8, w / 2 - 16, h * 0.68);
       ctx.fill();
+    }
+  }
+
+  if (handlebar) {
+    // Thick across the lip, sweeping out past the mouth and curling up.
+    ctx.fillStyle = handlebar;
+    ctx.strokeStyle = handlebar;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h * 0.655, 34, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 11;
+    for (const sign of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(w / 2 + sign * 26, h * 0.66);
+      ctx.quadraticCurveTo(w / 2 + sign * 62, h * 0.7, w / 2 + sign * 70, h * 0.6);
+      ctx.stroke();
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.arc(w / 2 + sign * 64, h * 0.58, 8, sign > 0 ? Math.PI * 0.1 : Math.PI * 0.9, sign > 0 ? Math.PI * 1.2 : -Math.PI * 0.2, sign < 0);
+      ctx.stroke();
+      ctx.lineWidth = 11;
     }
   }
 

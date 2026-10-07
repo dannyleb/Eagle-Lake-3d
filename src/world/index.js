@@ -10,6 +10,7 @@ import { makeDetailTexture, makeGroundMaterial, makeWaterMaterial } from "./surf
 import { Forest } from "./trees.js";
 import { buildRails } from "./rail.js";
 import { makeSignTexture, makeBannerTexture } from "../signage.js";
+import { createPoplar, createOak } from "../arborist.js";
 import { CollisionWorld } from "../collision.js";
 import { BRADSHALL } from "../config.js";
 import { seededRandom, makeCanvas, canvasTexture } from "../util.js";
@@ -273,6 +274,9 @@ export function buildWorld(scene) {
     (x > -48 && x < 14 && z > -124 && z < -40) ||
     (x > -352 && x < -308 && z > -10 && z < 70) || // Eagle Stop lot and lane
     (x > 374 && x < 420 && z > 4 && z < 38) || // Dairy Quake lot
+    (x > -27 && x < -7 && z > 70 && z < 86) || // the Treehouse deck
+    (x > -415 && x < -375 && z > 64 && z < 92) || // Rawhide & Rhinestones lot
+    (x > -16 && x < -2 && z > -24 && z < -8) || // the big oak (keep its ladder clear)
     (x > 276 && x < 300 && z > -194 && z < -168); // where Sidney starts, by Bradshall
   const tree = (x, z, s = 1, kind = "round") => {
     if (!spawnView(x, z) && freeSpot(x, z, 1.4 * s)) {
@@ -879,6 +883,64 @@ export function buildWorld(scene) {
   }
   const [gearDoorX, gearDoorZ] = L(gearShed, 0, gearShed.d / 2 + 1.4);
 
+  // ---------- Gary Jones's jobs ----------
+  // The Treehouse: an open-air deck bar on S McCarty with a poplar growing
+  // right up through a hole in its roof. Front (and the steps) face McCarty.
+  const th = { x: -17, z: 78 };
+  props.prim(PRIM.box(), { x: th.x, y: 0.2, z: th.z, sx: 16, sy: 0.4, sz: 12 }, "#8a6a44"); // deck
+  for (let k = -7; k <= 7; k += 1) props.prim(PRIM.box(), { x: th.x + k, y: 0.41, z: th.z, sx: 0.05, sy: 0.02, sz: 12 }, "#6b4f31");
+  props.prim(PRIM.box(), { x: th.x + 8.4, y: 0.1, z: th.z, sx: 0.9, sy: 0.2, sz: 3 }, "#7a5c3a"); // step
+  // Open slatted pergola roof (you can see in from above), with the tree
+  // coming up through a gap 1 m west of center.
+  const hole = { x: th.x - 1, z: th.z };
+  const roofY = 4.3, roofCol = "#5b3f26";
+  for (const sz of [-5.8, 5.8]) props.prim(PRIM.box(), { x: th.x, y: roofY, z: th.z + sz, sx: 16.6, sy: 0.35, sz: 0.3 }, roofCol);
+  for (const sx of [-8, 8]) props.prim(PRIM.box(), { x: th.x + sx, y: roofY, z: th.z, sx: 0.3, sy: 0.35, sz: 11.9 }, roofCol);
+  for (let k = -6.6; k <= 6.7; k += 1.1) {
+    if (Math.abs(th.x + k - hole.x) < 1.1) continue; // the gap the poplar grew through
+    props.prim(PRIM.box(), { x: th.x + k, y: roofY + 0.25, z: th.z, sx: 0.18, sy: 0.2, sz: 11.9 }, "#7a5c3a");
+  }
+  for (const [px, pz] of [[-7.6, -5.6], [7.6, -5.6], [-7.6, 5.6], [7.6, 5.6], [0, -5.6], [0, 5.6]]) {
+    props.prim(PRIM.box(), { x: th.x + px, y: 2.2, z: th.z + pz, sx: 0.35, sy: 4, sz: 0.35 }, "#4a3220");
+    collision.add({ type: "circle", x: th.x + px, z: th.z + pz, r: 0.3, h: 4 });
+  }
+  // Railings on the back and sides, the bar along the back, stools.
+  props.prim(PRIM.box(), { x: th.x - 7.6, y: 1, z: th.z, sx: 0.12, sy: 0.12, sz: 11 }, "#4a3220");
+  for (const sz of [-1, 1]) props.prim(PRIM.box(), { x: th.x, y: 1, z: th.z + sz * 5.6, sx: 15, sy: 0.12, sz: 0.12 }, "#4a3220");
+  props.prim(PRIM.box(), { x: th.x - 6.2, y: 0.95, z: th.z, sx: 0.9, sy: 1.1, sz: 8 }, "#6e4a2c");
+  props.prim(PRIM.box(), { x: th.x - 6.2, y: 1.55, z: th.z, sx: 1.2, sy: 0.1, sz: 8.4 }, "#3b2614");
+  collision.add({ type: "box", x: th.x - 6.2, z: th.z, hw: 0.6, hd: 4.2, h: 1.6 });
+  for (let k = -3; k <= 3; k += 2) {
+    props.prim(PRIM.cyl(8), { x: th.x - 5.2, y: 0.85, z: th.z + k, sx: 0.4, sy: 0.08, sz: 0.4 }, "#c0392b");
+    props.prim(PRIM.cyl(6), { x: th.x - 5.2, y: 0.62, z: th.z + k, sx: 0.08, sy: 0.45, sz: 0.08 }, "#9aa0a6");
+  }
+  for (const k of [-2.5, 2.5]) {
+    props.prim(PRIM.cyl(10), { x: th.x + 3.5, y: 1.15, z: th.z + k, sx: 1.2, sy: 0.08, sz: 1.2 }, "#7a5c3a"); // tables
+    props.prim(PRIM.cyl(6), { x: th.x + 3.5, y: 0.8, z: th.z + k, sx: 0.12, sy: 0.75, sz: 0.12 }, "#4a3220");
+  }
+  addSign({ x: th.x + 8.32, y: 3.6, z: th.z, rot: ROT.e, w: 6.5, h: 1.1, title: "The Treehouse", sub: "COLD BEER \u2022 LIVE MUSIC", bg: "#2f4a2a", fg: "#f2d24a" });
+  minimap.landmarks.push({ x: th.x, z: th.z, label: "The Treehouse" });
+  const treehousePoplar = createPoplar(scene, hole.x, hole.z);
+  collision.add({ type: "circle", x: hole.x, z: hole.z, r: 0.55, h: 4 });
+
+  // Rawhide & Rhinestones Western Wear, out on 90A West.
+  const ww = addBuilding({ x: -395, z: 84, w: 18, d: 12, h: 5.2, rot: ROT.n, wall: "#c49a6c", roof: "#6b3d22", front: "store", frontSeg: 18, frontSegH: 5.2, roofType: "gable", rh: 2.4 });
+  {
+    const [sx, sz] = L(ww, 0, ww.d / 2 + 0.06);
+    addSign({ x: sx, y: 4.4, z: sz, rot: ww.rot, w: 11, h: 1.5, title: "Rawhide & Rhinestones", sub: "WESTERN WEAR \u2022 BOOTS \u2022 HATS", bg: "#3b2614", fg: "#f2d24a" });
+    const [ax, az] = L(ww, 0, ww.d / 2 + 1.1);
+    props.prim(PRIM.box(), { x: ax, y: 3.3, z: az, sx: 16, sy: 0.14, sz: 2.2, ry: ww.rot, rx: 0.2 }, "#8a1c1c");
+  }
+  ground.groundQuad([[-410, 77], [-380, 77], [-380, 66], [-410, 66]], Y.lot, PAL.lot);
+  poleSign({ x: -411, z: 70, rot: 0, title: "Boots \u2022 Hats", sub: "PEARL SNAPS \u2022 BUCKLES", bg: "#8a1c1c", fg: "#ffffff", w: 6 });
+  minimap.landmarks.push({ x: ww.x, z: ww.z, label: "Rawhide & Rhinestones" });
+  const westernWear = { x: -395, z: 76.2 }; // just outside the door
+
+  // The big old oak on the northwest corner of Main and McCarty, with a dead
+  // limb hanging out over the street (and a rickety ladder against it).
+  const townOak = createOak(scene, -9, -16);
+  collision.add({ type: "circle", x: -9, z: -16, r: 0.9, h: 6 });
+
   // ---------- Granny's Lake: a fishing landing on the north bank, Granny's
   // house, cypress all around (and a 10-foot gator in the water) ----------
   const fishSpot = { x: 362, z: 117.5 };
@@ -1140,6 +1202,9 @@ export function buildWorld(scene) {
     gearHouse: { x: gearDoorX, z: gearDoorZ },
     gearLot: { x: -6, z: 150 },
     grannysLake: { spot: fishSpot, cast: { x: 362, z: 133 }, lake: GRANNYS_LAKE },
+    treehouse: { tree: treehousePoplar, spot: { x: hole.x + 1.7, z: hole.z }, street: { x: th.x + 9.5, z: th.z } },
+    westernWear,
+    townOak,
     crossings: railInfo.crossings,
     lampMats: railInfo.lampMats,
     triggers,

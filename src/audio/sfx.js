@@ -208,3 +208,74 @@ export function playLineSnap() {
   noise(0, 0.05, { vol: 0.3, freq: 2500, q: 1.5 });
   tone(900, 0, 0.25, { type: "triangle", vol: 0.04, slide: 0.3 });
 }
+
+// ---------- Gary Jones: chainsaw, trees, ladder, the register ----------
+// Two-stroke chainsaw: a buzzy sawtooth with a fast wobble, through a
+// low-pass. Idles while held; revChainsaw(true) screams it up for a cut.
+let saw = null;
+export function startChainsaw() {
+  const c = getCtx();
+  if (!c || saw) return;
+  const out = c.createGain();
+  out.gain.value = 0.0001;
+  const lp = c.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 900;
+  lp.connect(out).connect(c.destination);
+  const o1 = c.createOscillator();
+  o1.type = "sawtooth";
+  o1.frequency.value = 70;
+  const o2 = c.createOscillator();
+  o2.type = "square";
+  o2.frequency.value = 141;
+  const lfo = c.createOscillator();
+  lfo.frequency.value = 24;
+  const depth = c.createGain();
+  depth.gain.value = 6;
+  lfo.connect(depth);
+  depth.connect(o1.frequency);
+  depth.connect(o2.frequency);
+  o1.connect(lp);
+  o2.connect(lp);
+  for (const o of [o1, o2, lfo]) o.start();
+  out.gain.setTargetAtTime(0.05, c.currentTime, 0.05);
+  saw = { out, lp, o1, o2, lfo };
+}
+export function revChainsaw(on) {
+  const c = getCtx();
+  if (!c || !saw) return;
+  const t = c.currentTime;
+  saw.o1.frequency.setTargetAtTime(on ? 150 : 70, t, on ? 0.04 : 0.15);
+  saw.o2.frequency.setTargetAtTime(on ? 302 : 141, t, on ? 0.04 : 0.15);
+  saw.lp.frequency.setTargetAtTime(on ? 2600 : 900, t, 0.05);
+  saw.out.gain.setTargetAtTime(on ? 0.08 : 0.05, t, 0.05);
+}
+export function stopChainsaw() {
+  const c = getCtx();
+  if (!c || !saw) return;
+  const s = saw;
+  saw = null;
+  s.out.gain.setTargetAtTime(0.0001, c.currentTime, 0.12);
+  setTimeout(() => { for (const o of [s.o1, s.o2, s.lfo]) o.stop(); }, 700);
+}
+// A trunk giving way: cracking, then the whoosh of it going over.
+export function playTimber() {
+  for (let k = 0; k < 4; k++) noise(k * 0.12, 0.08, { vol: 0.3, freq: 1500 + k * 300, q: 1.2 });
+  noise(0.5, 1.2, { vol: 0.14, freq: 600, q: 0.4 });
+}
+// Something heavy hitting the ground (big: a tree).
+export function playThud(big = false) {
+  tone(big ? 60 : 90, 0, big ? 0.6 : 0.3, { type: "sine", vol: big ? 0.25 : 0.15, slide: 0.5 });
+  noise(0, big ? 0.5 : 0.2, { vol: big ? 0.3 : 0.15, freq: 300, q: 0.5 });
+}
+// An old wooden ladder complaining.
+export function playLadderCreak() {
+  tone(180 + Math.random() * 80, 0, 0.25, { type: "sawtooth", vol: 0.025, slide: 1.4 });
+  noise(0, 0.08, { vol: 0.08, freq: 900, q: 2 });
+}
+// Cash register: the bell and the drawer.
+export function playChaChing() {
+  tone(2093, 0, 0.5, { type: "triangle", vol: 0.06 });
+  tone(2637, 0.05, 0.6, { type: "triangle", vol: 0.05 });
+  noise(0.15, 0.12, { vol: 0.15, freq: 1200, q: 0.8 });
+}

@@ -48,6 +48,15 @@
           <button id="storyGo" class="chunk yellow"></button>
         </div>
       </div>
+      <div id="shopCard" role="dialog" aria-label="Rawhide and Rhinestones Western Wear">
+        <div class="shopInner">
+          <div class="shopKicker">RAWHIDE &amp; RHINESTONES &middot; WESTERN WEAR</div>
+          <div class="shopTitle">GARY'S $1,500 SHOPPING LIST</div>
+          <ul id="shopList"></ul>
+          <div class="shopTotal"><span>TOTAL</span><span id="shopTotal">$0</span></div>
+          <button id="shopGo" class="chunk yellow"></button>
+        </div>
+      </div>
       <canvas id="confetti"></canvas>
       <div id="menuConfirm" role="dialog" aria-label="Back to the main menu">
         <div class="mcInner">
@@ -98,8 +107,8 @@
       <h2>Green Dog Run</h2>
       <p>Free-roam a sun-baked Texas railroad town on foot, on a fire-department beach cruiser, or behind the wheel of a green '70 big-block. Two freight lines cut through town &mdash; mind the gates.</p>
       <div class="controlsGrid">
-        <div><strong>Keyboard</strong><br/>WASD / Arrows &mdash; walk<br/>Riding: W go &middot; A / D next turn &middot; S stop<br/>Shift &mdash; run / floor it<br/>Space &mdash; brake<br/>E &mdash; ride / park / talk<br/>V &mdash; camera &middot; M &mdash; map &middot; Esc &mdash; main menu<br/>P &mdash; pause radio &middot; R &mdash; next song<br/>F &mdash; get in the car from anywhere</div>
-        <div><strong>Touch</strong><br/>D-pad &mdash; walk any direction<br/>Riding: &#9650; go &middot; &#9664; &#9654; next turn &middot; &#9660; stop / turn around<br/>RUN &mdash; run / floor it<br/>E &mdash; ride (calls Green Dog to you) / park / talk<br/>CAR &mdash; calls the '70 to you<br/>&#10074;&#10074; / &#9654;&#9654; (top) &mdash; pause radio / next song<br/>MENU &mdash; back to the main menu</div>
+        <div><strong>Keyboard</strong><br/>WASD / Arrows &mdash; walk<br/>Riding: W go &middot; A / D next turn &middot; S stop<br/>Shift &mdash; run / floor it<br/>Space &mdash; brake<br/>E &mdash; ride / park / talk<br/>V &mdash; camera &middot; M &mdash; map &middot; Esc &mdash; main menu<br/>P &mdash; pause radio &middot; R &mdash; next song<br/>F &mdash; get in the car (Gary: the pickup) from anywhere</div>
+        <div><strong>Touch</strong><br/>D-pad &mdash; walk any direction<br/>Riding: &#9650; go &middot; &#9664; &#9654; next turn &middot; &#9660; stop / turn around<br/>RUN &mdash; run / floor it<br/>E &mdash; ride (calls Green Dog to you) / park / talk<br/>CAR &mdash; calls the '70 (Gary: his pickup) to you<br/>&#10074;&#10074; / &#9654;&#9654; (top) &mdash; pause radio / next song<br/>MENU &mdash; back to the main menu</div>
       </div>
       <button id="pressStart" class="chunk yellow" aria-label="Press start">&#9654; PRESS START</button>
       <div id="saveMenu">
@@ -118,6 +127,12 @@
           <canvas id="pickBradshall" width="112" height="112"></canvas>
           <span class="pickName">THE THICKER BRADSHALL</span>
           <span class="pickRole">Country musician</span>
+          <span class="pickSave"></span>
+        </button>
+        <button class="charPick" data-char="gary">
+          <canvas id="pickGary" width="112" height="112"></canvas>
+          <span class="pickName">GARY JONES</span>
+          <span class="pickRole">Cowboy arborist</span>
           <span class="pickSave"></span>
         </button>
       </div>

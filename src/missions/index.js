@@ -3,6 +3,8 @@ import { createRouteView } from "./route.js";
 import { createMissionUI } from "./ui.js";
 import { createNinjaGang } from "../ninja.js";
 import { createFishing } from "../fishing.js";
+import { createSawJob, createLadderJob } from "../arborist.js";
+import { createShopJob, SHOPPING_LIST } from "../shop.js";
 import {
   startSiren, stopSiren, setSirenVolume, duckRadio,
   playAchievementTheme, playPop, playObjective, playHit, playPoof, playOof, playTick, playFail,
@@ -17,11 +19,15 @@ import {
 //          { timed: true }               ...against the clock (see failStory)
 //   defeat { label, gang }               knock out every ninja in a gang
 //   perform { label, seconds, track }    play a show on the spot (Bradshall)
-//   fish   { label, fishing }            fish the gator out (state[fishing] is
-//                                        the createFishing() controller)
+//   job    { label, job, approach }      a hands-on job at a spot: fishing,
+//                                        sawing, climbing, shopping. state[job]
+//                                        is its controller (spot, facing,
+//                                        begin, press, prompt, status, update,
+//                                        end, active, done)
 // Each mission: { id, name, story, steps, achievement } (+ optional alarm,
 // setup, cleanup, onComplete, failStory). id is what saved games record.
-// To add a mission, append to MISSIONS (Sidney), BRADSHALL_MISSIONS, or
+// To add a mission, append to MISSIONS (Sidney), BRADSHALL_MISSIONS,
+// GARY_MISSIONS, or
 // SHARED_MISSIONS (every character, after their own). Optional hooks:
 // setup(ctx) -> state objects, cleanup(state, ctx) after the last step.
 // ---------------------------------------------------------------------------
@@ -153,6 +159,81 @@ export const BRADSHALL_MISSIONS = [
   },
 ];
 
+// Gary Jones's missions: new clothes first, then the tree work.
+export const GARY_MISSIONS = [
+  {
+    id: "gary-new-duds",
+    name: "New Duds",
+    story: {
+      kicker: "GARY JONES \u00b7 MISSION 1",
+      title: "$1,500 OF NEW DUDS",
+      body:
+        "Your denim's so faded it's practically white. Get out to Rawhide & Rhinestones Western Wear on 90A West " +
+        "and get the whole list: boots, jeans, a belt, a pearl snap and a cowboy hat. Budget: fifteen hundred dollars. Exactly.",
+      go: "SADDLE UP",
+    },
+    setup: (ctx) => ({ shop: createShopJob({ player: ctx.player, spot: ctx.world.westernWear, say: (t, ms) => ctx.hud.toast(t, ms) }) }),
+    steps: [
+      { type: "goto", label: "Get to Rawhide & Rhinestones", at: (ctx) => ctx.world.westernWear, r: 10 },
+      { type: "job", label: "Buy the whole list", job: "shop", approach: "Walk in to the counter" },
+    ],
+    cleanup: (state) => state.shop.end(),
+    onComplete: (ctx) => SHOPPING_LIST.forEach((item) => ctx.player.dress(item.id)),
+    achievement: {
+      title: "$1,500 OF NEW DUDS",
+      text: "Boots, jeans, a tooled belt with a buckle the size of a dinner plate, a pearl snap and a 10X hat. Still all denim. All Gary.",
+    },
+  },
+  {
+    id: "gary-treehouse",
+    name: "Save the Treehouse",
+    story: {
+      kicker: "GARY JONES \u00b7 MISSION 2",
+      title: "A TREE GREW THROUGH THE TREEHOUSE",
+      body:
+        "The Treehouse bar on S McCarty has a problem: a poplar grew right up through the middle of it and out the roof. " +
+        "The health inspector's coming Friday. Grab the chainsaw and save the business.",
+      go: "FIRE IT UP",
+    },
+    setup: (ctx) => ({
+      saw: createSawJob({ scene: ctx.scene, player: ctx.player, tree: ctx.world.treehouse.tree, spot: ctx.world.treehouse.spot, say: (t, ms) => ctx.hud.toast(t, ms) }),
+    }),
+    steps: [
+      { type: "goto", label: "Get to the Treehouse", at: (ctx) => ctx.world.treehouse.street, r: 12 },
+      { type: "job", label: "Cut down the poplar", job: "saw", approach: "Walk in to the tree", hold: 2.5 },
+    ],
+    cleanup: (state) => state.saw.end(),
+    onComplete: (ctx) => { if (ctx.world.treehouse.tree.standing) ctx.world.treehouse.tree.cut(0, true); },
+    achievement: {
+      title: "PAID: $50",
+      text: "The poplar's out, the roof's (mostly) fine, and the Treehouse is open for business. The owner paid you fifty bucks and a cold one.",
+    },
+  },
+  {
+    id: "gary-big-oak",
+    name: "The Big Oak",
+    story: {
+      kicker: "GARY JONES \u00b7 MISSION 3",
+      title: "THE BIG OAK DOWNTOWN",
+      body:
+        "The big old oak at Main and McCarty has a dead limb hanging right over the street. All you've got is a rickety old ladder. " +
+        "Tap E to climb, one rung at a time, and try not to fall off. Then cut that limb down.",
+      go: "HOLD MY HAT",
+    },
+    setup: (ctx) => ({ ladder: createLadderJob({ scene: ctx.scene, player: ctx.player, oak: ctx.world.townOak, say: (t, ms) => ctx.hud.toast(t, ms) }) }),
+    steps: [
+      { type: "goto", label: "Get to the big oak", at: (ctx) => ctx.world.townOak.spot, r: 10 },
+      { type: "job", label: "Climb up and cut the dead limb", job: "ladder", approach: "Walk up to the ladder" },
+    ],
+    cleanup: (state) => state.ladder.end(),
+    onComplete: (ctx) => { if (ctx.world.townOak.limbOn) ctx.world.townOak.dropLimb(true); },
+    achievement: {
+      title: "NEW CHAINSAW BLADE & NEW LADDER",
+      text: "The dead limb's down and nobody got bonked. The city sprang for a brand-new chainsaw blade and a ladder that doesn't wobble.",
+    },
+  },
+];
+
 // ---------------------------------------------------------------------------
 // Shared quest line: every character plays these after their own missions
 // (any character added later gets them too).
@@ -207,7 +288,7 @@ const GRANNYS_GATOR = {
   }),
   steps: [
     { type: "goto", label: "Get to Granny's Lake", at: (ctx) => ctx.world.grannysLake.spot, r: 10 },
-    { type: "fish", label: "Fish out the 10-foot gator", fishing: "fishing" },
+    { type: "job", label: "Fish out the 10-foot gator", job: "fishing", approach: "Walk down to the landing" },
   ],
   cleanup: (state) => state.fishing.end(),
   achievement: {
@@ -218,7 +299,7 @@ const GRANNYS_GATOR = {
 
 export const SHARED_MISSIONS = [LUNCH_SPECIAL, GRANNYS_GATOR];
 
-const MISSION_SETS = { sidney: MISSIONS, bradshall: BRADSHALL_MISSIONS };
+const MISSION_SETS = { sidney: MISSIONS, bradshall: BRADSHALL_MISSIONS, gary: GARY_MISSIONS };
 // A character's whole quest line: their own missions, then the shared ones.
 export const questLine = (character) => [...(MISSION_SETS[character] || MISSIONS), ...SHARED_MISSIONS];
 
@@ -414,26 +495,30 @@ export function createMissions(ctx) {
         endShowSong();
         step.resolve("done");
       }
-    } else if (step.type === "fish") {
-      const fishing = state[step.fishing];
-      if (!fishing.active) {
-        // Off the bike / out of the car, then walk down to the landing.
-        const d = Math.hypot(pos.x - step.x, pos.z - step.z);
+    } else if (step.type === "job") {
+      const job = state[step.job];
+      if (!job.active) {
+        // Off the bike / out of the car, then walk up to the spot.
+        const d = Math.hypot(pos.x - job.spot.x, pos.z - job.spot.z);
         if (ctx.getMode() !== "walk" || d > 3) {
-          ui.setObjective(step.label, ctx.getMode() !== "walk" ? "Hop off and grab the rod" : "Walk down to the landing", true);
-          ui.waypoint(ctx.getMode() === "walk" ? { x: step.x, y: 2, z: step.z } : null, ctx.camera, d);
+          ui.setObjective(step.label, ctx.getMode() !== "walk" ? "Hop off" : step.approach || "Walk up to it", true);
+          ui.waypoint(ctx.getMode() === "walk" ? { x: job.spot.x, y: 2, z: job.spot.z } : null, ctx.camera, d);
           return;
         }
         ui.waypoint(null);
-        fishing.begin();
+        const p = ctx.player;
+        p.group.position.set(job.spot.x, p.group.position.y, job.spot.z);
+        p.state.heading = job.facing;
+        p.group.rotation.y = job.facing;
+        job.begin();
       }
-      fishing.update(dt, time);
-      const st = fishing.status();
+      job.update(dt, time);
+      const st = job.status();
       ui.setObjective(step.label, st.sub, true);
       ui.setReel(st.meter ? st.meter.frac : null, st.meter ? st.meter.label : "", st.meter ? st.meter.hot : false);
-      if (fishing.landed) {
-        step.landedFor = (step.landedFor || 0) + dt;
-        if (step.landedFor > 1.6) step.resolve("done");
+      if (job.done) {
+        step.doneFor = (step.doneFor || 0) + dt;
+        if (step.doneFor > (step.hold ?? 1.6)) step.resolve("done");
       }
     } else if (step.type === "defeat") {
       const g = state[step.gang];
@@ -449,8 +534,9 @@ export function createMissions(ctx) {
       ui.dismissStory();
       return true;
     }
-    if (fishingNow()) {
-      state.fishing.press();
+    const job = currentJob();
+    if (job) {
+      job.press();
       return true;
     }
     const gang = state.gang;
@@ -473,14 +559,17 @@ export function createMissions(ctx) {
     return false;
   }
 
-  // The rod's in hand (the fish step has begun).
-  function fishingNow() {
-    return step && step.type === "fish" && state.fishing && state.fishing.active;
+  // The job controller, once a job step has begun (rod / saw in hand, at
+  // the ladder, at the counter); E goes to it and the player holds still.
+  function currentJob() {
+    const job = step && step.type === "job" ? state[step.job] : null;
+    return job && job.active ? job : null;
   }
 
   function prompt() {
     if (ui.storyOpen) return null;
-    if (fishingNow()) return state.fishing.prompt();
+    const job = currentJob();
+    if (job) return job.prompt();
     const gang = state.gang;
     if (gang && ctx.getMode() === "walk") {
       const p = ctx.getPos();
@@ -523,9 +612,9 @@ export function createMissions(ctx) {
     update,
     interact,
     prompt,
-    // Story cards and fishing hold the player still (E still works).
+    // Story cards and jobs hold the player still (E still works).
     get blocking() {
-      return ui.storyOpen || !!fishingNow();
+      return ui.storyOpen || !!currentJob();
     },
     // For the minimap
     get route() {

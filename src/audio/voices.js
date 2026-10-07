@@ -194,6 +194,7 @@ function makeCall(who) {
 //   about once a minute.
 //   Playing Bradshall: phone calls every 22-36 s, from Sid ("Hey, Blakey
 //   Boy...") and from Brian, mixed up.
+//   Anyone else (Gary): Brian calls every 35-55 s.
 let voiceClock = 0;
 export function updateVoices(frameDt, active, character = "sidney") {
   // Wall-clock time, not game time: on a slow phone the game's capped frame
@@ -229,7 +230,7 @@ export function updateVoices(frameDt, active, character = "sidney") {
     if (call) {
       lastCaller = who;
       queue = call;
-      callNext = character === "bradshall" ? 22 + Math.random() * 14 : 55 + Math.random() * 30;
+      callNext = character === "bradshall" ? 22 + Math.random() * 14 : character === "sidney" ? 55 + Math.random() * 30 : 35 + Math.random() * 20;
       lineNext = Math.max(lineNext, 6);
       startItem(c, queue.shift());
       return;

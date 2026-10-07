@@ -327,6 +327,78 @@ export function buildCar() {
   return g;
 }
 
+// ---------------- Gary's pickup: a square-body work truck ----------------
+// Two-tone faded red and white, chrome bumpers, a ladder rack over the bed,
+// his chainsaw case and a coil of rope in the back. Front is +z.
+export function buildTruck() {
+  const g = new THREE.Group();
+  const paint = new THREE.MeshStandardMaterial({ color: 0xa8372e, roughness: 0.55, metalness: 0.25 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xf1ede2, roughness: 0.5 });
+  const glass = new THREE.MeshStandardMaterial({ color: 0x223a4e, roughness: 0.08, metalness: 0.3, transparent: true, opacity: 0.6 });
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xe1e4e6, roughness: 0.15, metalness: 0.95 });
+  const black = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.8 });
+  const rack = new THREE.MeshStandardMaterial({ color: 0x3a3d42, roughness: 0.6, metalness: 0.5 });
+  const box = (w, h, d, x, y, z, m) => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    b.position.set(x, y, z);
+    g.add(b);
+    return b;
+  };
+  // Hood and front clip, cab, and the bed with its sides and tailgate.
+  box(1.86, 0.6, 1.5, 0, 0.88, 1.95, paint);
+  box(1.88, 0.12, 1.52, 0, 1.2, 1.95, white);
+  box(1.9, 0.95, 1.5, 0, 1.0, 0.55, paint);
+  box(1.84, 0.62, 1.42, 0, 1.78, 0.45, white);
+  box(1.86, 0.5, 0.06, 0, 1.75, 1.17, glass).rotation.x = -0.15;
+  box(1.86, 0.45, 0.06, 0, 1.78, -0.27, glass);
+  for (const sx of [-1, 1]) box(0.04, 0.42, 1.0, sx * 0.93, 1.78, 0.5, glass);
+  box(1.9, 0.18, 2.6, 0, 0.62, -1.5, paint); // bed floor
+  for (const sx of [-1, 1]) box(0.08, 0.62, 2.6, sx * 0.91, 0.98, -1.5, paint);
+  box(1.9, 0.62, 0.08, 0, 0.98, -2.78, paint); // tailgate
+  box(1.9, 0.08, 0.08, 0, 1.3, -2.78, white);
+  // Grille, lights, bumpers
+  box(1.5, 0.36, 0.05, 0, 0.92, 2.72, chrome);
+  for (const sx of [-1, 1]) {
+    box(0.26, 0.2, 0.05, sx * 0.72, 0.95, 2.74, new THREE.MeshBasicMaterial({ color: 0xfff3c4 }));
+    box(0.18, 0.18, 0.05, sx * 0.8, 1.0, -2.83, new THREE.MeshBasicMaterial({ color: 0xc0392b }));
+  }
+  box(2.0, 0.18, 0.18, 0, 0.6, 2.8, chrome);
+  box(2.0, 0.18, 0.18, 0, 0.6, -2.88, chrome);
+  // Ladder rack over the bed, and the gear in the back.
+  for (const z of [-0.5, -2.6]) {
+    for (const sx of [-1, 1]) box(0.07, 0.95, 0.07, sx * 0.9, 1.75, z, rack);
+    box(1.9, 0.07, 0.07, 0, 2.22, z, rack);
+  }
+  for (const sx of [-1, 1]) box(0.07, 0.07, 2.2, sx * 0.9, 2.22, -1.55, rack);
+  box(0.5, 0.3, 0.9, -0.5, 0.86, -1.3, new THREE.MeshStandardMaterial({ color: 0xe8742a, roughness: 0.6 })); // saw case
+  const rope = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.06, 6, 14), new THREE.MeshStandardMaterial({ color: 0xc9a86a, roughness: 0.9 }));
+  rope.rotation.x = Math.PI / 2;
+  rope.position.set(0.45, 0.76, -2.1);
+  g.add(rope);
+  // Wheels: white-letter tires on steel wheels.
+  const hub = new THREE.MeshStandardMaterial({ map: makeWheelTexture(5, "#e6e6e6", "#8a8f96"), roughness: 0.4, metalness: 0.5 });
+  const wheels = [];
+  for (const [wx, wz] of [[-0.9, 1.85], [0.9, 1.85], [-0.9, -1.7], [0.9, -1.7]]) {
+    const w = new THREE.Group();
+    w.position.set(wx, 0.46, wz);
+    const spin = new THREE.Group();
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.34, 18), black);
+    t.rotation.z = Math.PI / 2;
+    spin.add(t);
+    const face = new THREE.Mesh(new THREE.CircleGeometry(0.28, 18), hub);
+    face.position.x = Math.sign(wx) * 0.175;
+    face.rotation.y = Math.sign(wx) * Math.PI / 2;
+    spin.add(face);
+    w.add(spin);
+    g.add(w);
+    wheels.push(spin);
+  }
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  g.userData.wheels = wheels;
+  g.userData.seat = new THREE.Vector3(0.42, 0.62, 0.45);
+  return g;
+}
+
 // Vehicles run "on rails": they're locked to the street network and stay
 // in the right-hand lane, and they drive themselves. Tap up once and they
 // cruise; tap left/right to queue the next turn; tap down to stop (again
@@ -342,7 +414,7 @@ export function createVehicle(scene, type, spawn) {
   const isBike = type === "bike";
   const maxSpeed = isBike ? 20 : 52;
   const accel = isBike ? 14 : 24;
-  const wheels = group.userData.wheels || [];
+  let wheels = group.userData.wheels || [];
   const state = { group, heading: spawn.heading, speed: 0, type, maxSpeed, radius: isBike ? 0.7 : 1.45, lean: 0, boost: 1 };
 
   let rail = null; // { a, b, s, road, len, ux, uz }
@@ -509,6 +581,15 @@ export function createVehicle(scene, type, spawn) {
     update,
     // Drop off the rails (parked); the next update re-attaches wherever it is.
     park() { rail = null; state.speed = 0; cruise = false; turnIntent = 0; },
+    // Swap the body (Gary drives his pickup instead of the '70).
+    setModel(build) {
+      const m = build();
+      while (group.children.length) group.remove(group.children[0]);
+      for (const c of [...m.children]) group.add(c);
+      wheels = m.userData.wheels || [];
+      group.userData.wheels = wheels;
+      group.userData.seat = m.userData.seat;
+    },
     // Brake to a stop (used when you reach an objective).
     stop() { cruise = false; turnIntent = 0; },
   };

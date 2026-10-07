@@ -801,7 +801,8 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
 /* ---------- Character picker ---------- */
 #startOverlay { cursor: default; }
 .pickTitle { margin: 10px 0 8px; font-size: 13px; font-weight: 900; letter-spacing: 0.18em; color: var(--yellow); }
-#charPicks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+#charPicks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.charPick { min-width: 0; }
 .charPick {
   display: flex;
   flex-direction: column;
@@ -825,7 +826,9 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
 .charPick:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 @media (max-height: 500px) {
   .charPick canvas { width: 56px; height: 56px; }
-  .charPick { padding: 6px; }
+  .charPick { padding: 6px 4px; }
+  .charPick .pickName { font-size: 12px; }
+  .charPick .pickRole, .charPick .pickSave { font-size: 10px; }
 }
 
 /* ---------- Dr. Pebber boost ---------- */
@@ -949,3 +952,22 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
 .charPick .pickSave { font-size: 11px; font-weight: 900; color: #8ff3e8; min-height: 1em; }
 .charPick.on .pickSave { color: #16705a; }
 #startOverlay.resume .charPick.noSave { opacity: 0.35; pointer-events: none; }
+
+/* ---------- Western wear store: Gary's shopping list ---------- */
+#shopCard { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(20, 8, 36, 0.45); opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 6; }
+#shopCard.show { opacity: 1; pointer-events: auto; }
+.shopInner { width: min(92%, 420px); max-height: 94%; overflow-y: auto; padding: 14px 16px 16px; border-radius: 18px; border: 4px solid #8a1c1c; background: linear-gradient(180deg, #f6ead2, #e8d3a8); color: #3b2614; box-shadow: 0 6px 0 var(--ink); text-align: center; }
+.shopKicker { font-size: 11px; font-weight: 900; letter-spacing: 0.14em; color: #8a1c1c; }
+.shopTitle { font-size: 21px; font-weight: 900; margin: 4px 0 8px; }
+#shopList { list-style: none; margin: 0; padding: 0; text-align: left; }
+#shopList li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; margin-bottom: 6px; border-radius: 10px; background: rgba(255, 255, 255, 0.55); border: 2px solid #c9a86a; cursor: pointer; }
+#shopList li .shopName { flex: 1; font-weight: 800; font-size: 14px; line-height: 1.2; }
+#shopList li .shopName small { display: block; font-weight: 600; font-size: 11px; color: #6b4f31; }
+#shopList li .shopPrice { font-weight: 900; font-size: 15px; }
+#shopList li .shopCheck { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #8a1c1c; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; }
+#shopList li.bought { background: #dff3d8; border-color: #2f9e44; }
+#shopList li.bought .shopCheck { background: #2f9e44; border-color: #2f9e44; }
+#shopList li.next { border-color: #8a1c1c; box-shadow: 0 0 0 2px #f2d24a; }
+.shopTotal { display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; margin: 6px 4px 12px; padding-top: 8px; border-top: 3px dashed #8a1c1c; }
+#shopGo { display: inline-flex; align-items: center; gap: 8px; height: 48px; font-size: 16px; }
+@media (max-height: 560px) { #shopList li { padding: 4px 8px; margin-bottom: 4px; } .shopTitle { font-size: 17px; } }

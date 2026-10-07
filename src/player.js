@@ -5,6 +5,7 @@ import { clearHeading } from "./assist.js";
 import { wrapAngle, makeCanvas, canvasTexture } from "./util.js";
 import { makeFaceTexture, makeHeadMaterials } from "./textures.js";
 import { FACES } from "./faces.js";
+import { buildGary } from "./gary.js";
 
 // Sidney — a stylized tribute built from the photos: heavyset, glasses and a
 // thin mustache, dark wavy hair, a charcoal-brown uniform shirt with a gold
@@ -182,6 +183,7 @@ export function buildSidney() {
 export const CHARACTERS = {
   sidney: { name: "SIDNEY", short: "Sidney", build: buildSidney },
   bradshall: { name: "THE THICKER BRADSHALL", short: "Bradshall", build: () => buildBradshall({ playable: true }) },
+  gary: { name: "GARY JONES", short: "Gary", build: buildGary },
 };
 
 export function createPlayer(scene, spawn) {
@@ -232,22 +234,26 @@ export function createPlayer(scene, spawn) {
     }
   }
 
-  // Fishing: a rod in the right hand (or null to put it away), and the arm
-  // angle the fishing controller drives (cast, reel, haul back). He stands
-  // still while fishing.
-  let rod = null;
-  let rodAngle = -1.15;
-  function holdRod(r) {
-    if (rod) rod.parent?.remove(rod);
-    rod = r;
-    if (rod) parts.armR.add(rod);
+  // A tool in the right hand (fishing rod, chainsaw; null puts it away),
+  // and the arm angle the job's controller drives (cast, reel, saw). He
+  // stands still while holding one.
+  let tool = null;
+  let toolAngle = -1.15;
+  function holdTool(t) {
+    if (tool) tool.parent?.remove(tool);
+    tool = t;
+    if (tool) parts.armR.add(tool);
     else {
       parts.armL.rotation.set(0, 0, 0);
       parts.armR.rotation.set(0, 0, 0);
     }
   }
-  function rodArm(angle) {
-    rodAngle = angle;
+  function toolArm(angle) {
+    toolAngle = angle;
+  }
+  // Gary's new clothes from the western wear store (no-op for others).
+  function dress(item) {
+    if (parts.dress) parts.dress(item);
   }
 
   // Gold championship belt: black strap, big center plate with a red jewel,
@@ -402,12 +408,12 @@ export function createPlayer(scene, spawn) {
       parts.hips.position.y = 0.95 + Math.abs(Math.sin(state.walkCycle * 4.5)) * 0.03;
       return;
     }
-    if (rod) {
+    if (tool) {
       state.speed = 0;
       group.position.x = oldX;
       group.position.z = oldZ;
-      parts.armR.rotation.set(rodAngle, 0, 0.08);
-      parts.armL.rotation.set(rodAngle + 0.35, 0, -0.5); // left hand up on the rod too
+      parts.armR.rotation.set(toolAngle, 0, 0.08);
+      parts.armL.rotation.set(toolAngle + 0.35, 0, -0.5); // left hand up on it too
       parts.legL.rotation.x = 0;
       parts.legR.rotation.x = 0;
       parts.hips.position.y = 0.95;
@@ -424,5 +430,5 @@ export function createPlayer(scene, spawn) {
     }
   }
 
-  return { group, state, update, setPose, animateRide, punch, setChief, setBelt, setCharacter, perform, holdRod, rodArm, get performing() { return performing; } };
+  return { group, state, update, setPose, animateRide, punch, setChief, setBelt, setCharacter, perform, holdTool, toolArm, dress, get performing() { return performing; } };
 }

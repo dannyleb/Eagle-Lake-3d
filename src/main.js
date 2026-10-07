@@ -7,7 +7,7 @@ import { createNPC } from "./npc.js";
 import { createTrain } from "./train.js";
 import { createControls } from "./controls.js";
 import { createPlayer, CHARACTERS } from "./player.js";
-import { createVehicle } from "./vehicles.js";
+import { createVehicle, buildTruck } from "./vehicles.js";
 import { createChaseCamera } from "./camera.js";
 import { createHud } from "./ui/hud.js";
 import { toonify } from "./render/toon.js";
@@ -253,7 +253,7 @@ function callRide(key) {
     veh.group.position.set(p.x + Math.cos(h) * 1.4, 0.16, p.z - Math.sin(h) * 1.4);
     veh.state.heading = h;
     veh.group.rotation.set(0, h, 0);
-    hud.toast(key === "bike" ? "Green Dog rolls up" : "The '70 pulls up", 1400);
+    hud.toast(key === "bike" ? "Green Dog rolls up" : `${RIDES.car.name[0].toUpperCase()}${RIDES.car.name.slice(1)} pulls up`, 1400);
   }
   mount(key);
 }
@@ -284,7 +284,7 @@ function promptText() {
   if (nearBradshall()) return { text: "Ask The Thicker Bradshall to play one", action: "TALK" };
   const ride = nearestRide();
   if (ride === "bike") return { text: "Hop on Green Dog", action: "RIDE" };
-  if (ride === "car") return { text: "Get in the '70", action: "DRIVE" };
+  if (ride === "car") return { text: `Get in ${RIDES.car.name}`, action: "DRIVE" };
   if (trig) return { text: trig.text };
   return null;
 }
@@ -562,6 +562,16 @@ createStartScreen((id, resume) => {
   if (character !== "sidney") {
     player.setCharacter(character);
     if (character === "bradshall") bradshall.group.visible = false; // he's you now
+  }
+  if (character === "gary") {
+    // Gary drives his pickup instead of the '70, and starts out beside it.
+    car.setModel(buildTruck);
+    Object.assign(RIDES.car, { label: "GARY'S PICKUP \u00b7 350 V8", name: "the pickup" });
+    toonify(car.group);
+    player.group.position.set(SPAWN.car.x + 0.5, player.group.position.y, SPAWN.car.z + 3.2);
+    player.state.heading = 0;
+    player.group.rotation.y = 0;
+    chaseCam.snap();
   }
   missions.setCharacter(character);
   unlockAudio();

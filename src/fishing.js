@@ -65,7 +65,7 @@ function buildBobber() {
   return g;
 }
 
-// player: the player object (holdRod / rodArm). spot: { x, z } on the bank;
+// player: the player object (holdTool / toolArm). spot: { x, z } on the bank;
 // cast: { x, z } where the bait lands. say(text, ms): a toast.
 export function createFishing({ scene, player, spot, cast, say }) {
   const root = new THREE.Group();
@@ -142,7 +142,7 @@ export function createFishing({ scene, player, spot, cast, say }) {
     player.group.position.z = spot.z;
     player.state.heading = towardWater;
     player.group.rotation.y = towardWater;
-    player.holdRod(rod);
+    player.holdTool(rod);
     root.visible = true;
     readyNewSteak();
   }
@@ -342,7 +342,7 @@ export function createFishing({ scene, player, spot, cast, say }) {
       }
     }
 
-    player.rodArm(armAngle);
+    player.toolArm(armAngle);
     // The bait: the steak dangling and flying out, then the bobber on the
     // water until he takes it.
     steak.visible = state === "ready" || state === "casting";
@@ -369,16 +369,18 @@ export function createFishing({ scene, player, spot, cast, say }) {
 
   // Put the rod away; the gator stays on the bank for a while, then goes.
   function end() {
-    player.holdRod(null);
+    player.holdTool(null);
     for (const o of [steak, bobber, line]) o.visible = false;
     setState("idle");
     setTimeout(() => scene.remove(root), 12000);
   }
 
   return {
+    spot,
+    facing: towardWater,
     begin, press, prompt, status, update, end,
     get state() { return state; },
-    get landed() { return state === "landed"; },
+    get done() { return state === "landed"; },
     get active() { return state !== "idle"; },
   };
 }

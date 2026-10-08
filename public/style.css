@@ -1021,3 +1021,16 @@ body.touch #voiceCard { max-width: calc(100% - 172px); }
   .failOsd { font-size: 11px; }
   .failFoot { font-size: 9px; letter-spacing: 0.08em; }
 }
+
+/* Toasts and captions clear the HUD: on a phone the top corners hold the
+   mode label, objective and minimap, so captions drop below them; on a
+   landscape phone they stay up top but narrow to the gap between. */
+#toast { z-index: 4; }
+@media (max-width: 560px) {
+  #toast { top: 150px; max-width: calc(100% - 24px); }
+  #viewport.alarm #toast { top: 180px; }
+  #reelMeter { top: 214px; }
+}
+@media (max-height: 500px) and (min-width: 561px) {
+  #toast { max-width: calc(100% - 440px); font-size: 13px; }
+}

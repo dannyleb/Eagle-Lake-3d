@@ -1,361 +1,248 @@
 # Eagle Lake: Green Dog Run
 
-A lightweight, browser-based 3D free-roam game — think *Simpsons: Hit & Run*
-energy, scaled down to a small Texas railroad town. Explore on foot, hop on a
-beach cruiser named **Green Dog**, or take the '70 muscle car out for a spin,
-all while dodging the train that cuts straight through downtown.
+A browser-based 3D free-roam game built with Three.js. It's a fully static
+site with no framework and no server code, and it's built to load in a few
+seconds and run smoothly on a phone.
 
-The look is modeled on mid-90s CD-ROM "virtual town" explorers: bright,
-saturated pre-rendered-style colors, a high three-quarter camera, puffy
-clouds, and a chunky purple "Eagle-Eye View-O-Matic" bezel with a location
-readout, compass, speed meter, minimap, and full town map.
+## Tech stack
 
-Rendering is cel-shaded: every lit surface uses banded toon lighting, and a
-single full-screen pass draws ink outlines from the depth buffer (silhouettes
-plus creases), with a light color grade on top. Surfaces get procedural
-detail in world space (grass blades, asphalt grain and cracks, sidewalk slab
-joints, animated water ripples), roofs are shingled with fascia and ridge
-caps, and the town is dressed with rooftop units, curbs, benches, planters,
-hydrants, stop signs, picket fences, mailboxes and flower beds. Geese fly
-over in V formation.
+| Area | Choice |
+|---|---|
+| Rendering | [Three.js](https://threejs.org/) r186 (WebGL) |
+| Language | Plain JavaScript (ES modules), no framework |
+| Bundler | esbuild 0.24: one IIFE bundle targeting ES2019 |
+| Linting | ESLint 9 (flat config, `eslint.config.js`) |
+| Audio | Web Audio API plus `<audio>` / `<video>` media elements |
+| Storage | `localStorage` (saved games) |
+| Hosting | GitHub Pages, deployed by GitHub Actions |
+| Runtime | Node 20+ (build only) |
 
-Built with [Three.js](https://threejs.org/), no framework, no image assets —
-merged low-poly geometry, instanced trees, and procedurally generated
-textures, so a whole town (about 275 houses, 1,700 trees, two rail lines, a
-lake, farms, and an airport) loads in a few seconds and runs on a phone. On
-slower devices the render resolution steps down automatically.
-
-## Missions
-
-The start screen asks you to pick a character: **Sidney** (volunteer
-firefighter), **The Thicker Bradshall** (country musician) or **Gary
-Jones** (cowboy arborist). Arrow keys or 1 / 2 / 3 pick on a keyboard; tap
-a card on a phone. Each character has his own mission chain, then the
-shared one.
-
-### Sidney
-
-The game opens at Veterans Memorial Park, with Sidney listening to The
-Thicker Bradshall busk by the pond and Green Dog parked beside him. A few
-seconds in, the missions start:
-
-1. **Fire Alarm.** The siren at Station 1 goes off, a flashing alarm
-   banner appears, and the station's roof lights start blinking. Get to the
-   fire station on McCarty Avenue. Unlocks **FIRE CHIEF** (and a white
-   chief's helmet).
-2. **The Eagle Stop.** Ninjas have taken over the Eagle Stop drive-thru on
-   90A West. Get there and defeat all six: press E to take one down on
-   foot, or run them down on the bike or in the car. They circle, dart in
-   for flying kicks, and flip out of the way of traffic. Unlocks **HEAD OF
-   SECURITY**.
-3. **Wrestling Night.** The title match is about to start. Get home to
-   Sidney's house (northeast side, yellow "SIDNEY'S" yard sign) before the
-   countdown hits zero. Miss it and you get another shot. Unlocks the
-   **CHAMPIONSHIP BELT**, which he wears from then on.
-
-### The Thicker Bradshall
-
-1. **Gig at the Ferris Hotel.** Ride downtown to the Ferris Hotel on
-   McCarty (red brick, "LIVE MUSIC FRIDAYS", his name on the chalkboard
-   under the canopy). Once he's off the bike he swings the guitar around
-   and plays a 30-second set of "I Got Drunk with the Crowd" while the
-   room whoops, whistles and claps along, then a big roar and applause
-   as the song fades out. Unlocks **PAID: $50**.
-2. **Go Get the Gear.** The band gear is at **The Little House**, out
-   back of a main house a little south of town. Ride out, walk up to it,
-   and grab it. Unlocks a can of
-   **DR. PEBBER** (24 flavors, one more than the other guy).
-
-Both locations are placed approximately and are easy to move in
-`src/world/index.js`.
-
-### Gary Jones
-
-A cowboy in denim from head to toe, with a great big handlebar mustache, a
-chainsaw, and a red-and-white square-body pickup with a ladder rack (he
-drives it instead of the '70, and starts out right beside it at the fire
-station). Brian Weed calls him now and then.
-
-1. **$1,500 of New Duds.** Ride out to **Rawhide & Rhinestones Western
-   Wear** on 90A West and walk up to the counter. The shopping list comes
-   up: cowboy boots ($475), jeans ($135), a tooled belt with a big silver
-   buckle ($165), a denim pearl snap ($125) and a 10X cowboy hat ($600):
-   $1,500 exactly. Tap a line (or E for the next one) to buy it, and Gary
-   changes into it on the spot, faded old denim to sharp new denim. Then
-   check out. Unlocks **$1,500 OF NEW DUDS**.
-2. **Save the Treehouse.** A poplar grew right up through **The
-   Treehouse**, the open-air deck bar on S McCarty, and out the roof. Walk
-   in to the trunk, tap E to fire up the chainsaw, then tap fast to cut.
-   TIMBER! Unlocks **PAID: $50**.
-3. **The Big Oak.** The big old oak on the northwest corner of Main and
-   McCarty has a dead limb hanging over the street, and all Gary's got is
-   a rickety old ladder. Tap E to climb, one rung at a time. Each rung, the
-   ladder might buck him off (more likely higher up); climb back up and
-   try again. It gets kinder after every fall, and from the fourth try on
-   he always makes it. At the top, saw the limb off and climb down.
-   Unlocks a **NEW CHAINSAW BLADE & NEW LADDER**.
-
-### Everybody: the shared quest line
-
-After their own missions, every character (including any added later)
-plays the shared missions in `SHARED_MISSIONS`:
-
-1. **The Lunch Special.** The **Dairy Quake** out on 90A East ends its
-   lunch special at two o'clock sharp. Beat the clock (miss it and you get
-   another try) for the **CHEESE FRIES BASKET**.
-2. **There's a 10-Foot Alligator in Granny's Lake!** Ride out to Granny's
-   Lake (Granny's Lake Rd, off 90A East between the Sputnik and the Dairy
-   Quake) and walk down to the landing, where a rod with a T-bone steak on
-   the line is waiting.
-   - **Tap E to cast.** The steak flies out and the bobber sits on the
-     water. Little nibbles twitch it, but the gator bites when he feels
-     like it.
-   - **BITE! Tap E** within a second or two to set the hook. Too slow and
-     he steals the steak (a new T-bone goes on; cast again).
-   - **Tap E fast to reel him in.** The meter fills with every tap and he
-     pulls back, harder now and then; let it run dry and the line snaps.
-   - Fill it and he comes up out of the lake onto the bank. Unlocks a big
-     plate of **DEEP-FRIED GATOR BALLS**.
-
-## Dr. Pebber cans
-
-About 80 cans of Dr. Pebber float over the streets: mid-block on every
-other block in town, and every ~110 m out the highways (red dots on the
-minimap). Ride, drive or walk through one for a **Dr. Pebber Rush**: 1.6x
-speed for 5 seconds, with a fizz, a wider view and a countdown bar. Grab
-another to reset the clock. Each can comes back 25 seconds after it's
-taken. Tuning lives at the top of `src/pickups.js`.
-
-Watch the lake shore: alligators sun themselves all the way around it.
-They'll hiss with jaws wide open if you get close, and snap if you get
-closer.
-
-Every objective gets a story card, an objective tracker, an on-screen
-waypoint with distance, yellow arrows painted along the shortest street
-route, and the same route on the minimap and town map. New missions are a
-few lines each in `src/missions/index.js`.
-
-## The map
-
-The street grid, rail lines, and landmark positions follow the real town,
-compressed to about 60% scale: Main St (east-west) crossing McCarty Ave /
-FM 102 (north-south), the old Sunset Route freight line cutting diagonally
-through downtown, the second line meeting it at a junction west of town,
-the abandoned Santa Fe grade by the depot, the lake on the south side, the
-rice dryers, Veterans Memorial Park, the golf course, and the airport to the
-northeast. The layout was reconstructed from public sources (addresses,
-historic-district boundaries, highway route descriptions, rail history), so
-it is approximate; exact street geometry from OpenStreetMap can be dropped
-in later.
-
-## Play it
-
-Visit the GitHub Pages deployment, or run it locally (see below).
-
-## The theme song
-
-The title screen opens on **PRESS START** (any key or tap; browsers only
-allow sound after one), which brings up the game's theme song, "Back to
-School", looping under the character picker. Picking a character starts the game
-with the theme still playing for about five seconds; then it fades out as
-the radio station comes up with the in-game songs.
-
-The **MENU** button (top left, or `Esc`) asks to confirm, then takes you
-back to the title screen to pick a character again; missions start over.
-
-## Saved games
-
-Progress is saved in the browser (localStorage), one slot per character:
-every finished mission ("Progress saved" pops up after the achievement)
-and where you are, every few seconds and whenever you leave the page.
-After PRESS START, if there's a save:
-
-- **CONTINUE** picks up the last character played, on the spot you left,
-  at the next unfinished mission (with the chief's helmet and the
-  championship belt back on if you'd earned them). With saves for more
-  than one character it asks which one.
-- **NEW GAME** goes to the character picker; picking a character starts
-  them over (a card says so if they have a save). Other characters' saves
-  are kept.
-
-Saves record missions by id, so missions added later simply show up as
-the next ones to play. A browser that blocks storage (private browsing)
-just plays without saving. The code is in `src/save.js`.
-
-Every mission achievement, for every character, brings the theme back: a
-slice of it fades in over the confetti while the radio tunes away, holds
-for about five seconds, then fades out with a bit of dial static as the
-radio station tunes back in, right where its song left off. Each
-achievement picks up a different strong spot in the song. A second theme
-track can be added to `THEME_TRACKS` in `src/audio.js`; achievements then
-alternate between them.
-
-## The radio
-
-A local station plays continuously from the moment you tap or press any key —
-on foot, on the bike, in the car, doesn't matter:
-
-- **"I'll Take It Back"** by Blake — built from Sidney's own voice
-- **"Peel On"** by The Thicker Bradshall — a friend of Sidney's from Eagle Lake
-- **"Nananananana"** by The Thicker Bradshall
-- **"I Got Drunk with the Crowd"** by Blake (also the song at the Ferris Hotel show)
-
-It loops through the station automatically; press `R` any time to skip to
-the next track. All the songs are lazy-loaded (only fetched once playback
-actually starts), so they never add weight to the initial page load.
-
-## Voices and phone calls
-
-**Playing Sidney:** every 8 to 13 seconds Sid pipes up with a short line
-(none longer than two seconds) cut from his real voicemails, picked at
-random without repeats. A card pops up in the lower right with his face
-and a caption, and the music ducks way down under him, then swells back.
-
-**Phone calls:** the phone rings (two rings, an INCOMING CALL card with
-the caller's face shaking), then the caller talks through a phone-line
-filter with captions, then hangs up.
-- Playing **The Thicker Bradshall**, Sid calls him every half minute or
-  so with the same voicemail clips ("Hey, Blakey Boy..." then "Give me a
-  call back. Bye."), mixed in with calls from Brian Weed.
-- Playing any character, **Brian Weed** calls (about once a minute as
-  Sidney) about Dr. Pebber, hamburgers, and how bad he'd beat his arch
-  nemesis **Billy Powell** in a wrestling match.
-
-There are no recordings of Brian, so his twelve lines are synthesized:
-[Piper](https://github.com/rhasspy/piper) text-to-speech with the "ryan"
-voice (CC BY-NC-SA 4.0, non-commercial), pitched down and slowed a touch
-for a big-guy drawl. Lines and captions live in `BRIAN_LINES` in
-`src/audio.js`; the clips are in `public/audio/brian/`.
-
-Pause the radio any time to hear the voices clearly.
-
-## Townsfolk
-
-Eighteen locals stroll the sidewalks around town, turning at random
-corners, each with a name tag: **Brian Weed**, **Greg Bradbury** and
-**Tattoo Face Man**, plus a cast of made-up regulars (Miss Darlene, Coach
-Pete, Pastor Ray, Old Man Wendel, Rhonda, Duck Dale, Big Earl, Tripp,
-Nurse Patrice, Farmer Gus, Aunt Bev, Deputy Doug, Tammy Jo, Hector and Lou
-Ellen). They call out a hello as you pass; walk up and press E to chat.
-Lines know who you're playing. They'll jump out of the way if you come
-through on the bike or in the car. Anyone more than 150 m away isn't drawn,
-to keep phones fast. Brian Weed is modeled on his photos (a stylized tribute: big build, black
-cap, full mustache, gray ballpark "CHAMPS" tee); the others' looks are
-placeholders until there are photos to go from. Adding someone is one entry in `PEOPLE` in `src/townsfolk.js`.
-
-## The Thicker Bradshall
-
-A local country musician. Playing as Sidney, he busks by the pond at
-Veterans Memorial Park; walk up and press `E` to have him put one of his
-songs on. Playing as him, the guitar rides slung across his back until
-showtime. He's an original, stylized tribute (cowboy hat, big mutton
-chops, pearl-snap western shirt, buckle, boots, stickered acoustic guitar),
-not a likeness of the real person, in the same style as Sidney himself.
-
-## Controls
-
-**Desktop**
-- `WASD` / Arrow keys — walk
-- Riding: `W` to start rolling (it keeps going on its own), `A` / `D` to
-  pick your next turn, `S` to stop (`S` again turns around)
-- `Shift` — sprint (on foot) / boost (car)
-- `Space` — brake
-- `E` — ride / park / talk / order at the drive-thru window; with nothing
-  nearby, it calls Green Dog to you and you hop on
-- `F` — call the '70 to you and get in
-- `V` — camera (Town View, Bird's Eye, Street View)
-- `M` — map (mini map, town map, off)
-- `P` — pause / play the radio · `R` — next song
-
-**Mobile**
-- D-pad — on foot it works from Sidney's point of view: ▲ walks the way
-  he's facing, ◀ ▶ turn him, ▼ backs up (he steers himself around walls
-  and trees and pops free if he's stuck)
-- Riding — tap ▲ once and Green Dog or the '70 rides itself along the
-  streets in the right-hand lane. Tap ◀ or ▶ before an intersection to
-  queue your next turn (it takes it automatically); tap ▼ to stop, ▼ again
-  to turn around. On a mission, with no turn queued, it follows the yellow
-  route on its own
-- `RUN` — sprint / boost
-- `E` button — ride / park / talk / order (the label changes to match);
-  anywhere else it calls Green Dog to you
-- `CAR` — calls the '70 to you and you get in
-- `❚❚` / `▶` (top right) — pause / play the radio; `▶▶` next to it skips
-  to the next song (works while paused too: it turns the radio back on)
-- `VIEW`, `MAP`, `RADIO` — same as the keys above
+The only runtime dependency is `three`.
 
 ## Running locally
 
 ```bash
 npm install
 npm run dev       # dev server at http://localhost:8080, rebuilds on reload
-npm run build     # production build into dist/ (what GitHub Pages serves)
+npm run build     # production build into dist/
 npm run lint      # ESLint over src/ and the build script
 ```
 
-There's no framework and no server-side code: the build bundles `src/`
-with esbuild and copies the static files in `public/` next to it in
-`dist/`, a fully static site. Pushing to the deploy branch runs
-`.github/workflows/pages.yml` (lint, build, deploy). `dist/` is not
-committed.
+Edits to `public/` need a dev server restart. `dist/` is generated and
+not committed.
 
-## About the setting — and why none of it is real
+## Build and deploy
 
-This game is a personal, satirical tribute to Eagle Lake, Texas — a real
-small town with a genuine railroad heritage (the restored 1911 Santa Fe
-Depot), a historic Main Street / Commerce Street downtown grid, and a
-well-earned reputation as a goose-hunting destination. Those general,
-publicly documented facts about the town's geography and history shaped the
-*layout* of the map.
+`build.mjs` does the whole build:
 
-Everything placed on top of that layout is invented:
+1. Wipes `dist/` and copies `public/` (page, styles, audio, video) into it.
+2. Bundles `src/main.js` with esbuild into `dist/bundle.js` (minified for
+   production, with sourcemaps in dev).
+3. Stamps content hashes onto the script and stylesheet links
+   (`bundle.js?v=<hash>`), so a browser never pairs a fresh `index.html`
+   with a stale cached bundle. The same hash shows on the start screen as
+   the build number.
 
-- **Every business name, sign, and logo in the game is original and
-  fictional**, generated at runtime from drawn text on a `<canvas>` — there
-  are no scanned photos, no real logos, and no copied signage anywhere in
-  the game.
-- The old drive-thru beer-and-cigarettes store some longtime residents
-  remember appears as the **Eagle Stop**, by request, with an original
-  drawn sign and no logos. Everything that happens there (ninjas included)
-  is fiction.
-- **Sidney** is an original stylized character — stocky build, glasses, a
-  work shirt, a shoulder radio — inspired by the general silhouette of a
-  small-town volunteer firefighter. It is a low-poly game-art tribute, not a
-  likeness, scan, or photo of any real person.
-- The '70-era muscle car is a deliberately abstracted, generic low-poly
-  silhouette finished in green with white stripes. It carries no
-  manufacturer badges, logos, or licensed body panels — any resemblance is
-  limited to the general shape and color scheme of a classic American
-  muscle car, used as inspiration.
-- The water tower, the goose-hunting banner, the depot museum, the chapel,
-  the feed store, and every house on every side street are generic small-
-  town set dressing invented for this game.
+`.github/workflows/pages.yml` runs on every push to the deploy branches:
+`npm ci`, then lint, then build, then upload `dist/` and deploy to Pages.
+A lint error fails the deploy.
 
-If you're a Eagle Lake local and recognize the *spirit* of a place here —
-that's the idea. If you think something cuts a little too close to a real,
-still-operating business, open an issue and it'll get changed.
+## Rendering
+
+- **Cel shading:** every lit material is swapped at load for a
+  `MeshToonMaterial` that bands the light into a few flat steps
+  (`src/render/toon.js`).
+- **Ink outlines in one pass:** the scene renders to a 4x multisampled
+  offscreen target with a depth texture. A full-screen shader takes the
+  screen-space Laplacian of `1/viewZ`, which is zero on flat surfaces and
+  spikes at silhouettes and creases. That draws both outer contours and
+  inner fold lines with no extra geometry pass. The same pass applies a
+  color grade (saturation, contrast, warm lift) and a vignette
+  (`src/render/post.js`).
+- **Anti-aliasing:** comes from the multisampled render target.
+- **Adaptive resolution:** pixel ratio starts at up to 1.5 on touch
+  devices and 2 on desktop. If the frame time averages worse than 40 fps,
+  it steps down by 0.25 at a time, to no lower than 1.
+
+## World building and performance
+
+The town is roughly 275 buildings, 1,700 trees, two rail lines, a lake,
+farmland and an airport. It stays fast through:
+
+- **Merged geometry:** `src/world/builder.js` gathers flat-shaded,
+  vertex-colored triangles from thousands of small pieces and emits one
+  `BufferGeometry`. The town renders in a handful of draw calls.
+- **Instancing:** trees, pickups, gators, rail ties and geese use
+  `InstancedMesh` (all trees take three draw calls).
+- **One facade atlas:** every wall in town samples a single procedurally
+  drawn 1536x1024 atlas. RGB carries light and shadow detail, and alpha
+  marks window glass, which a small shader patch turns into colored walls
+  with glass (`src/world/atlas.js`).
+- **One surface texture:** ground and water share a seamless 512px
+  texture, one detail layer per channel: grass (R), asphalt (G),
+  concrete (B), water ripples (A) (`src/world/surface.js`).
+- **Canopy cut-away:** tree fragments between the camera and the player
+  are discarded in the shader, so foliage never hides the player.
+- **Distance culling:** NPCs more than 150 m away aren't drawn.
+- **Spatial grid collision:** static obstacles (boxes, circles, polygons)
+  are bucketed in a uniform grid, so movement and camera checks only test
+  what's nearby (`src/collision.js`).
+
+## Assets
+
+- **No image files.** Every texture, sign, face and logo is drawn at
+  runtime on a `<canvas>` (`src/textures.js`, `src/signage.js`,
+  `src/faces.js`).
+- **Audio** lives in `public/audio/` as MP3: songs, voice clips and the
+  soundtrack for the one video clip. Songs are lazy-loaded, fetched only
+  when playback starts, so they don't add to the initial page load.
+- **Video:** `public/media/` holds one H.264 Main-profile MP4 (480x270,
+  yuv420p, faststart). It's fetched only when the scene that uses it starts.
+
+## Map and navigation
+
+- **Layout data** (`src/map/layout.js`) defines roads as polylines with
+  widths, rail lines, the lake polygon, named regions, and helpers
+  (`distToRoad`, `nearestRoad`, `laneReach`, `locate`).
+- **Street routing** (`src/missions/nav.js`): the road polylines become a
+  graph, with nodes at every intersection, T-junction and road end and
+  edges along the roads. A route is the shortest path between the network
+  points nearest the start and the destination.
+- **Route display** (`src/missions/route.js`): scrolling chevrons along
+  the street, a beacon over the destination, and the same route drawn on
+  the minimap and full map.
+
+## Movement and vehicles
+
+- **On foot:** free movement against the collision grid. Walking assists
+  (`src/assist.js`) bend the path around obstacles with feelers and pop
+  the player free if stuck.
+- **Vehicles on rails:** bikes and cars lock to the road graph in the
+  right-hand lane (lane offset `min(2.6, road width / 4)`), so nothing can
+  push them off the street. Input queues the next turn, cruise, stop and
+  turn-around. With nothing queued, a vehicle follows the active route.
+- **Arrival:** a vehicle "arrives" when it's within reach of a target from
+  its lane, plus its current stopping distance, so it brakes in time
+  instead of overshooting. Arrival braking is twice the normal rate.
+- **Cameras:** three views (low chase, elevated three-quarter, overhead)
+  with per-vehicle distances (`src/camera.js`).
+- **Trains:** each car is positioned by its two trucks along a rail
+  polyline, so it bends through curves (`src/train.js`).
+
+## Input
+
+`src/controls.js` merges keyboard, an on-screen D-pad and bezel buttons
+into one per-frame `poll()` result: analog axes for walking, one-shot taps
+for riding, and named actions (interact, view, map, radio).
+
+| Action | Desktop | Phone |
+|---|---|---|
+| Move / steer | WASD or arrow keys | D-pad |
+| Interact | E | E button |
+| Sprint / boost | Shift | RUN button |
+| Brake | Space | D-pad down |
+| Camera | V | VIEW button |
+| Map | M | MAP button |
+| Radio play/pause, next | P, R | top-right buttons |
+| Main menu | Esc | MENU button |
+
+## Mission engine
+
+Missions are data, not code paths (`src/missions/index.js`). Each one is
+an object with an id, a story card, a list of steps, an achievement, and
+optional `setup`, `cleanup` and `onComplete` hooks.
+
+| Step type | What it does |
+|---|---|
+| `goto` | Reach a point. Can be timed, and can require being on foot |
+| `defeat` | Clear a group of enemies |
+| `perform` | Hold position while something plays out |
+| `job` | A hands-on interaction run by a job controller |
+
+- **Job controllers** share one interface: `spot`, `facing`, `begin()`,
+  `press()`, `prompt()`, `status()` returning `{ sub, meter }`,
+  `update(dt, time)`, `end()`, `active`, `done`. Fishing, sawing,
+  climbing and shopping all plug in this way.
+- **Quest lines:** each playable character has a list of missions,
+  followed by a shared list that any character added later inherits.
+- **Debug skip-ahead:** `?debug&mission=N` starts partway through the
+  list.
+
+## Saved games
+
+`src/save.js` stores one slot per character in `localStorage` under
+`eagle-lake-save-v1`:
+
+```js
+{ slots: { <character>: { done: [missionId, ...], x, z, heading, savedAt } }, last }
+```
+
+- **When it saves:** the moment a mission is won, every few seconds while
+  playing, and when the page is hidden or closed.
+- **Missions are recorded by id**, not by position in the list, so
+  missions added later just show up as the next ones to play.
+- **Resuming** replays each finished mission's `onComplete` to restore
+  lasting rewards.
+- **No storage available** (private browsing): the game plays without
+  saving.
+
+## Audio architecture
+
+`src/audio/`, re-exported from `index.js`:
+
+| Module | Role |
+|---|---|
+| `engine.js` | Shared `AudioContext`, unlock-on-gesture, tones, noise, tweens, media channels |
+| `sfx.js` | Procedural sound effects (oscillators and noise, no files) |
+| `radio.js` | Station playlist and volume mix: theme duck, voice duck, talk window |
+| `theme.js` | Title theme, game-intro handoff, achievement stingers |
+| `voices.js` | Voice lines and phone calls, with a phone-line filter (band-pass) |
+| `crowd.js` | Synthesized crowd noise |
+
+- **Phone autoplay rules:** sound can only start inside a real gesture
+  (click, touchend or keydown, not touchstart or pointerdown). The first
+  tap resumes the `AudioContext` and plays a silent buffer to unlock it.
+  `navigator.audioSession.type = "playback"` lets iOS play through the
+  silent switch.
+- **iOS volume:** Safari ignores `.volume` on media elements, so media
+  routes through `MediaElementSource → GainNode` for fades and ducking.
+- **Video with sound on phones** (`src/ui/failcam.js`): the `<video>`
+  plays muted, which is always allowed. Its soundtrack is a separate MP3
+  decoded into an `AudioBuffer` and played through the already-unlocked
+  context. It restarts at `video.currentTime` on every `playing` event and
+  stops on `waiting`, so it stays in sync through buffering. If the video
+  can't decode, the clip is skipped.
+- **Timing:** voice and call scheduling uses wall-clock time, not game
+  time, so slow frames don't stretch it.
+- **Synthesized voice clips** were made with
+  [Piper](https://github.com/rhasspy/piper) text-to-speech, "ryan" voice
+  (CC BY-NC-SA 4.0, non-commercial), then pitch-shifted.
 
 ## Project structure
 
 ```
-src/main.js          game loop and wiring: rides, interactions, trains and gates
+src/main.js          game loop and wiring: input, rides, interactions, trains, saves
 src/config.js        spawn points and world constants
 src/util.js          shared helpers (seeded random, angles, canvas textures)
-src/faces.js         face presets for the named characters
-src/save.js          saved games (localStorage, one slot per character)
-src/map/             town layout: roads, rails, lake, areas, location names
-src/world/           world builder (merged geometry, facade atlas, surfaces, sky, trees, rails)
-src/render/          cel shading: toon materials and the ink-outline post pass
-src/missions/        mission engine and mission list, street routing, route arrows, mission UI
-src/audio/           engine, sound effects, radio, theme song, voices and calls, crowd
-src/ui/              HUD and minimap, start screen, menu, voice card, portraits, confetti
-src/*.js             player, NPCs and townsfolk, vehicles, train, gators, ninjas,
-                     Dr. Pebber cans, fishing, camera, controls, textures, signage
-src/gary.js          Gary Jones's model, outfits and chainsaw
-src/arborist.js      the Treehouse poplar, the big oak and ladder, sawing / climbing jobs
-src/shop.js          the western wear store's shopping list
-public/              static files: index.html, style.css, audio/
-build.mjs            esbuild build and dev server; stamps cache-busting hashes
+src/save.js          saved games (localStorage)
+src/controls.js      keyboard, D-pad and button input
+src/collision.js     uniform-grid static collision
+src/assist.js        walking assists (obstacle feelers, unstick)
+src/camera.js        chase / three-quarter / overhead cameras
+src/vehicles.js      on-rails vehicles, lane following, braking
+src/train.js         trains along rail polylines
+src/textures.js      procedural canvas textures
+src/signage.js       procedural signs
+src/faces.js         procedural face textures
+src/map/             layout data: roads, rails, lake, regions, geometry helpers
+src/world/           world builder: merged geometry, facade atlas, surfaces, sky, trees, rails
+src/render/          toon materials and the ink-outline / color-grade post pass
+src/missions/        mission engine and data, street routing, route display, mission UI
+src/audio/           audio engine, sfx, radio, theme, voices, crowd
+src/ui/              HUD and minimap, start screen, menu, cards, video overlay, confetti
+src/*.js             characters, NPCs, pickups, job controllers and other gameplay modules
+public/              static files: index.html, style.css, audio/, media/
+build.mjs            esbuild build and dev server; cache-busting hashes
 eslint.config.js     lint rules
-.github/workflows/pages.yml   lint, build and deploy to GitHub Pages
+.github/workflows/pages.yml   lint, build, deploy to GitHub Pages
 ```

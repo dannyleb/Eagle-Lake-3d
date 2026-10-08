@@ -11,7 +11,9 @@ import {
 //
 //   createSawJob     fire up the chainsaw, tap E to cut, the tree falls
 //   createLadderJob  tap E to climb a rickety ladder (he might fall: try
-//                    again, it gets kinder each time), then saw the limb
+//                    again, it gets kinder each time), then saw the limb.
+//                    Each fall can roll a tape (clip: { play(kind), open,
+//                    skip(), close() }) before he climbs back on.
 //
 // Jobs share an interface with fishing (see missions "job" step): spot,
 // facing, begin(), press(), prompt(), status(), update(dt, time), end(),
@@ -303,7 +305,7 @@ export function createSawJob({ scene, player, tree, spot, say }) {
 
 // The big oak downtown: climb the rickety ladder (tap E per rung; it might
 // buck him off), saw off the dead limb at the top, climb back down.
-export function createLadderJob({ scene, player, oak, say }) {
+export function createLadderJob({ scene, player, oak, say, clip = null }) {
   const saw = buildChainsaw();
   saw.rotation.x = 1.0;
   toonify(saw);
@@ -334,6 +336,7 @@ export function createLadderJob({ scene, player, oak, say }) {
       oak.seeThrough(true);
     },
     press() {
+      if (clip && clip.open) return clip.skip();
       if (state === "base" || state === "holding") {
         // Up one rung.
         playLadderCreak();
@@ -379,7 +382,7 @@ export function createLadderJob({ scene, player, oak, say }) {
         case "base": case "holding": case "climbing":
           return { sub: `Tap E to climb · rung ${rung} of ${oak.rungs}${tries}`, meter: { frac: rung / oak.rungs, label: "CLIMB! TAP E", hot: false } };
         case "falling": return { sub: "Whoa-oh-oh!", meter: null };
-        case "down": return { sub: "Ow. Shake it off...", meter: null };
+        case "down": return { sub: clip && clip.open ? "Roll the tape! (E skips it)" : "Ow. Shake it off...", meter: null };
         case "dropping": return { sub: "Look out below!", meter: null };
         case "descending": return { sub: "Climbing back down...", meter: null };
         case "top": return { sub: "At the top. Tap E to start the saw", meter: null };
@@ -415,9 +418,10 @@ export function createLadderJob({ scene, player, oak, say }) {
           say(falls >= 3 ? "OOF! That ladder's out to get you. One more go: you've got this." : "OOF! The rickety old ladder bucked you off. Climb back up!", 2400);
           state = "down";
           t = 0;
+          if (clip) clip.play(falls === 1 ? "full" : "replay");
         }
       } else if (state === "down") {
-        if (t > 1) {
+        if (t > 1 && !(clip && clip.open)) {
           rung = 0;
           place(0);
           state = "base";
@@ -443,6 +447,7 @@ export function createLadderJob({ scene, player, oak, say }) {
     },
     end() {
       stopChainsaw();
+      if (clip) clip.close();
       player.holdTool(null);
       player.group.position.y = GROUND_Y;
       player.group.rotation.set(0, player.state.heading, 0);

@@ -21,6 +21,7 @@ import { createTownsfolk } from "./townsfolk.js";
 import { createVoiceCard } from "./ui/voicecard.js";
 import { createMenu } from "./ui/menu.js";
 import { createStartScreen } from "./ui/startscreen.js";
+import { failCamOpen } from "./ui/failcam.js";
 import { createPickups, BOOST_SECONDS, BOOST_MULT } from "./pickups.js";
 import {
   unlockAudio, startCrossingBell, stopCrossingBell, setBellVolume, playHorn,
@@ -455,7 +456,7 @@ function frame() {
   const pushing = mode === "walk" && ((input.dir != null && input.mag > 0.3) || Math.abs(input.y) > 0.3);
   stuckWatch.update(dt, pushing, ent.group.position, collision, ent.state.radius, input.dir ?? ent.state.heading);
   // Sid's voicemail lines are Sidney's voice: only when playing Sidney.
-  updateVoices(dt, started && !missions.blocking && !themePlaying(), character);
+  updateVoices(dt, started && !missions.blocking && !themePlaying() && !failCamOpen(), character);
   if (mode === "bike") player.animateRide(bike.state.speed, dt);
   if (hopOffWhenStopped) {
     if (mode === "walk") hopOffWhenStopped = false;

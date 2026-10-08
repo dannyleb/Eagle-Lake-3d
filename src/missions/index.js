@@ -6,6 +6,7 @@ import { createNinjaGang } from "../ninja.js";
 import { createFishing } from "../fishing.js";
 import { createSawJob, createLadderJob } from "../arborist.js";
 import { createShopJob, SHOPPING_LIST } from "../shop.js";
+import { failCam } from "../ui/failcam.js";
 import {
   startSiren, stopSiren, setSirenVolume, duckRadio,
   playAchievementTheme, playPop, playObjective, playHit, playPoof, playOof, playTick, playFail,
@@ -222,7 +223,9 @@ export const GARY_MISSIONS = [
         "Tap E to climb, one rung at a time, and try not to fall off. Then cut that limb down.",
       go: "HOLD MY HAT",
     },
-    setup: (ctx) => ({ ladder: createLadderJob({ scene: ctx.scene, player: ctx.player, oak: ctx.world.townOak, say: (t, ms) => ctx.hud.toast(t, ms) }) }),
+    setup: (ctx) => ({
+      ladder: createLadderJob({ scene: ctx.scene, player: ctx.player, oak: ctx.world.townOak, say: (t, ms) => ctx.hud.toast(t, ms), clip: failCam() }),
+    }),
     steps: [
       { type: "goto", label: "Get to the big oak", at: (ctx) => ctx.world.townOak.spot, r: 10 },
       { type: "job", label: "Climb up and cut the dead limb", job: "ladder", approach: "Walk up to the ladder" },

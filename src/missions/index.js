@@ -379,6 +379,9 @@ export function createMissions(ctx) {
     }
     if (ctx.arrive) ctx.arrive();
     if (m.onComplete) m.onComplete(ctx);
+    // Saved the moment it's won, not after the achievement card: closing
+    // the game during the fanfare doesn't lose it.
+    if (ctx.onMissionDone) ctx.onMissionDone(m.id);
     playPop();
     playAchievementTheme(); // theme fades in over the radio, then tunes back
     await ui.achievement(m.achievement.title, m.achievement.text);
@@ -393,7 +396,6 @@ export function createMissions(ctx) {
     await wait(3.5);
     for (const m of line.filter((m) => !done.includes(m.id)).slice(from)) {
       await runMission(m);
-      if (ctx.onMissionDone) ctx.onMissionDone(m.id);
       await wait(2.5);
     }
     ui.setObjective("Free roam", "More missions coming soon");

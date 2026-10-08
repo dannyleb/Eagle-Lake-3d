@@ -21,6 +21,7 @@ import {
 //          { timed: true }               ...against the clock (see failStory)
 //          { onFoot: true }              ...r holds in a car too (no drive-by)
 //   defeat { label, gang }               knock out every ninja in a gang
+//          { say }                       ...with a line at the start
 //   perform { label, seconds, track }    play a show on the spot (Bradshall)
 //   job    { label, job, approach }      a hands-on job at a spot: fishing,
 //                                        sawing, climbing, shopping. state[job]
@@ -46,6 +47,16 @@ const EAGLE_STOP_NINJAS = [
   { x: -338, z: 28, y: 5.62, heading: 0 }, // on the roof
   { x: -322, z: 38, y: 5.62, heading: 0 },
 ];
+
+// Sidney can't say "ninjas". It comes out "mimjas", every time (the
+// narrator and everybody else say it right).
+const SIDNEY_MIMJAS = {
+  kicked: ["Ow! Dang mimjas!", "Hey! Quit kickin' me, mimja!", "These mimjas don't fight fair!"],
+  defeat: ["One less mimja!", "Get outta my Eagle Stop, mimja!", "That's what you get, mimja!", "Mimja down!"],
+  last: "That's all the mimjas!",
+};
+const sidneySays = (line) => `Sidney: "${line}"`;
+const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
 export const MISSIONS = [
   {
@@ -79,12 +90,12 @@ export const MISSIONS = [
         "Eagle Stop. They locked the cashier in the beer cooler and they're eating all the " +
         "boiled peanuts. Get out there and defeat them. On foot, get close and hit E — " +
         "or bring Green Dog and run them down.",
-      go: "LET'S ROLL",
+      go: "MIMJAS?! LET'S ROLL",
     },
-    setup: (ctx) => ({ gang: createNinjaGang(ctx.scene, ctx.collision, EAGLE_STOP_NINJAS) }),
+    setup: (ctx) => ({ gang: createNinjaGang(ctx.scene, ctx.collision, EAGLE_STOP_NINJAS), barks: SIDNEY_MIMJAS }),
     steps: [
       { type: "goto", label: "Get to the Eagle Stop", ...EAGLE_STOP },
-      { type: "defeat", label: "Defeat the ninjas", gang: "gang" },
+      { type: "defeat", label: "Defeat the ninjas", gang: "gang", say: sidneySays("Look at all them mimjas!") },
     ],
     achievement: {
       title: "HEAD OF SECURITY",
@@ -324,6 +335,7 @@ export function createMissions(ctx) {
     return new Promise((resolve) => {
       const spot = s.at ? s.at(ctx) : s;
       step = { ...s, x: spot.x, z: spot.z, resolve };
+      if (s.say) ctx.hud.toast(s.say, 2200);
       // Spots set back from the street (a store, a lake) are out of reach of
       // a car or bike on its rails, so riding past counts as arriving.
       if (s.type === "goto") step.rideR = s.onFoot ? s.r : Math.max(s.r, laneReach(step.x, step.z) + 4);
@@ -423,6 +435,7 @@ export function createMissions(ctx) {
 
     // Ninjas run whenever a gang exists, even before Sidney arrives.
     const gang = state.gang;
+    const barks = state.barks; // a character's lines during the fight
     if (gang) {
       gang.update(dt, {
         px: pos.x,
@@ -432,13 +445,16 @@ export function createMissions(ctx) {
         kickPlayer: (dx, dz) => {
           ctx.kickPlayer(dx, dz);
           playOof();
-          ctx.hud.toast("Ninja kick! Get back in there.", 1400);
+          ctx.hud.toast(barks ? sidneySays(pick(barks.kicked)) : "Ninja kick! Get back in there.", 1400);
         },
         onHit: (n, how) => {
           playHit();
           if (how === "ram") ctx.hud.toast("Run down!", 900);
         },
-        onDefeat: () => playPoof(),
+        onDefeat: () => {
+          playPoof();
+          if (barks) ctx.hud.toast(sidneySays(gang.remaining === 0 ? barks.last : pick(barks.defeat)), 1600);
+        },
       });
     }
 

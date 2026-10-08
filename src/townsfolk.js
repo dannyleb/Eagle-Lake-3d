@@ -59,6 +59,7 @@ export const PEOPLE = [
       "Got a new one this week. Guess where.",
       "Stay off that lake shore. Them gators don't play.",
       "Ninjas at the Eagle Stop? Wild town, man.",
+      ["sidney", "Sidney. It's NIN-jas. Not mimjas. Come on, man."],
     ],
   },
   // Everyday locals (made up).
@@ -80,6 +81,7 @@ export const PEOPLE = [
       "Two-a-days start Monday. Tell the boys.",
       "Hustle, {you}! Hustle!",
       "We'll take district this year. Write it down.",
+      ["sidney", "Heard you ran off a bunch of 'mimjas', Chief. Whatever those are."],
     ],
   },
   {
